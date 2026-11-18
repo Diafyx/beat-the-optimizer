@@ -1,0 +1,232 @@
+# Contributing to Beat the Optimizer
+
+Thanks for your interest. This guide lists every rule that CI enforces, so a
+failing check should never surprise you.
+
+## Principles
+
+1. Nothing reaches `main` except through a pull request.
+2. Every pull request starts from an issue. Bot PRs (Dependabot, the release
+   bot) are the only exception.
+3. Every issue belongs to a milestone, and every release is a closed milestone.
+4. CI is the source of truth. `npm run check` runs the same scripts as the CI
+   jobs, so local and CI results do not drift.
+5. Anything that needs PostgreSQL (level authoring and its checks) runs only in
+   CI. You never need Docker or a local database.
+6. When the project grows, CI grows in the same pull request.
+7. Rules are enforced by tooling wherever possible.
+
+## Questions, bugs and ideas
+
+- Questions go to [Discussions](https://github.com/Diafyx/beat-the-optimizer/discussions).
+- Bugs and feature requests use the issue forms. Blank issues are disabled.
+- Security problems are reported privately; see [SECURITY.md](SECURITY.md).
+
+Issue titles are short and imperative, for example `Show the cost of each
+join`. A bug title describes the symptom, not the guessed cause.
+
+## Levels are not open for contributions
+
+Everything in `levels/` (level files, level specs, stories and explanations) is
+all rights reserved; see [`levels/LICENSE`](levels/LICENSE). Pull requests that
+add or change level content are closed. You are welcome to open an issue if a
+level looks wrong or unfair.
+
+## Setup
+
+1. Install Node.js 22, 24 or 26 (`.nvmrc` names the version the maintainer
+   uses).
+2. Install dependencies with `npm ci`.
+3. Optional but recommended: install [pre-commit](https://pre-commit.com/) and
+   run `pre-commit install`. The hooks run the fast checks on staged files:
+   end-of-file and trailing whitespace fixes, check-yaml, typos, actionlint,
+   zizmor, ESLint and Prettier.
+
+## Local checks
+
+```bash
+npm run check       # the local part of PR CI
+npm run check-all   # every job that can run locally
+```
+
+Every CI job calls an npm script of the same name, so you can run any job on
+its own:
+
+| Script          | What it runs                                                             |
+| --------------- | ------------------------------------------------------------------------ |
+| `lint`          | ESLint with `--max-warnings 0`, then `prettier --check`                  |
+| `typecheck`     | `tsc --strict` for the app, and again for `src/engine` without DOM types |
+| `unit`          | Vitest with coverage gates                                               |
+| `coverage`      | Merges coverage and checks diff coverage                                 |
+| `levels`        | Validates every level file                                               |
+| `docs`          | markdownlint on every Markdown file                                      |
+| `check-filters` | Fails if a tracked file matches no CI path filter                        |
+| `e2e`           | Playwright on Chromium, Firefox, WebKit and a mobile viewport            |
+| `a11y`          | axe accessibility checks                                                 |
+| `lighthouse`    | Lighthouse CI budgets                                                    |
+| `bundle-size`   | Bundle-size budget                                                       |
+| `build`         | Production build into `dist/`                                            |
+
+Scripts whose CI job has not landed yet print "not configured yet" and exit
+successfully.
+
+## Branches
+
+- `main` is the only long-lived branch.
+- Branch names are `<type>/<issue-number>-<short-slug>`, for example
+  `feat/12-share-card` or `fix/31-wrong-index-cost`. CI checks the pattern.
+- To bring a branch up to date, merge `main` into it (or use the "Update
+  branch" button). Do not rebase and force-push.
+- Branches are deleted automatically after merge.
+
+## Commits
+
+- Use [Conventional Commits](https://www.conventionalcommits.org/) for branch
+  commits too. They become the body of the squashed commit.
+- `main` accepts only signed commits. The squash commit that GitHub creates on
+  merge is signed by GitHub, so your branch commits are fine either way, but
+  signing them is encouraged.
+- No attribution trailers (`Co-authored-by`, `Assisted-by`, `Generated-by`).
+- Never commit secrets or `.env` files.
+- `package-lock.json` is committed.
+
+## Pull requests
+
+**Title**: `type(scope): summary`, following Conventional Commits.
+
+- Types: `feat`, `fix`, `perf`, `refactor`, `test`, `docs`, `ci`, `build`,
+  `chore`, `revert`.
+- Scopes: `engine`, `levels`, `authoring`, `ui`, `share`, `analytics`,
+  `deploy`, `ci`, `docs`, `release`, plus `deps` for dependency updates.
+- A breaking change adds `!`, for example `feat(engine)!: ...`, and gets the
+  `breaking-change` label.
+- The title becomes the squash commit subject, so it drives the changelog and
+  the version bump.
+
+**Body**: use the pull request template and keep every heading. Write "No" or
+"N/A" rather than deleting one. The body must contain `Closes #N` (or `Fixes`
+or `Resolves`) for an open issue.
+
+**Labels and milestone**: one `type/*` label matching the title type, at least
+one `area/*` label, and the milestone of the linked issue. The maintainer adds
+them for pull requests from forks. CI sets the `size/*` label.
+
+**Scope**: one pull request normally closes one issue. Up to three closely
+related small issues may share a pull request.
+
+**Merging**: squash merge only, done by the maintainer after all required
+checks pass and all conversations are resolved. Auto-merge is disabled.
+
+### Size
+
+Size counts lines added plus lines deleted. Files marked `linguist-generated`
+in `.gitattributes` (the lockfile and generated level files) do not count.
+
+| Label      | Lines changed | Rule                                                                              |
+| ---------- | ------------- | --------------------------------------------------------------------------------- |
+| `size/S`   | up to 100     | Fine, but consider bundling it with related work                                  |
+| `size/M`   | 101 to 300    | Target                                                                            |
+| `size/L`   | 301 to 700    | Target                                                                            |
+| `size/XL`  | 701 to 1500   | Allowed                                                                           |
+| `size/XXL` | over 1500     | Allowed only with a filled-in "Why is this PR large?" section; CI fails otherwise |
+
+## What CI checks
+
+Two checks are required on `main`: `pr-hygiene` and `ci-gate`.
+
+**`pr-hygiene`** checks the title format, the branch name, the issue link, the
+`type/*` and `area/*` labels, the milestone, the template headings and the
+size rule. Bot PRs skip the issue-link, milestone, branch-name and template
+checks.
+
+**`ci-gate`** passes only when every CI job either passed or was skipped
+because the path filters said it was not needed:
+
+- **Path filters** live in `.github/filters.yml`. Changes to shared inputs
+  (`.github/**`, `package.json`, `package-lock.json`, `.gitattributes`) run
+  every job.
+- **No file escapes the filters**: the `check-filters` job fails if any tracked
+  file matches no filter group. If you add a folder, add it to a filter group in
+  the same pull request.
+- **Full runs** happen on every push to `main`, nightly, before every release,
+  on manual runs and on any pull request labelled `ci:full`.
+- **Docs-only** pull requests still run `lint`, `docs`, `pr-hygiene` and the
+  gate.
+
+**Gates that fail the build:**
+
+| Gate                                              | Threshold                                                                                                                  |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Line and branch coverage, `src/engine`            | 100%                                                                                                                       |
+| Line and branch coverage, whole project           | 95% or more                                                                                                                |
+| Diff coverage (lines changed in the pull request) | 100%                                                                                                                       |
+| Warnings                                          | Errors: ESLint `--max-warnings 0`; a `console.warn` or `console.error` in a test fails it                                  |
+| Types                                             | `tsc --strict` with no errors                                                                                              |
+| Formatting and spelling                           | Prettier, typos, markdownlint                                                                                              |
+| Workflows                                         | actionlint and zizmor                                                                                                      |
+| Level files                                       | Schema, solvable, stored costs match a recomputation, stored optimizer plan matches its metadata                           |
+| Level authoring                                   | Pull requests touching `authoring/` or `levels/` regenerate the levels against PostgreSQL in CI and fail on any difference |
+| Browsers                                          | Playwright end-to-end tests pass on Chromium, Firefox, WebKit and a mobile viewport                                        |
+| Accessibility                                     | No serious or critical axe violations                                                                                      |
+| Performance                                       | Lighthouse CI and bundle-size budgets                                                                                      |
+| Mutation score, `src/engine` (nightly)            | 90% or more; a drop opens an issue                                                                                         |
+
+Each coverage exclusion comment needs a reason on the same line.
+
+## Tests
+
+- The engine is pure TypeScript in `src/engine`: no DOM, no Node APIs and no
+  runtime dependencies. Unit tests and fast-check property tests cover it. The
+  key invariant is that the best plan never costs more than the optimizer's
+  plan.
+- A bug fix includes a test that fails without the fix.
+- Test order is shuffled. Vitest prints the seed, so you can rerun a failing
+  order with `npx vitest run --sequence.seed=<seed>`.
+- A test that expects a console warning spies on the console itself, for
+  example `vi.spyOn(console, 'warn').mockImplementation(() => {})`.
+- **Flaky tests are never retried silently.** Label the issue `flaky`, and
+  quarantine the test by adding `@flaky` to its name until it is fixed.
+
+## Labels
+
+Labels are defined in `.github/labels.yml` and synced by a workflow. Do not
+create labels by hand.
+
+| Group    | Labels                                                                                                                                           |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Type     | `type/feature`, `type/bug`, `type/perf`, `type/refactor`, `type/test`, `type/docs`, `type/ci`, `type/build`, `type/chore`, `type/security`       |
+| Area     | `area/engine`, `area/levels`, `area/authoring`, `area/ui`, `area/share`, `area/analytics`, `area/deploy`, `area/ci`, `area/docs`, `area/release` |
+| Size     | `size/S`, `size/M`, `size/L`, `size/XL`, `size/XXL`                                                                                              |
+| Priority | `priority/P0` (drop everything), `priority/P1` (this milestone), `priority/P2` (nice to have)                                                    |
+| Status   | `status/triage`, `status/blocked`, `status/needs-decision`                                                                                       |
+| Other    | `breaking-change`, `good first issue`, `help wanted`, `dependencies`, `flaky`, `ci:full`, `emergency-bypass`                                     |
+
+Title type to label: `feat` → `type/feature`, `fix` → `type/bug` (or
+`type/security`), and the other types map by name. A `revert` takes the label
+of what it reverts.
+
+Every issue has one `type/*`, at least one `area/*`, a `size/*` estimate, a
+`priority/*` label and a milestone. New issues start with `status/triage`
+until the maintainer triages them. Issues estimated `size/XL` or larger are
+split into sub-issues. Deferring an issue means moving it to a later milestone
+with a comment saying why.
+
+## Releases
+
+- One milestone per release (`v0.1.0`, `v0.2.0`, ...). A release happens only
+  when its milestone has no open issues.
+- Versions follow semantic versioning. Before 1.0, `feat` and breaking changes
+  bump the minor version, and `fix` and `perf` bump the patch version.
+- [release-please](https://github.com/googleapis/release-please) keeps a
+  release pull request up to date with the version bump and `CHANGELOG.md`.
+  The changelog is generated; do not edit it by hand.
+- When the maintainer merges the release pull request, the same workflow tags
+  the release, runs the full test suite, and deploys the site to Cloudflare
+  after the maintainer approves it.
+- Every pull request from this repository gets a preview deployment. Pull
+  requests from forks and from Dependabot do not, because they have no access
+  to secrets.
+
+## Code of Conduct
+
+Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md).

@@ -22,7 +22,7 @@
     "a11y": "node scripts/not-configured.mjs a11y 9",
     "lighthouse": "node scripts/not-configured.mjs lighthouse 9",
     "bundle-size": "node scripts/not-configured.mjs bundle-size 9",
-    "docs": "node scripts/not-configured.mjs docs 4",
+    "docs": "markdownlint-cli2",
     "check-filters": "node scripts/not-configured.mjs check-filters 4",
     "check": "npm run lint && npm run typecheck && npm run unit && npm run levels && npm run docs && npm run check-filters && npm run build",
     "check-all": "npm run check && npm run coverage && npm run e2e && npm run a11y && npm run lighthouse && npm run bundle-size"
@@ -34,6 +34,7 @@
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.14.0",
     "happy-dom": "^21.0.4",
+    "markdownlint-cli2": "^0.24.1",
     "prettier": "^3.10.1",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.73.0",
