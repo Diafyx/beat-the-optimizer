@@ -72,11 +72,12 @@ its own:
 | `bundle-size`    | Bundle-size budget                                                       |
 | `build`          | Production build into `dist/`                                            |
 | `pr-size`        | CI only: counts the changed lines and sets the `size/*` label            |
+| `pr-hygiene`     | CI only: checks the pull request rules below through the GitHub API      |
 
 Scripts whose CI job has not landed yet print "not configured yet" and exit
-successfully. `pr-size` needs a pull request and a GitHub token, so it runs
-only in CI; its rules are in `scripts/lib/pr-size.ts`, and `npm run unit` tests
-them.
+successfully. `pr-size` and `pr-hygiene` need a pull request and a GitHub
+token, so they run only in CI; their rules are in `scripts/lib/pr-size.ts` and
+`scripts/lib/pr-rules.ts`, and `npm run unit` tests them.
 
 ## Branches
 
@@ -145,16 +146,19 @@ in `.gitattributes` (the lockfile and generated level files) do not count.
 
 Two checks are required on `main`: `pr-hygiene` and `ci-gate`.
 
-**`pr-hygiene`** checks the title format, the branch name, the issue link, the
-`type/*` and `area/*` labels, the milestone, the template headings and the
-size rule. Bot PRs skip the issue-link, milestone, branch-name and template
+**`pr-hygiene`** checks the title format, the branch name, the issue link (an
+open issue), the `type/*` and `area/*` labels, the `breaking-change` label
+against the `!` in the title, the milestone of the linked issue, the template
+headings and the result of `pr-size`. It runs again when you edit the title or
+description, push, or change labels or the milestone, and its job summary says
+what to fix. Bot PRs skip the issue-link, milestone, branch-name and template
 checks.
 
-The `pr-size` job (in `.github/workflows/pr-hygiene.yml`) counts the changed
-lines and keeps exactly one `size/*` label on the pull request, updating it on
-every push. It fails a `size/XXL` pull request whose "Why is this PR large?"
-section is empty or "N/A". A pull request from a fork has a read-only token,
-so its size is checked but not labelled.
+The `pr-size` job, in the same workflow, counts the changed lines and keeps
+exactly one `size/*` label on the pull request, updating it on every push. It
+fails a `size/XXL` pull request whose "Why is this PR large?" section is empty
+or "N/A". A pull request from a fork has a read-only token, so its size is
+checked but not labelled.
 
 **`ci-gate`** passes only when every CI job either passed or was skipped
 because the path filters said it was not needed:
