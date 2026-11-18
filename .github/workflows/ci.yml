@@ -1,0 +1,223 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+  push:
+    branches: [main]
+  workflow_call:
+    inputs:
+      full:
+        description: Run every job regardless of changed paths
+        type: boolean
+        default: false
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # One group per pull request, cancelling older runs. Every other run gets its
+  # own group, so runs on main are never cancelled.
+  group: ci-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  changes:
+    name: changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read # paths-filter lists the PR's files through the API
+    outputs:
+      code: ${{ steps.select.outputs.code }}
+      docs: ${{ steps.select.outputs.docs }}
+      skippable: ${{ steps.select.outputs.skippable }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: filter
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          filters: .github/filters.yml
+      - id: select
+        env:
+          EVENT: ${{ github.event_name }}
+          FULL_INPUT: ${{ inputs.full }}
+          FULL_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:full') }}
+          SHARED: ${{ steps.filter.outputs.shared }}
+          ENGINE: ${{ steps.filter.outputs.engine }}
+          APP: ${{ steps.filter.outputs.app }}
+          TESTS: ${{ steps.filter.outputs.tests }}
+          SCRIPTS: ${{ steps.filter.outputs.scripts }}
+          LEVELS: ${{ steps.filter.outputs.levels }}
+          DOCS: ${{ steps.filter.outputs.docs }}
+        run: |
+          # Full run: anything but a pull request, `full: true`, the ci:full
+          # label, or a change to a shared input.
+          full=false
+          if [[ $EVENT != pull_request || $FULL_INPUT == true || $FULL_LABEL == true || $SHARED == true ]]; then
+            full=true
+          fi
+          code=false
+          if [[ $full == true || $ENGINE == true || $APP == true || $TESTS == true || $SCRIPTS == true || $LEVELS == true ]]; then
+            code=true
+          fi
+          docs=false
+          if [[ $full == true || $DOCS == true ]]; then
+            docs=true
+          fi
+          # Jobs ci-gate may accept as skipped: only the ones not selected here.
+          skippable=()
+          [[ $code == true ]] || skippable+=(typecheck unit coverage)
+          [[ $docs == true ]] || skippable+=(docs)
+          skippable_csv=$(IFS=,; echo "${skippable[*]}")
+          {
+            echo "code=$code"
+            echo "docs=$docs"
+            echo "skippable=$skippable_csv"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "### Selected jobs"
+            echo "| full | code | docs | allowed skips |"
+            echo "|---|---|---|---|"
+            echo "| $full | $code | $docs | ${skippable_csv:-none} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  lint:
+    name: lint
+    needs: changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run check-filters
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - run: uv tool install pre-commit
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+      # typos, actionlint, zizmor, whitespace and YAML checks, as run locally.
+      - run: npm run hooks
+
+  typecheck:
+    name: typecheck
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+
+  unit:
+    name: unit (Node ${{ matrix.node }})
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22', '24', '26']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run unit
+      - if: ${{ !cancelled() }}
+        uses: test-summary/action@37b508cfee6d4d080eedd00b5bb240a6a784a6a5 # v2.6
+        with:
+          paths: reports/junit.xml
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: junit-unit-node-${{ matrix.node }}
+          path: reports/junit.xml
+          if-no-files-found: error
+      # Coverage is the same on every Node version; the coverage job uses the
+      # leg that matches .nvmrc.
+      - if: matrix.node == '26'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-unit
+          path: coverage/lcov.info
+          if-no-files-found: error
+
+  coverage:
+    name: coverage
+    needs: [changes, unit]
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # diff-cover compares with origin/main
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: coverage-unit
+          path: coverage
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      # The unit job already applied the line and branch thresholds; this adds
+      # 100% diff coverage on the lines this pull request changes.
+      - run: npm run coverage
+      - if: ${{ !cancelled() }}
+        run: cat coverage/diff-cover.md >> "$GITHUB_STEP_SUMMARY"
+
+  docs:
+    name: docs
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # the link check compares with origin/main
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run docs
+
+  ci-gate:
+    name: ci-gate
+    if: always()
+    needs: [changes, lint, typecheck, unit, coverage, docs]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      # Passes only if every job succeeded or was skipped because `changes`
+      # did not select it. A failed or cancelled job fails the gate.
+      - uses: re-actors/alls-green@b5b5b37504aa4183270bd3d855c52a67f212be35 # v1.3.0
+        with:
+          jobs: ${{ toJSON(needs) }}
+          allowed-skips: ${{ needs.changes.outputs.skippable }}

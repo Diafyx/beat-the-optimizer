@@ -1,0 +1,43 @@
+# Path filters for ci.yml, read by dorny/paths-filter in the `changes` job.
+# Every file in the repository must match at least one group:
+# `npm run check-filters` fails otherwise. A new folder gets a group (or joins
+# one) in the same pull request.
+#
+# A change in `shared` runs every job.
+shared:
+  - '.github/**'
+  - 'package.json'
+  - 'package-lock.json'
+  - '.gitattributes'
+  - '.gitignore'
+  - '.nvmrc'
+  - '.editorconfig'
+  - '.pre-commit-config.yaml'
+  - '.prettierrc.json'
+  - '.prettierignore'
+  - '.markdownlint-cli2.jsonc'
+  - 'eslint.config.js'
+  - 'tsconfig*.json'
+  - 'vite.config.ts'
+
+engine:
+  - 'src/engine/**'
+
+app:
+  - 'src/**'
+  - 'index.html'
+  - 'public/**'
+
+tests:
+  - 'tests/**'
+
+scripts:
+  - 'scripts/**'
+
+levels:
+  - 'levels/**'
+
+docs:
+  - '**/*.md'
+  - 'docs/**'
+  - 'LICENSE'

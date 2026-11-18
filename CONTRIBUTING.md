@@ -34,13 +34,16 @@ level looks wrong or unfair.
 
 ## Setup
 
-1. Install Node.js 22, 24 or 26 (`.nvmrc` names the version the maintainer
-   uses).
+1. Install Node.js 22 (22.18 or later), 24 or 26. `.nvmrc` names the version
+   the maintainer uses. Scripts in `scripts/` are TypeScript that Node runs
+   directly, which needs 22.18 or later.
 2. Install dependencies with `npm ci`.
 3. Optional but recommended: install [pre-commit](https://pre-commit.com/) and
    run `pre-commit install`. The hooks run the fast checks on staged files:
    end-of-file and trailing whitespace fixes, check-yaml, typos, actionlint,
    zizmor, ESLint and Prettier.
+4. For `npm run coverage` and `npm run hooks`, install
+   [uv](https://docs.astral.sh/uv/) and pre-commit. CI installs both itself.
 
 ## Local checks
 
@@ -55,12 +58,13 @@ its own:
 | Script          | What it runs                                                             |
 | --------------- | ------------------------------------------------------------------------ |
 | `lint`          | ESLint with `--max-warnings 0`, then `prettier --check`                  |
+| `hooks`         | Every pre-commit hook on every file (typos, actionlint, zizmor and more) |
 | `typecheck`     | `tsc --strict` for the app, and again for `src/engine` without DOM types |
 | `unit`          | Vitest with coverage gates                                               |
-| `coverage`      | Merges coverage and checks diff coverage                                 |
+| `coverage`      | diff-cover: 100% coverage of the lines changed since `origin/main`       |
 | `levels`        | Validates every level file                                               |
-| `docs`          | markdownlint on every Markdown file                                      |
-| `check-filters` | Fails if a tracked file matches no CI path filter                        |
+| `docs`          | markdownlint on every Markdown file, then a link check on changed ones   |
+| `check-filters` | Fails if a file matches no group in `.github/filters.yml`                |
 | `e2e`           | Playwright on Chromium, Firefox, WebKit and a mobile viewport            |
 | `a11y`          | axe accessibility checks                                                 |
 | `lighthouse`    | Lighthouse CI budgets                                                    |
@@ -143,10 +147,10 @@ checks.
 because the path filters said it was not needed:
 
 - **Path filters** live in `.github/filters.yml`. Changes to shared inputs
-  (`.github/**`, `package.json`, `package-lock.json`, `.gitattributes`) run
-  every job.
-- **No file escapes the filters**: the `check-filters` job fails if any tracked
-  file matches no filter group. If you add a folder, add it to a filter group in
+  (the `shared` group: `.github/**`, `package.json`, `package-lock.json`,
+  `.gitattributes` and the tool configuration files) run every job.
+- **No file escapes the filters**: `check-filters` (in the `lint` job) fails if
+  any file matches no filter group. If you add a folder, add it to a filter group in
   the same pull request.
 - **Full runs** happen on every push to `main`, nightly, before every release,
   on manual runs and on any pull request labelled `ci:full`.

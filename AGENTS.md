@@ -10,10 +10,13 @@ npm run dev         # dev server
 npm run check       # the local part of PR CI; run before every pull request
 npm run check-all   # every job that can run locally
 npm run lint        # ESLint (--max-warnings 0) and prettier --check
+npm run hooks       # every pre-commit hook on every file (needs pre-commit)
 npm run format      # prettier --write
 npm run typecheck   # tsc for the app, and for src/engine without DOM types
 npm run unit        # Vitest with coverage gates
-npm run docs        # markdownlint
+npm run coverage    # diff-cover, 100% on changed lines (needs uv)
+npm run docs        # markdownlint and a link check on changed Markdown
+npm run check-filters # every file matches a group in .github/filters.yml
 npm run build       # production build into dist/
 ```
 
@@ -23,6 +26,10 @@ npm run build       # production build into dist/
   and no runtime dependencies; 100% line and branch coverage.
 - `src/`: the web app.
 - `tests/`: test setup and cross-cutting tests.
+- `scripts/`: repository tooling in TypeScript, run directly by Node; logic in
+  `scripts/lib/` is unit-tested and covered.
+- `.github/filters.yml`: CI path filters. A new folder needs a filter group in
+  the same pull request.
 - `levels/`: level content, **all rights reserved**. Do not create or edit level
   content unless the maintainer asks.
 - `docs/adr/`: architecture decision records.

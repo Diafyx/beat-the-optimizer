@@ -6,7 +6,7 @@
   "license": "MIT",
   "type": "module",
   "engines": {
-    "node": "^22.12.0 || ^24.0.0 || ^26.0.0"
+    "node": "^22.18.0 || ^24.0.0 || ^26.0.0"
   },
   "scripts": {
     "dev": "vite",
@@ -14,31 +14,37 @@
     "preview": "vite preview",
     "format": "prettier --write .",
     "lint": "eslint . --max-warnings 0 && prettier --check .",
+    "hooks": "pre-commit run --all-files --show-diff-on-failure",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.engine.json",
     "unit": "vitest run --coverage",
-    "coverage": "node scripts/not-configured.mjs coverage 4",
+    "coverage": "uvx --from diff-cover==11.0.3 diff-cover coverage/lcov.info --compare-branch=origin/main --fail-under=100 --show-uncovered --format markdown:coverage/diff-cover.md",
     "levels": "node scripts/not-configured.mjs levels 15",
     "e2e": "node scripts/not-configured.mjs e2e 9",
     "a11y": "node scripts/not-configured.mjs a11y 9",
     "lighthouse": "node scripts/not-configured.mjs lighthouse 9",
     "bundle-size": "node scripts/not-configured.mjs bundle-size 9",
-    "docs": "markdownlint-cli2",
-    "check-filters": "node scripts/not-configured.mjs check-filters 4",
+    "docs": "markdownlint-cli2 && node scripts/check-links.ts",
+    "check-filters": "node scripts/check-filters.ts",
     "check": "npm run lint && npm run typecheck && npm run unit && npm run levels && npm run docs && npm run check-filters && npm run build",
-    "check-all": "npm run check && npm run coverage && npm run e2e && npm run a11y && npm run lighthouse && npm run bundle-size"
+    "check-all": "npm run check && npm run hooks && npm run coverage && npm run e2e && npm run a11y && npm run lighthouse && npm run bundle-size"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/node": "^22.20.5",
+    "@types/picomatch": "^4.0.3",
     "@vitest/coverage-v8": "^5.1.0",
     "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.14.0",
     "happy-dom": "^21.0.4",
+    "linkinator": "^8.1.0",
     "markdownlint-cli2": "^0.24.1",
+    "picomatch": "^4.0.7",
     "prettier": "^3.10.1",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.73.0",
     "vite": "^8.3.8",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.0",
+    "yaml": "^2.9.1"
   }
 }
