@@ -1,0 +1,86 @@
+name: Bug report
+description: Something does not work as documented
+title: '[Bug] '
+labels: ['type/bug', 'status/triage']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting this. Please search existing issues first.
+        Security problems must NOT be reported here: use "Report a vulnerability"
+        on the Security tab.
+  - type: checkboxes
+    id: search
+    attributes:
+      label: Search before asking
+      options:
+        - label: I searched the existing issues and found nothing similar.
+          required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: The steps that show the problem, including the plan choices you made (join order, access paths, join methods).
+    validations:
+      required: true
+  - type: input
+    id: level
+    attributes:
+      label: Level
+      description: The level number, or the date of the daily puzzle.
+      placeholder: 'Level 3, or the daily puzzle of 2026-12-01'
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Level
+        - Engine or scoring
+        - UI
+        - Share card
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      value: |
+        - Browser and version:
+        - Device:
+        - OS:
+    validations:
+      required: true
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Optional. Drag images here if they help show the problem.
+  - type: textarea
+    id: output
+    attributes:
+      label: Console output or error
+      description: Optional. Errors from the browser console. They are rendered as code.
+      render: text
+  - type: checkboxes
+    id: pr
+    attributes:
+      label: Are you willing to submit a PR?
+      options:
+        - label: Yes, I am willing to submit a PR.
+  - type: checkboxes
+    id: coc
+    attributes:
+      label: Code of Conduct
+      options:
+        - label: I agree to follow this project's Code of Conduct.
+          required: true
