@@ -55,21 +55,22 @@ npm run check-all   # every job that can run locally
 Every CI job calls an npm script of the same name, so you can run any job on
 its own:
 
-| Script          | What it runs                                                             |
-| --------------- | ------------------------------------------------------------------------ |
-| `lint`          | ESLint with `--max-warnings 0`, then `prettier --check`                  |
-| `hooks`         | Every pre-commit hook on every file (typos, actionlint, zizmor and more) |
-| `typecheck`     | `tsc --strict` for the app, and again for `src/engine` without DOM types |
-| `unit`          | Vitest with coverage gates                                               |
-| `coverage`      | diff-cover: 100% coverage of the lines changed since `origin/main`       |
-| `levels`        | Validates every level file                                               |
-| `docs`          | markdownlint on every Markdown file, then a link check on changed ones   |
-| `check-filters` | Fails if a file matches no group in `.github/filters.yml`                |
-| `e2e`           | Playwright on Chromium, Firefox, WebKit and a mobile viewport            |
-| `a11y`          | axe accessibility checks                                                 |
-| `lighthouse`    | Lighthouse CI budgets                                                    |
-| `bundle-size`   | Bundle-size budget                                                       |
-| `build`         | Production build into `dist/`                                            |
+| Script           | What it runs                                                             |
+| ---------------- | ------------------------------------------------------------------------ |
+| `lint`           | ESLint with `--max-warnings 0`, then `prettier --check`                  |
+| `hooks`          | Every pre-commit hook on every file (typos, actionlint, zizmor and more) |
+| `typecheck`      | `tsc --strict` for the app, and again for `src/engine` without DOM types |
+| `unit`           | Vitest with coverage gates                                               |
+| `coverage`       | diff-cover: 100% coverage of the lines changed since `origin/main`       |
+| `levels`         | Validates every level file                                               |
+| `docs`           | markdownlint on every Markdown file, then a link check on changed ones   |
+| `check-filters`  | Fails if a file matches no group in `.github/filters.yml`                |
+| `check-lockfile` | Fails if a `package-lock.json` URL is not on `registry.npmjs.org`        |
+| `e2e`            | Playwright on Chromium, Firefox, WebKit and a mobile viewport            |
+| `a11y`           | axe accessibility checks                                                 |
+| `lighthouse`     | Lighthouse CI budgets                                                    |
+| `bundle-size`    | Bundle-size budget                                                       |
+| `build`          | Production build into `dist/`                                            |
 
 Scripts whose CI job has not landed yet print "not configured yet" and exit
 successfully.
@@ -92,7 +93,10 @@ successfully.
   signing them is encouraged.
 - No attribution trailers (`Co-authored-by`, `Assisted-by`, `Generated-by`).
 - Never commit secrets or `.env` files.
-- `package-lock.json` is committed.
+- `package-lock.json` is committed, and every package in it resolves from
+  `registry.npmjs.org`. The project `.npmrc` sets that registry, overriding a
+  mirror in your own npm config, and `check-lockfile` (in the `lint` job)
+  fails on any other URL.
 
 ## Pull requests
 
@@ -148,7 +152,7 @@ because the path filters said it was not needed:
 
 - **Path filters** live in `.github/filters.yml`. Changes to shared inputs
   (the `shared` group: `.github/**`, `package.json`, `package-lock.json`,
-  `.gitattributes` and the tool configuration files) run every job.
+  `.npmrc`, `.gitattributes` and the tool configuration files) run every job.
 - **No file escapes the filters**: `check-filters` (in the `lint` job) fails if
   any file matches no filter group. If you add a folder, add it to a filter group in
   the same pull request.
