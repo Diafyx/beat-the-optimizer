@@ -12,7 +12,14 @@ export default defineConfig({
     environment: 'node',
     setupFiles: ['tests/setup/fail-on-console.ts'],
     sequence: { shuffle: true },
-    reporters: ['default', 'junit'],
+    // On GitHub Actions, the github-actions reporter adds failure annotations
+    // and the job summary. Setting `reporters` replaces Vitest's defaults, so
+    // it has to be listed here.
+    reporters: [
+      'default',
+      'junit',
+      ...(process.env['GITHUB_ACTIONS'] === 'true' ? ['github-actions'] : []),
+    ],
     outputFile: { junit: 'reports/junit.xml' },
     coverage: {
       provider: 'v8',

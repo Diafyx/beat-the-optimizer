@@ -1,7 +1,7 @@
 # Labels as code. Synced to GitHub by .github/workflows/labels.yml.
 # Do not create or edit labels in the GitHub UI; change this file instead.
-# release-please manages "autorelease: pending" and "autorelease: tagged"
-# itself; the sync never deletes them.
+# The sync deletes every label not listed here, so release-please's own labels
+# are listed at the end.
 
 # Size (set on PRs by the pr-size job; estimated on issues)
 - name: size/S
@@ -128,3 +128,11 @@
 - name: emergency-bypass
   color: e99695
   description: Explains a ruleset bypass used in an emergency
+
+# release-please applies these by name; listing them keeps the sync from deleting them
+- name: 'autorelease: pending'
+  color: ededed
+  description: Release PR waiting to be merged (set by release-please)
+- name: 'autorelease: tagged'
+  color: ededed
+  description: Release PR merged and tagged (set by release-please)
