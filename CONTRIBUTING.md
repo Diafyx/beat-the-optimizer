@@ -194,6 +194,27 @@ because the path filters said it was not needed:
 
 Each coverage exclusion comment needs a reason on the same line.
 
+### Security scanning and dependency updates
+
+- **CodeQL** (`codeql.yml`) analyses the TypeScript and the workflow files on
+  every pull request, on pushes to `main` and weekly. It is an advanced setup,
+  so the repository's CodeQL default setup stays off; the two cannot run
+  together.
+- **OpenSSF Scorecard** (`scorecard.yml`) runs on pushes to `main` and weekly.
+  Results are published to scorecard.dev (the README badge) and shown in code
+  scanning.
+- **Dependabot** (`.github/dependabot.yml`) proposes npm and GitHub Actions
+  updates every Monday, only for versions public for at least a week. Minor
+  and patch updates are grouped into one pull request per ecosystem, and each
+  major update has its own. Titles start with `build(deps)` or `ci(deps)` and
+  the labels are set, so these pull requests pass `pr-hygiene`. They are never
+  merged automatically.
+- **Overrides**: when a development tool depends on a vulnerable package and
+  has no fixed release yet, `overrides` in `package.json` pins a patched
+  version, and the override is removed once the tool catches up. Today: `glob`
+  14 under `linkinator` (minimatch advisory) and `katex` 0.18 under
+  `micromark-extension-math`.
+
 ## Tests
 
 - The engine is pure TypeScript in `src/engine`: no DOM, no Node APIs and no
