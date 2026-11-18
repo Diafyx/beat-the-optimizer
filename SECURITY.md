@@ -10,7 +10,7 @@ latest release, is supported. Older releases are not patched.
 | Live site (latest release) | Yes       |
 | Older releases             | No        |
 
-Development uses Node.js 22, 24 and 26.
+Development uses Node.js 22 (22.18 or later), 24 and 26.
 
 ## Reporting a vulnerability
 

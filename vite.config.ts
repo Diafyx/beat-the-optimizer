@@ -16,7 +16,7 @@ export default defineConfig({
     outputFile: { junit: 'reports/junit.xml' },
     coverage: {
       provider: 'v8',
-      include: ['src/**/*.ts'],
+      include: ['src/**/*.ts', 'scripts/lib/**/*.ts'],
       exclude: ['src/**/*.test.ts'],
       reporter: ['text', 'lcov', 'json-summary'],
       reportsDirectory: 'coverage',

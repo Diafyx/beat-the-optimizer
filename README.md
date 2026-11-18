@@ -1,5 +1,7 @@
 # Beat the Optimizer
 
+[![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
+
 A daily puzzle for people who write SQL. Each level gives you a query and a few
 tables. You choose the join order, how each table is read and how each join is
 done. Then your plan runs against the plan PostgreSQL chose for the same query.
@@ -23,7 +25,7 @@ done. Then your plan runs against the plan PostgreSQL chose for the same query.
 
 ## Run it locally
 
-You need Node.js 22, 24 or 26 (see `.nvmrc`). No database is needed.
+You need Node.js 22.18 or later, 24 or 26 (see `.nvmrc`). No database is needed.
 
 ```bash
 npm ci
@@ -36,18 +38,18 @@ The level authoring step runs PostgreSQL, so it runs only in GitHub Actions.
 
 ## Supported versions
 
-| Component  | Supported                                                        |
-| ---------- | ---------------------------------------------------------------- |
-| Node.js    | 22, 24 and 26 (for development; the site itself is static)       |
-| Browsers   | Latest Chromium, Firefox and WebKit (Safari), desktop and mobile |
-| PostgreSQL | 18, as the reference optimizer for level authoring               |
+| Component  | Supported                                                           |
+| ---------- | ------------------------------------------------------------------- |
+| Node.js    | 22 (22.18 or later), 24 and 26, for development; the site is static |
+| Browsers   | Latest Chromium, Firefox and WebKit (Safari), desktop and mobile    |
+| PostgreSQL | 18, as the reference optimizer for level authoring                  |
 
 ## Licence
 
 This repository has two licences:
 
 - **Code** (everything outside `levels/`) is under the [MIT licence](LICENSE).
-- **Level content** in [`levels/`](levels/) (level files, level specs, stories
+- **Level content** in `levels/` (level files, level specs, stories
   and explanations) is **all rights reserved**. See
   [`levels/LICENSE`](levels/LICENSE).
 
