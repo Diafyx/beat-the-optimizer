@@ -1,0 +1,47 @@
+name: PR hygiene
+
+# Checks the pull request rules in CONTRIBUTING.md. The rules are in
+# scripts/lib/, with unit tests; this file only runs them. The scripts use Node
+# built-ins only, so there is no npm ci.
+#
+# Triggered by pull_request, never pull_request_target: a pull request from a
+# fork gets a read-only token, so its size is checked but not labelled.
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+      - labeled
+      - unlabeled
+      - milestoned
+      - demilestoned
+
+permissions: {}
+
+concurrency:
+  group: pr-hygiene-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  pr-size:
+    name: pr-size
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write # set the size/* label
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2 # the merge commit and the base commit it is diffed against
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      # Labels set with this token do not trigger another run.
+      - run: npm run pr-size
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}

@@ -1,5 +1,6 @@
 # Beat the Optimizer
 
+[![CI](https://github.com/Diafyx/beat-the-optimizer/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Diafyx/beat-the-optimizer/actions/workflows/ci.yml?query=branch%3Amain)
 [![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
 
 A daily puzzle for people who write SQL. Each level gives you a query and a few
