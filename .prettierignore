@@ -1,0 +1,9 @@
+# Prettier also reads .gitignore. These paths are local-only or generated.
+.private/
+.claude/
+_output/
+dist/
+coverage/
+reports/
+package-lock.json
+LICENSE
