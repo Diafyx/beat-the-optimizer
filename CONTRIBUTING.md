@@ -144,7 +144,20 @@ in `.gitattributes` (the lockfile and generated level files) do not count.
 
 ## What CI checks
 
-Two checks are required on `main`: `pr-hygiene` and `ci-gate`.
+The `main` branch ruleset requires, before a pull request can merge:
+
+- the checks `pr-hygiene` and `ci-gate`, reported by GitHub Actions;
+- a branch that is up to date with `main` (use "Update branch" or merge
+  `main` in);
+- CodeQL code scanning results with no new alert of high severity or above
+  and no new error;
+- all review conversations resolved, and squash merge.
+
+It also blocks force pushes and deletion of `main`, and requires signed
+commits and a linear history there. Only repository and organization admins
+can bypass these rules, and only on a pull request; a bypass is an emergency
+measure, and the pull request gets the `emergency-bypass` label with a comment
+explaining why.
 
 **`pr-hygiene`** checks the title format, the branch name, the issue link (an
 open issue), the `type/*` and `area/*` labels, the `breaking-change` label
@@ -270,6 +283,9 @@ with a comment saying why.
 - Every pull request from this repository gets a preview deployment. Pull
   requests from forks and from Dependabot do not, because they have no access
   to secrets.
+- Deployments use two GitHub environments. `preview` has no protection.
+  `production` needs the maintainer's approval and accepts deployments only
+  from `main` and from `v*` tags.
 
 ## Code of Conduct
 
