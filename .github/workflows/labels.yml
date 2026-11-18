@@ -1,7 +1,8 @@
 name: Labels
 
 # Labels as code: .github/labels.yml is the only source of labels.
-# Labels missing from the file are deleted, except release-please's own.
+# Labels missing from the file are deleted. release-please's labels are in the
+# file, so they are kept.
 on:
   push:
     branches: [main]
@@ -30,12 +31,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: crazy-max/ghaction-github-labeler@548a7c3603594ec17c819e1239f281a3b801ab4d # v6.0.0
+      - uses: EndBug/label-sync@52074158190acb45f3077f9099fea818aa43f97a # v2.3.3
         with:
+          config-file: .github/labels.yml
+          delete-other-labels: true
           dry-run: true
-          exclude: |
-            autorelease: pending
-            autorelease: tagged
 
   sync:
     name: labels (sync)
@@ -49,8 +49,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: crazy-max/ghaction-github-labeler@548a7c3603594ec17c819e1239f281a3b801ab4d # v6.0.0
+      - uses: EndBug/label-sync@52074158190acb45f3077f9099fea818aa43f97a # v2.3.3
         with:
-          exclude: |
-            autorelease: pending
-            autorelease: tagged
+          config-file: .github/labels.yml
+          delete-other-labels: true

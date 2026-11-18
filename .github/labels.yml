@@ -1,130 +1,138 @@
 # Labels as code. Synced to GitHub by .github/workflows/labels.yml.
 # Do not create or edit labels in the GitHub UI; change this file instead.
-# release-please manages "autorelease: pending" and "autorelease: tagged"
-# itself; the sync never deletes them.
+# The sync deletes every label not listed here, so release-please's own labels
+# are listed at the end.
 
 # Size (set on PRs by the pr-size job; estimated on issues)
 - name: size/S
-  color: c2e0c6
+  color: 'c2e0c6'
   description: Up to 100 changed lines
 - name: size/M
-  color: 9be9a8
+  color: '9be9a8'
   description: 101 to 300 changed lines
 - name: size/L
-  color: 40c463
+  color: '40c463'
   description: 301 to 700 changed lines
 - name: size/XL
-  color: 30a14e
+  color: '30a14e'
   description: 701 to 1500 changed lines
 - name: size/XXL
-  color: 216e39
+  color: '216e39'
   description: More than 1500 changed lines; needs "Why is this PR large?"
 
 # Type (matches the Conventional Commit type of the PR title)
 - name: type/feature
-  color: 1d76db
+  color: '1d76db'
   description: New capability (feat)
 - name: type/bug
-  color: d73a4a
+  color: 'd73a4a'
   description: Something does not work as documented (fix)
 - name: type/perf
-  color: bfbfbf
+  color: 'bfbfbf'
   description: Performance improvement (perf)
 - name: type/refactor
-  color: bfbfbf
+  color: 'bfbfbf'
   description: Code change without behaviour change (refactor)
 - name: type/test
-  color: bfbfbf
+  color: 'bfbfbf'
   description: Tests only (test)
 - name: type/docs
-  color: 0075ca
+  color: '0075ca'
   description: Documentation (docs)
 - name: type/ci
-  color: bfbfbf
+  color: 'bfbfbf'
   description: CI and workflows (ci)
 - name: type/build
-  color: bfbfbf
+  color: 'bfbfbf'
   description: Build system and dependencies (build)
 - name: type/chore
-  color: bfbfbf
+  color: 'bfbfbf'
   description: Maintenance (chore)
 - name: type/security
-  color: b60205
+  color: 'b60205'
   description: Security fix
 
 # Area (the allowed PR title scopes)
 - name: area/engine
-  color: c5def5
+  color: 'c5def5'
   description: Pure TypeScript engine and cost model
 - name: area/levels
-  color: c5def5
+  color: 'c5def5'
   description: Level files, specs and validation
 - name: area/authoring
-  color: c5def5
+  color: 'c5def5'
   description: Offline level authoring against PostgreSQL
 - name: area/ui
-  color: c5def5
+  color: 'c5def5'
   description: Web user interface
 - name: area/share
-  color: c5def5
+  color: 'c5def5'
   description: Share card
 - name: area/analytics
-  color: c5def5
+  color: 'c5def5'
   description: Privacy-friendly measurement
 - name: area/deploy
-  color: c5def5
+  color: 'c5def5'
   description: Cloudflare deployment
 - name: area/ci
-  color: c5def5
+  color: 'c5def5'
   description: GitHub Actions and repository tooling
 - name: area/docs
-  color: c5def5
+  color: 'c5def5'
   description: Documentation
 - name: area/release
-  color: c5def5
+  color: 'c5def5'
   description: Releases and versioning
 
 # Priority
 - name: priority/P0
-  color: b60205
+  color: 'b60205'
   description: Drop everything
 - name: priority/P1
-  color: d93f0b
+  color: 'd93f0b'
   description: Needed for this milestone
 - name: priority/P2
-  color: fbca04
+  color: 'fbca04'
   description: Nice to have
 
 # Status
 - name: status/triage
-  color: ededed
+  color: 'ededed'
   description: Needs labels and a milestone
 - name: status/blocked
   color: '000000'
   description: Waiting on something outside this issue
 - name: status/needs-decision
-  color: d876e3
+  color: 'd876e3'
   description: Waiting on a maintainer decision
 
 # Other
 - name: breaking-change
-  color: b60205
+  color: 'b60205'
   description: Breaks compatibility; listed first in the changelog
 - name: good first issue
-  color: 7057ff
+  color: '7057ff'
   description: Good for newcomers
 - name: help wanted
   color: '008672'
   description: Extra attention is needed
 - name: dependencies
-  color: 0366d6
+  color: '0366d6'
   description: Dependency update
 - name: flaky
-  color: f9d0c4
+  color: 'f9d0c4'
   description: Test fails intermittently; quarantined until fixed
 - name: ci:full
-  color: 5319e7
+  color: '5319e7'
   description: Run every CI job regardless of changed paths
 - name: emergency-bypass
-  color: e99695
+  color: 'e99695'
   description: Explains a ruleset bypass used in an emergency
+
+# release-please applies these by name; listing them keeps the sync from deleting them
+- name: 'autorelease: pending'
+  color: 'ededed'
+  description: Release PR waiting to be merged (set by release-please)
+- name: 'autorelease: tagged'
+  color: 'ededed'
+  description: Release PR merged and tagged (set by release-please)
