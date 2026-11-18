@@ -1,0 +1,18 @@
+{
+  "config": {
+    "default": true,
+    // Prose is wrapped by hand and tables can be wide.
+    "MD013": false,
+  },
+  "globs": ["**/*.md"],
+  "ignores": [
+    ".git/**",
+    "node_modules/**",
+    ".private/**",
+    ".claude/**",
+    "_output/**",
+    "dist/**",
+    "coverage/**",
+    "CHANGELOG.md",
+  ],
+}
