@@ -19,6 +19,16 @@ updates:
     commit-message:
       prefix: build(deps)
     labels: [dependencies, type/build, area/ci]
+    ignore:
+      # The Node types follow the oldest supported Node in package.json
+      # `engines` (22), so code cannot use APIs that Node 22 lacks. Remove
+      # when Node 22 support is dropped, and set the new oldest major.
+      - dependency-name: '@types/node'
+        update-types: [version-update:semver-major]
+      # typescript-eslint does not support TypeScript 7 yet (its peer range
+      # is <6.1.0), so the update cannot resolve. Remove when it does.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: github-actions
     directory: /

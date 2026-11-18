@@ -7,6 +7,7 @@ interface Update {
   'package-ecosystem': string;
   'commit-message': { prefix: string };
   labels: string[];
+  ignore?: { 'dependency-name': string; 'update-types': string[] }[];
   groups: Record<string, { 'update-types': string[] }>;
 }
 
@@ -21,6 +22,23 @@ describe('.github/dependabot.yml', () => {
       'npm',
       'github-actions',
     ]);
+  });
+
+  it('ignores the npm majors that must not or cannot land', () => {
+    const npm = config.updates.find((update) => update['package-ecosystem'] === 'npm');
+    expect(npm?.ignore).toEqual([
+      { 'dependency-name': '@types/node', 'update-types': ['version-update:semver-major'] },
+      { 'dependency-name': 'typescript', 'update-types': ['version-update:semver-major'] },
+    ]);
+  });
+
+  it('keeps @types/node on the oldest supported Node major', () => {
+    const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as {
+      engines: { node: string };
+      devDependencies: Record<string, string>;
+    };
+    const oldest = /\d+/.exec(pkg.engines.node)?.[0];
+    expect(pkg.devDependencies['@types/node']).toMatch(new RegExp(`^\\^${String(oldest)}\\.`));
   });
 
   describe.each(config.updates)('$package-ecosystem', (update) => {
