@@ -1,0 +1,11 @@
+{
+  // The engine is pure TypeScript: no DOM, no Node and no runtime dependencies.
+  // Compiling it without those type libraries makes any such use a type error.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "types": []
+  },
+  "include": ["src/engine"],
+  "exclude": ["src/engine/**/*.test.ts"]
+}

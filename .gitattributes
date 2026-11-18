@@ -1,0 +1,6 @@
+* text=auto eol=lf
+
+# Generated files. They are excluded from the PR size count (A6) and collapsed
+# in diffs. This is the single list of exclusions.
+package-lock.json linguist-generated=true
+levels/*.json linguist-generated=true
