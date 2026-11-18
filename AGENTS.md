@@ -18,6 +18,7 @@ npm run coverage    # diff-cover, 100% on changed lines (needs uv)
 npm run docs        # markdownlint and a link check on changed Markdown
 npm run check-filters # every file matches a group in .github/filters.yml
 npm run check-lockfile # every lockfile URL is on registry.npmjs.org
+npm run pr-size     # CI only: size label for a pull request
 npm run build       # production build into dist/
 ```
 

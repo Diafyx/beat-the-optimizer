@@ -1,0 +1,125 @@
+// A small GitHub REST client for the pr-hygiene workflow. It reads pull
+// requests and issues, and sets labels. The fetch function is injectable so the
+// tests never touch the network.
+
+export interface PullRequest {
+  title: string;
+  body: string;
+  branch: string;
+  labels: string[];
+  milestone: string | null;
+  /** True for app and bot accounts such as Dependabot and the release bot. */
+  isBot: boolean;
+  /** "owner/name" of the head repository; null if the fork was deleted. */
+  headRepository: string | null;
+}
+
+export interface Issue {
+  open: boolean;
+  isPullRequest: boolean;
+  milestone: string | null;
+}
+
+export type FetchLike = (url: string, init: RequestInit) => Promise<Response>;
+
+function object(value: unknown, what: string): Record<string, unknown> {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error(`GitHub API: ${what} is not an object`);
+  }
+  return value as Record<string, unknown>;
+}
+
+function string(value: unknown, what: string): string {
+  if (typeof value !== 'string') throw new Error(`GitHub API: ${what} is not a string`);
+  return value;
+}
+
+function milestoneTitle(value: unknown): string | null {
+  return value === null ? null : string(object(value, 'milestone')['title'], 'milestone title');
+}
+
+/** Reads the fields the rules need from a GET /pulls/{n} response. */
+export function toPullRequest(json: unknown): PullRequest {
+  const pr = object(json, 'pull request');
+  const head = object(pr['head'], 'head');
+  const labels = pr['labels'];
+  if (!Array.isArray(labels)) throw new Error('GitHub API: labels is not a list');
+  return {
+    title: string(pr['title'], 'title'),
+    body: pr['body'] === null ? '' : string(pr['body'], 'body'),
+    branch: string(head['ref'], 'head ref'),
+    labels: labels.map((label: unknown) => string(object(label, 'label')['name'], 'label name')),
+    milestone: milestoneTitle(pr['milestone']),
+    isBot: object(pr['user'], 'user')['type'] === 'Bot',
+    headRepository:
+      head['repo'] === null ? null : string(object(head['repo'], 'repo')['full_name'], 'repo name'),
+  };
+}
+
+/** Reads the fields the rules need from a GET /issues/{n} response. */
+export function toIssue(json: unknown): Issue {
+  const issue = object(json, 'issue');
+  return {
+    open: issue['state'] === 'open',
+    isPullRequest: 'pull_request' in issue,
+    milestone: milestoneTitle(issue['milestone']),
+  };
+}
+
+export function gitHub(repository: string, token: string, fetchFn: FetchLike = fetch) {
+  const call = (method: string, path: string, body?: unknown): Promise<Response> =>
+    fetchFn(`https://api.github.com/repos/${repository}${path}`, {
+      method,
+      headers: {
+        accept: 'application/vnd.github+json',
+        authorization: `Bearer ${token}`,
+        'x-github-api-version': '2022-11-28',
+      },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    });
+
+  const fail = async (what: string, response: Response): Promise<never> => {
+    throw new Error(
+      `GitHub API: ${what} failed: ${String(response.status)} ${await response.text()}`,
+    );
+  };
+
+  return {
+    async pull(number: number): Promise<PullRequest> {
+      const response = await call('GET', `/pulls/${String(number)}`);
+      if (!response.ok) return fail(`reading pull request #${String(number)}`, response);
+      return toPullRequest(await response.json());
+    },
+
+    /** The issue, or null if it does not exist or was deleted. */
+    async issue(number: number): Promise<Issue | null> {
+      const response = await call('GET', `/issues/${String(number)}`);
+      if (response.status === 404 || response.status === 410) return null;
+      if (!response.ok) return fail(`reading issue #${String(number)}`, response);
+      return toIssue(await response.json());
+    },
+
+    async addLabels(number: number, labels: readonly string[]): Promise<void> {
+      const response = await call('POST', `/issues/${String(number)}/labels`, { labels });
+      if (!response.ok) await fail(`adding labels to #${String(number)}`, response);
+    },
+
+    /** Removes a label; a label that is already gone is fine. */
+    async removeLabel(number: number, label: string): Promise<void> {
+      const path = `/issues/${String(number)}/labels/${encodeURIComponent(label)}`;
+      const response = await call('DELETE', path);
+      if (!response.ok && response.status !== 404) {
+        await fail(`removing ${label} from #${String(number)}`, response);
+      }
+    },
+  };
+}
+
+/** A GitHub Actions error annotation, escaped as the Actions runner expects. */
+export function annotation(title: string, message: string): string {
+  const data = (text: string): string =>
+    text.replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A');
+  const property = (text: string): string =>
+    data(text).replaceAll(':', '%3A').replaceAll(',', '%2C');
+  return `::error title=${property(title)}::${data(message)}`;
+}
