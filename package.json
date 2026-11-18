@@ -25,7 +25,8 @@
     "bundle-size": "node scripts/not-configured.mjs bundle-size 9",
     "docs": "markdownlint-cli2 && node scripts/check-links.ts",
     "check-filters": "node scripts/check-filters.ts",
-    "check": "npm run lint && npm run typecheck && npm run unit && npm run levels && npm run docs && npm run check-filters && npm run build",
+    "check-lockfile": "node scripts/check-lockfile.ts",
+    "check": "npm run lint && npm run typecheck && npm run unit && npm run levels && npm run docs && npm run check-filters && npm run check-lockfile && npm run build",
     "check-all": "npm run check && npm run hooks && npm run coverage && npm run e2e && npm run a11y && npm run lighthouse && npm run bundle-size"
   },
   "devDependencies": {

@@ -8,6 +8,7 @@ shared:
   - '.github/**'
   - 'package.json'
   - 'package-lock.json'
+  - '.npmrc'
   - '.gitattributes'
   - '.gitignore'
   - '.nvmrc'

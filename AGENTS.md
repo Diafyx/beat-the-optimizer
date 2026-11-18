@@ -17,6 +17,7 @@ npm run unit        # Vitest with coverage gates
 npm run coverage    # diff-cover, 100% on changed lines (needs uv)
 npm run docs        # markdownlint and a link check on changed Markdown
 npm run check-filters # every file matches a group in .github/filters.yml
+npm run check-lockfile # every lockfile URL is on registry.npmjs.org
 npm run build       # production build into dist/
 ```
 
