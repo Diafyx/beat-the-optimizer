@@ -4,7 +4,19 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist/', 'coverage/', 'reports/', '.private/', '.claude/', '_output/'] },
+  {
+    ignores: [
+      'dist/',
+      'coverage/',
+      'reports/',
+      'playwright-report/',
+      'test-results/',
+      '.lighthouseci/',
+      '.private/',
+      '.claude/',
+      '_output/',
+    ],
+  },
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,
   tseslint.configs.stylisticTypeChecked,

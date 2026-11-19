@@ -72,7 +72,7 @@ jobs:
           fi
           # Jobs ci-gate may accept as skipped: only the ones not selected here.
           skippable=()
-          [[ $code == true ]] || skippable+=(typecheck unit coverage)
+          [[ $code == true ]] || skippable+=(typecheck unit coverage e2e a11y lighthouse bundle-size)
           [[ $docs == true ]] || skippable+=(docs)
           skippable_csv=$(IFS=,; echo "${skippable[*]}")
           {
@@ -207,10 +207,120 @@ jobs:
       - run: npm ci
       - run: npm run docs
 
+  # Browser gates against the production build (playwright.config.ts). The
+  # browsers come from Playwright, with their system libraries.
+  e2e:
+    name: e2e (${{ matrix.project }})
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { project: chromium, browser: chromium }
+          - { project: firefox, browser: firefox }
+          - { project: webkit, browser: webkit }
+          - { project: mobile, browser: chromium }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps "$BROWSER"
+        env:
+          BROWSER: ${{ matrix.browser }}
+      - run: npm run e2e -- --project="$PROJECT"
+        env:
+          PROJECT: ${{ matrix.project }}
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-${{ matrix.project }}
+          path: |
+            reports/junit-e2e.xml
+            playwright-report/
+          if-no-files-found: error
+
+  a11y:
+    name: a11y
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      # axe on desktop Chromium and the mobile viewport.
+      - run: npm run a11y
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: a11y
+          path: |
+            reports/junit-e2e.xml
+            playwright-report/
+          if-no-files-found: error
+
+  lighthouse:
+    name: lighthouse
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      # Mobile defaults, median of 5 runs, budgets in lighthouserc.json.
+      - run: npm run lighthouse
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: lighthouse
+          path: reports/lighthouse/
+          if-no-files-found: error
+
+  bundle-size:
+    name: bundle-size
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # Writes the per-file table to the job summary.
+      - run: npm run bundle-size
+
   ci-gate:
     name: ci-gate
     if: always()
-    needs: [changes, lint, typecheck, unit, coverage, docs]
+    needs: [changes, lint, typecheck, unit, coverage, docs, e2e, a11y, lighthouse, bundle-size]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:

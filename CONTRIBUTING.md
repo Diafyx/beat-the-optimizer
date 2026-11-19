@@ -44,6 +44,10 @@ level looks wrong or unfair.
    zizmor, ESLint and Prettier.
 4. For `npm run coverage` and `npm run hooks`, install
    [uv](https://docs.astral.sh/uv/) and pre-commit. CI installs both itself.
+5. For the browser checks (`e2e`, `a11y`, `lighthouse`), install Playwright's
+   browsers with `npx playwright install chromium firefox webkit`. On Linux,
+   WebKit also needs system libraries, which
+   `sudo npx playwright install-deps webkit` installs.
 
 ## Local checks
 
@@ -67,9 +71,9 @@ its own:
 | `check-filters`  | Fails if a file matches no group in `.github/filters.yml`                |
 | `check-lockfile` | Fails if a `package-lock.json` URL is not on `registry.npmjs.org`        |
 | `e2e`            | Playwright on Chromium, Firefox, WebKit and a mobile viewport            |
-| `a11y`           | axe accessibility checks                                                 |
-| `lighthouse`     | Lighthouse CI budgets                                                    |
-| `bundle-size`    | Bundle-size budget                                                       |
+| `a11y`           | axe (WCAG 2.2 A and AA) on desktop Chromium and the mobile viewport      |
+| `lighthouse`     | Lighthouse CI on mobile, budgets in `lighthouserc.json`                  |
+| `bundle-size`    | Gzipped JavaScript in `dist/` within 60 kB                               |
 | `build`          | Production build into `dist/`                                            |
 | `pr-size`        | CI only: counts the changed lines and sets the `size/*` label            |
 | `pr-hygiene`     | CI only: checks the pull request rules below through the GitHub API      |
@@ -202,7 +206,7 @@ because the path filters said it was not needed:
 | Level authoring                                   | Pull requests touching `authoring/` or `levels/` regenerate the levels against PostgreSQL in CI and fail on any difference |
 | Browsers                                          | Playwright end-to-end tests pass on Chromium, Firefox, WebKit and a mobile viewport                                        |
 | Accessibility                                     | No serious or critical axe violations                                                                                      |
-| Performance                                       | Lighthouse CI and bundle-size budgets                                                                                      |
+| Performance                                       | Lighthouse CI budgets on mobile (`lighthouserc.json`) and 60 kB of gzipped JavaScript                                      |
 | Mutation score, `src/engine` (nightly)            | 90% or more; a drop opens an issue                                                                                         |
 
 Each coverage exclusion comment needs a reason on the same line.
@@ -241,6 +245,9 @@ Each coverage exclusion comment needs a reason on the same line.
   order with `npx vitest run --sequence.seed=<seed>`.
 - A test that expects a console warning spies on the console itself, for
   example `vi.spyOn(console, 'warn').mockImplementation(() => {})`.
+- Browser tests live in `e2e/` and run against the production build served
+  by `vite preview`. They fail if the page logs a console error or throws.
+  Accessibility specs carry `@a11y` in their name and run with `npm run a11y`.
 - **Flaky tests are never retried silently.** Label the issue `flaky`, and
   quarantine the test by adding `@flaky` to its name until it is fixed.
 

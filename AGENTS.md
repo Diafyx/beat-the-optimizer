@@ -29,6 +29,7 @@ npm run build       # production build into dist/
   and no runtime dependencies; 100% line and branch coverage.
 - `src/`: the web app.
 - `tests/`: test setup and cross-cutting tests.
+- `e2e/`: Playwright browser and accessibility tests against `vite preview`.
 - `scripts/`: repository tooling in TypeScript, run directly by Node; logic in
   `scripts/lib/` is unit-tested and covered.
 - `.github/filters.yml`: CI path filters. A new folder needs a filter group in
