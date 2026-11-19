@@ -1,6 +1,7 @@
-// A small GitHub REST client for the pr-hygiene workflow. It reads pull
-// requests and issues, and sets labels. The fetch function is injectable so the
-// tests never touch the network.
+// A small GitHub REST client for the pr-hygiene workflow and the failure
+// reports of the scheduled workflows. It reads pull requests and issues, sets
+// labels, and opens and comments on issues. The fetch function is injectable so
+// the tests never touch the network.
 
 export interface PullRequest {
   title: string;
@@ -18,6 +19,19 @@ export interface Issue {
   open: boolean;
   isPullRequest: boolean;
   milestone: string | null;
+}
+
+/** An open issue as the failure reports need it. */
+export interface IssueSummary {
+  number: number;
+  body: string;
+  url: string;
+}
+
+export interface NewIssue {
+  title: string;
+  body: string;
+  labels: readonly string[];
 }
 
 export type FetchLike = (url: string, init: RequestInit) => Promise<Response>;
@@ -66,6 +80,20 @@ export function toIssue(json: unknown): Issue {
   };
 }
 
+/** Reads an issue from a list or create response. */
+export function toIssueSummary(json: unknown): IssueSummary {
+  const issue = object(json, 'issue');
+  const number = issue['number'];
+  if (typeof number !== 'number') throw new Error('GitHub API: issue number is not a number');
+  return {
+    number,
+    body: issue['body'] === null ? '' : string(issue['body'], 'issue body'),
+    url: string(issue['html_url'], 'issue URL'),
+  };
+}
+
+export type GitHub = ReturnType<typeof gitHub>;
+
 export function gitHub(repository: string, token: string, fetchFn: FetchLike = fetch) {
   const call = (method: string, path: string, body?: unknown): Promise<Response> =>
     fetchFn(`https://api.github.com/repos/${repository}${path}`, {
@@ -111,6 +139,30 @@ export function gitHub(repository: string, token: string, fetchFn: FetchLike = f
       if (!response.ok && response.status !== 404) {
         await fail(`removing ${label} from #${String(number)}`, response);
       }
+    },
+
+    /** Open issues with the label, not pull requests; the first 100 only. */
+    async openIssues(label: string): Promise<IssueSummary[]> {
+      const query = `state=open&labels=${encodeURIComponent(label)}&per_page=100`;
+      const response = await call('GET', `/issues?${query}`);
+      if (!response.ok) return fail(`listing issues labelled ${label}`, response);
+      const list: unknown = await response.json();
+      if (!Array.isArray(list)) throw new Error('GitHub API: issues is not a list');
+      return list
+        .map((issue: unknown) => object(issue, 'issue'))
+        .filter((issue) => !('pull_request' in issue))
+        .map(toIssueSummary);
+    },
+
+    async createIssue(issue: NewIssue): Promise<IssueSummary> {
+      const response = await call('POST', '/issues', issue);
+      if (!response.ok) return fail('creating an issue', response);
+      return toIssueSummary(await response.json());
+    },
+
+    async comment(number: number, body: string): Promise<void> {
+      const response = await call('POST', `/issues/${String(number)}/comments`, { body });
+      if (!response.ok) await fail(`commenting on #${String(number)}`, response);
     },
   };
 }

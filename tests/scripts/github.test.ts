@@ -5,6 +5,7 @@ import {
   annotation,
   gitHub,
   toIssue,
+  toIssueSummary,
   toPullRequest,
 } from '../../scripts/lib/github.ts';
 
@@ -62,6 +63,24 @@ describe('toIssue', () => {
       isPullRequest: true,
       milestone: null,
     });
+  });
+});
+
+describe('toIssueSummary', () => {
+  it('reads the number, body and URL', () => {
+    expect(toIssueSummary({ number: 3, body: 'text', html_url: 'https://x/3' })).toEqual({
+      number: 3,
+      body: 'text',
+      url: 'https://x/3',
+    });
+    expect(toIssueSummary({ number: 4, body: null, html_url: 'https://x/4' }).body).toBe('');
+  });
+
+  it('rejects responses of the wrong shape', () => {
+    expect(() => toIssueSummary({ number: '3', body: '', html_url: 'u' })).toThrow(
+      'issue number is not a number',
+    );
+    expect(() => toIssueSummary({ number: 3, body: '' })).toThrow('issue URL is not a string');
   });
 });
 
@@ -135,9 +154,44 @@ describe('gitHub', () => {
     ]);
   });
 
+  it('lists open issues with a label, leaving out pull requests', async () => {
+    const issue = { number: 1, body: 'a', html_url: 'https://x/1' };
+    const { fetch, calls } = fakeFetch(
+      json([issue, { number: 2, body: 'b', html_url: 'https://x/2', pull_request: {} }]),
+    );
+    expect(await gitHub('o/r', 'tok', fetch).openIssues('type/ci')).toEqual([
+      { number: 1, body: 'a', url: 'https://x/1' },
+    ]);
+    expect(calls[0]?.url).toBe(
+      'https://api.github.com/repos/o/r/issues?state=open&labels=type%2Fci&per_page=100',
+    );
+  });
+
+  it('rejects an issue list of the wrong shape', async () => {
+    const { fetch } = fakeFetch(json({}));
+    await expect(gitHub('o/r', 'tok', fetch).openIssues('type/ci')).rejects.toThrow(
+      'issues is not a list',
+    );
+  });
+
+  it('opens an issue and comments on one', async () => {
+    const { fetch, calls } = fakeFetch(
+      json({ number: 9, body: 'b', html_url: 'https://x/9' }, 201),
+      json({}, 201),
+    );
+    const client = gitHub('o/r', 'tok', fetch);
+    const issue = { title: 't', body: 'b', labels: ['type/ci'] };
+    expect(await client.createIssue(issue)).toEqual({ number: 9, body: 'b', url: 'https://x/9' });
+    await client.comment(9, 'again');
+    expect(calls.map(({ url, method, body }) => [method, url, body])).toEqual([
+      ['POST', 'https://api.github.com/repos/o/r/issues', issue],
+      ['POST', 'https://api.github.com/repos/o/r/issues/9/comments', { body: 'again' }],
+    ]);
+  });
+
   it('fails with the status and message of an error response', async () => {
     const error = (): Response => new Response('Bad credentials', { status: 401 });
-    const { fetch } = fakeFetch(error(), error(), error(), error());
+    const { fetch } = fakeFetch(error(), error(), error(), error(), error(), error(), error());
     const client = gitHub('o/r', 'tok', fetch);
     await expect(client.pull(7)).rejects.toThrow(
       'reading pull request #7 failed: 401 Bad credentials',
@@ -145,6 +199,13 @@ describe('gitHub', () => {
     await expect(client.issue(1)).rejects.toThrow('reading issue #1 failed: 401');
     await expect(client.addLabels(7, ['size/M'])).rejects.toThrow('adding labels to #7 failed');
     await expect(client.removeLabel(7, 'size/S')).rejects.toThrow('removing size/S from #7 failed');
+    await expect(client.openIssues('type/ci')).rejects.toThrow(
+      'listing issues labelled type/ci failed',
+    );
+    await expect(client.createIssue({ title: 't', body: 'b', labels: [] })).rejects.toThrow(
+      'creating an issue failed',
+    );
+    await expect(client.comment(9, 'x')).rejects.toThrow('commenting on #9 failed');
   });
 });
 

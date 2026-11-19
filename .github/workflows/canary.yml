@@ -1,0 +1,81 @@
+name: Canary
+
+# Forward-looking checks, weekly on main. Not a required check: a failure says
+# a future release will break the project, and opens one tracking issue, or
+# comments on the open one (scripts/report-failure.ts).
+on:
+  schedule:
+    - cron: '29 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      force-failure:
+        description: Fail on purpose, to test the tracking issue
+        type: boolean
+        default: false
+
+permissions: {}
+
+# One run at a time, so two failures never open two issues.
+concurrency:
+  group: canary
+  cancel-in-progress: false
+
+jobs:
+  # The newest Node.js release. It runs ahead of the supported versions in
+  # `engines` and the unit matrix only while a Current line exists; between a
+  # line's LTS promotion and the next major it is the same as .nvmrc.
+  node-current:
+    name: node (current)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: current
+          cache: npm
+      - run: node --version
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run unit
+      - run: npm run build
+
+  # The authoring run against the next PostgreSQL major joins here once the
+  # authoring pipeline exists.
+
+  forced-failure:
+    name: forced-failure
+    if: inputs.force-failure
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - run: |
+          echo "::error title=forced-failure::Started with force-failure, to test the tracking issue."
+          exit 1
+
+  report:
+    name: report
+    needs: [node-current, forced-failure]
+    if: failure()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The script imports only Node built-ins, so it needs no npm ci.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - run: node scripts/report-failure.ts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          NEEDS: ${{ toJSON(needs) }}

@@ -17,6 +17,7 @@
     "playwright-report/**",
     "test-results/**",
     ".lighthouseci/**",
+    ".stryker-tmp/**",
     "CHANGELOG.md",
   ],
 }

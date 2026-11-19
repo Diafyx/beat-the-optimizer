@@ -12,6 +12,7 @@ export default tseslint.config(
       'playwright-report/',
       'test-results/',
       '.lighthouseci/',
+      '.stryker-tmp/',
       '.private/',
       '.claude/',
       '_output/',

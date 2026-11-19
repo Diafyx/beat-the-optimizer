@@ -16,6 +16,8 @@ npm run typecheck   # tsc for the app, and for src/engine without DOM types
 npm run unit        # Vitest with coverage gates
 npm run coverage    # diff-cover, 100% on changed lines (needs uv)
 npm run docs        # markdownlint and a link check on changed Markdown
+npm run links-all   # the link check on every Markdown file (nightly)
+npm run mutation    # Stryker on src/engine, 90% killed or more (nightly)
 npm run check-filters # every file matches a group in .github/filters.yml
 npm run check-lockfile # every lockfile URL is on registry.npmjs.org
 npm run pr-size     # CI only: size label for a pull request
