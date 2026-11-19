@@ -22,6 +22,7 @@ shared:
   - 'vite.config.ts'
   - 'playwright.config.ts'
   - 'lighthouserc.json'
+  - 'stryker.config.json'
 
 engine:
   - 'src/engine/**'

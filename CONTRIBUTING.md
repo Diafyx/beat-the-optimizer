@@ -74,6 +74,8 @@ its own:
 | `a11y`           | axe (WCAG 2.2 A and AA) on desktop Chromium and the mobile viewport      |
 | `lighthouse`     | Lighthouse CI on mobile, budgets in `lighthouserc.json`                  |
 | `bundle-size`    | Gzipped JavaScript in `dist/` within 60 kB                               |
+| `mutation`       | Stryker on `src/engine`, at least 90% of mutants killed (nightly)        |
+| `links-all`      | The link check on every Markdown file (nightly)                          |
 | `build`          | Production build into `dist/`                                            |
 | `pr-size`        | CI only: counts the changed lines and sets the `size/*` label            |
 | `pr-hygiene`     | CI only: checks the pull request rules below through the GitHub API      |
@@ -207,7 +209,7 @@ because the path filters said it was not needed:
 | Browsers                                          | Playwright end-to-end tests pass on Chromium, Firefox, WebKit and a mobile viewport                                        |
 | Accessibility                                     | No serious or critical axe violations                                                                                      |
 | Performance                                       | Lighthouse CI budgets on mobile (`lighthouserc.json`) and 60 kB of gzipped JavaScript                                      |
-| Mutation score, `src/engine` (nightly)            | 90% or more; a drop opens an issue                                                                                         |
+| Mutation score, `src/engine` (nightly)            | 90% or more of mutants killed; a drop below fails the nightly run and opens an issue                                       |
 
 Each coverage exclusion comment needs a reason on the same line.
 
@@ -231,8 +233,30 @@ Each coverage exclusion comment needs a reason on the same line.
 - **Overrides**: when a development tool depends on a vulnerable package and
   has no fixed release yet, `overrides` in `package.json` pins a patched
   version, and the override is removed once the tool catches up. Today: `glob`
-  14 under `linkinator` (minimatch advisory) and `katex` 0.18 under
-  `micromark-extension-math`.
+  14 under `linkinator` and `minimatch` 11 under `@stryker-mutator/core`
+  (minimatch advisory), `qs` 6.16 under `typed-rest-client` (Stryker) and
+  `katex` 0.18 under `micromark-extension-math`.
+
+### Scheduled workflows
+
+Both run on `main` and can be started by hand from the Actions tab. Neither is
+a required check.
+
+- **Nightly** (`nightly.yml`, daily): every CI job (`ci.yml` with
+  `full: true`), Stryker mutation testing of `src/engine` (`npm run mutation`,
+  report in the `mutation` artifact) and the link check on every Markdown file
+  (`npm run links-all`).
+- **Canary** (`canary.yml`, weekly): type check, unit tests and build on the
+  newest Node.js release. Node.js now has a Current line only from a major's
+  release in April until its LTS promotion in October; the rest of the year
+  the newest release is the `.nvmrc` version and the canary repeats the unit
+  job. The authoring run against the next PostgreSQL major joins it once the
+  authoring pipeline exists.
+- **Failures**: the `report` job opens one issue per workflow, titled
+  "Nightly workflow failed" or "Canary workflow failed" and labelled
+  `type/ci`, `area/ci` and `status/triage`. Later failures comment on that
+  issue while it is open; close it when the workflow passes again. To test
+  this, start a run by hand with **force-failure** checked.
 
 ## Tests
 
