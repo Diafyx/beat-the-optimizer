@@ -158,3 +158,8 @@ vite.config.ts.timestamp-*
 
 # Test reports (JUnit XML)
 reports/
+
+# Browser test output (Playwright and Lighthouse CI)
+playwright-report/
+test-results/
+.lighthouseci/

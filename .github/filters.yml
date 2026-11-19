@@ -20,6 +20,8 @@ shared:
   - 'eslint.config.js'
   - 'tsconfig*.json'
   - 'vite.config.ts'
+  - 'playwright.config.ts'
+  - 'lighthouserc.json'
 
 engine:
   - 'src/engine/**'
@@ -31,6 +33,7 @@ app:
 
 tests:
   - 'tests/**'
+  - 'e2e/**'
 
 scripts:
   - 'scripts/**'
