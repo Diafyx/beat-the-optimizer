@@ -39,8 +39,10 @@ tests:
 scripts:
   - 'scripts/**'
 
+# The level format's schema runs the same jobs as the levels it describes.
 levels:
   - 'levels/**'
+  - 'schema/**'
 
 docs:
   - '**/*.md'

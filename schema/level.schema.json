@@ -1,0 +1,354 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Diafyx/beat-the-optimizer/blob/main/schema/level.schema.json",
+  "title": "Beat the Optimizer level",
+  "description": "One level file, format 1. The rules the schema cannot express are in docs/level-format.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "id",
+    "title",
+    "story",
+    "sql",
+    "tables",
+    "joins",
+    "orderBy",
+    "locks",
+    "cardinalities",
+    "optimizer",
+    "costs",
+    "explanation"
+  ],
+  "properties": {
+    "format": { "const": 1 },
+    "id": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "title": { "$ref": "#/$defs/text" },
+    "story": { "$ref": "#/$defs/paragraphs" },
+    "sql": { "$ref": "#/$defs/text" },
+    "tables": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 3,
+      "items": { "$ref": "#/$defs/table" }
+    },
+    "joins": {
+      "type": "array",
+      "maxItems": 2,
+      "items": { "$ref": "#/$defs/join" }
+    },
+    "orderBy": {
+      "oneOf": [{ "$ref": "#/$defs/columnRef" }, { "type": "null" }]
+    },
+    "locks": { "type": "array", "items": { "$ref": "#/$defs/lock" } },
+    "cardinalities": { "$ref": "#/$defs/cardinalities" },
+    "optimizer": { "$ref": "#/$defs/optimizer" },
+    "costs": { "$ref": "#/$defs/costs" },
+    "explanation": { "$ref": "#/$defs/paragraphs" }
+  },
+  "$defs": {
+    "text": { "type": "string", "minLength": 1 },
+    "name": { "type": "string", "pattern": "^[a-z_][a-z0-9_]*$" },
+    "count": {
+      "description": "A row count or a cost: an integer that every JSON parser reads exactly.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "fraction": { "type": "number", "minimum": 0, "maximum": 1 },
+    "scalar": {
+      "oneOf": [{ "type": "string" }, { "type": "number" }, { "type": "boolean" }]
+    },
+    "paragraphs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/text" }
+    },
+    "tableSet": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/name" }
+    },
+    "columnRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["table", "column"],
+      "properties": {
+        "table": { "$ref": "#/$defs/name" },
+        "column": { "$ref": "#/$defs/name" }
+      }
+    },
+    "table": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "rows", "filter", "storedOrder", "columns", "indexes"],
+      "properties": {
+        "name": { "$ref": "#/$defs/name" },
+        "rows": { "$ref": "#/$defs/count" },
+        "filter": {
+          "description": "The query's predicates on this table, as SQL, or null.",
+          "oneOf": [{ "$ref": "#/$defs/text" }, { "type": "null" }]
+        },
+        "storedOrder": {
+          "description": "The column the rows are physically stored in order of, or null.",
+          "oneOf": [{ "$ref": "#/$defs/name" }, { "type": "null" }]
+        },
+        "columns": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/column" }
+        },
+        "indexes": { "type": "array", "items": { "$ref": "#/$defs/index" } }
+      }
+    },
+    "column": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "stats"],
+      "properties": {
+        "name": { "$ref": "#/$defs/name" },
+        "type": { "$ref": "#/$defs/text" },
+        "stats": {
+          "oneOf": [{ "$ref": "#/$defs/stats" }, { "type": "null" }]
+        }
+      }
+    },
+    "stats": {
+      "description": "What PostgreSQL's statistics say about the column (pg_stats), as shown to the player.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nullFraction", "distinct", "mostCommon", "histogram", "correlation"],
+      "properties": {
+        "nullFraction": { "$ref": "#/$defs/fraction" },
+        "distinct": { "type": "number", "minimum": 0 },
+        "mostCommon": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["value", "frequency"],
+            "properties": {
+              "value": { "$ref": "#/$defs/scalar" },
+              "frequency": { "$ref": "#/$defs/fraction" }
+            }
+          }
+        },
+        "histogram": { "type": "array", "items": { "$ref": "#/$defs/scalar" } },
+        "correlation": {
+          "oneOf": [{ "type": "number", "minimum": -1, "maximum": 1 }, { "type": "null" }]
+        }
+      }
+    },
+    "index": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "column"],
+      "properties": {
+        "name": { "$ref": "#/$defs/name" },
+        "column": { "$ref": "#/$defs/name" }
+      }
+    },
+    "join": {
+      "description": "An equality join predicate: left.column = right.column.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["left", "right"],
+      "properties": {
+        "left": { "$ref": "#/$defs/columnRef" },
+        "right": { "$ref": "#/$defs/columnRef" }
+      }
+    },
+    "scan": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["table", "access"],
+          "properties": {
+            "table": { "$ref": "#/$defs/name" },
+            "access": { "const": "seq" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["table", "access", "index"],
+          "properties": {
+            "table": { "$ref": "#/$defs/name" },
+            "access": { "const": "index" },
+            "index": { "$ref": "#/$defs/name" }
+          }
+        }
+      ]
+    },
+    "step": {
+      "description": "Joins the next table to the result so far.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["join", "scan"],
+          "properties": {
+            "join": { "enum": ["hash", "nestedLoop", "merge"] },
+            "scan": { "$ref": "#/$defs/scan" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["join", "table", "index"],
+          "properties": {
+            "join": { "const": "indexNestedLoop" },
+            "table": { "$ref": "#/$defs/name" },
+            "index": { "$ref": "#/$defs/name" }
+          }
+        }
+      ]
+    },
+    "plan": {
+      "description": "A left-deep plan: scan the first table, then join one table per step.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["first", "steps"],
+      "properties": {
+        "first": { "$ref": "#/$defs/scan" },
+        "steps": { "type": "array", "maxItems": 2, "items": { "$ref": "#/$defs/step" } }
+      }
+    },
+    "lock": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "tables"],
+          "properties": {
+            "kind": { "const": "joinOrder" },
+            "tables": { "$ref": "#/$defs/tableSet" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "method"],
+          "properties": {
+            "kind": { "const": "joinMethod" },
+            "method": { "enum": ["hash", "nestedLoop", "indexNestedLoop", "merge"] }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "scan"],
+          "properties": {
+            "kind": { "const": "access" },
+            "scan": { "$ref": "#/$defs/scan" }
+          }
+        }
+      ]
+    },
+    "cardinalities": {
+      "description": "True row counts from the data. Hidden from the player until the run.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scans", "joins", "lookups"],
+      "properties": {
+        "scans": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["table", "filtered", "indexes"],
+            "properties": {
+              "table": { "$ref": "#/$defs/name" },
+              "filtered": { "$ref": "#/$defs/count" },
+              "indexes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["index", "matched"],
+                  "properties": {
+                    "index": { "$ref": "#/$defs/name" },
+                    "matched": { "$ref": "#/$defs/count" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "joins": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["tables", "rows"],
+            "properties": {
+              "tables": {
+                "allOf": [{ "$ref": "#/$defs/tableSet" }, { "type": "array", "minItems": 2 }]
+              },
+              "rows": { "$ref": "#/$defs/count" }
+            }
+          }
+        },
+        "lookups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["outer", "index", "fetched"],
+            "properties": {
+              "outer": { "$ref": "#/$defs/tableSet" },
+              "index": { "$ref": "#/$defs/name" },
+              "fetched": { "$ref": "#/$defs/count" }
+            }
+          }
+        }
+      }
+    },
+    "explainNode": {
+      "description": "One node of PostgreSQL's EXPLAIN output, with its estimates.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodeType", "relation", "index", "estimatedRows", "estimatedCost", "children"],
+      "properties": {
+        "nodeType": { "$ref": "#/$defs/text" },
+        "relation": { "oneOf": [{ "$ref": "#/$defs/name" }, { "type": "null" }] },
+        "index": { "oneOf": [{ "$ref": "#/$defs/name" }, { "type": "null" }] },
+        "estimatedRows": { "type": "number", "minimum": 0 },
+        "estimatedCost": { "type": "number", "minimum": 0 },
+        "children": { "type": "array", "items": { "$ref": "#/$defs/explainNode" } }
+      }
+    },
+    "optimizer": {
+      "description": "PostgreSQL's plan for the query. Hidden from the player until the run.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["postgres", "settings", "plan", "explain"],
+      "properties": {
+        "postgres": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" },
+        "settings": {
+          "description": "The non-default settings the level was authored with, as PostgreSQL prints them.",
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/name" },
+          "additionalProperties": { "type": "string" }
+        },
+        "plan": { "$ref": "#/$defs/plan" },
+        "explain": { "$ref": "#/$defs/explainNode" }
+      }
+    },
+    "costs": {
+      "description": "Stored results of the cost model; validation recomputes them.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["best", "optimizer", "bestPlan"],
+      "properties": {
+        "best": { "$ref": "#/$defs/count" },
+        "optimizer": { "$ref": "#/$defs/count" },
+        "bestPlan": { "$ref": "#/$defs/plan" }
+      }
+    }
+  }
+}
