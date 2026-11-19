@@ -7,6 +7,9 @@ estimates, so the result is exact and the same on every machine.
 [ADR 0002](adr/0002-cost-model-rows-touched.md) records why. Changing a
 constant changes the scores of existing levels and needs a new ADR.
 
+`planCost` in [`src/engine/cost.ts`](../src/engine/cost.ts) implements this
+page, and the worked example below is one of its tests.
+
 ## Notation
 
 - `rows(T)`: the rows in table `T` (`tables[].rows`).
