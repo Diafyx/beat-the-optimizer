@@ -88,6 +88,10 @@ A level has at most three tables, so the engine enumerates every plan and the
 best cost is exact. It is computed over the whole plan space, ignoring the
 level's locks.
 
+`enumeratePlans`, `allowedByLocks` and `bestPlan` in
+[`src/engine/plans.ts`](../src/engine/plans.ts) implement this section. On a
+tie, `bestPlan` keeps the first plan in enumeration order.
+
 ## Worked example
 
 [`tests/fixtures/example-level.json`](../tests/fixtures/example-level.json):

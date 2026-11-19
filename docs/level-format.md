@@ -97,11 +97,11 @@ A plan is left-deep: scan a first table, then join one more table per step.
 
 ### Locks
 
-| Lock                                         | Effect                                                                                  |
-| -------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `{ "kind": "joinOrder", "tables": [...] }`   | The tables are joined in this order                                                     |
-| `{ "kind": "joinMethod", "method": "hash" }` | Every join uses this method                                                             |
-| `{ "kind": "access", "scan": { ... } }`      | This table is read with this scan (unless it is the inner side of an index nested loop) |
+| Lock                                         | Effect                                                                                          |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `{ "kind": "joinOrder", "tables": [...] }`   | The listed tables are joined in this order; other tables may come before, between or after them |
+| `{ "kind": "joinMethod", "method": "hash" }` | Every join uses this method                                                                     |
+| `{ "kind": "access", "scan": { ... } }`      | This table is read with this scan (unless it is the inner side of an index nested loop)         |
 
 The app shows locked choices greyed out. Locks restrict the player, never the
 best plan: `costs.best` is computed over the whole plan space.
