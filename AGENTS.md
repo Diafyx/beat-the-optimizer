@@ -36,6 +36,8 @@ npm run build       # production build into dist/
   `scripts/lib/` is unit-tested and covered.
 - `.github/filters.yml`: CI path filters. A new folder needs a filter group in
   the same pull request.
+- `schema/`: the level format's JSON Schema (MIT). The format is in
+  `docs/level-format.md` and the cost model in `docs/cost-model.md`.
 - `levels/`: level content, **all rights reserved**. Do not create or edit level
   content unless the maintainer asks.
 - `docs/adr/`: architecture decision records.
