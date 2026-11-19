@@ -1,14 +1,16 @@
 /**
- * Smallest k with 2^k >= n, for a row count n >= 0.
+ * Smallest k with 2^k >= n, for a row count n >= 0, and 0 for n <= 1.
  * The cost model charges a sort of n rows as n * ceilLog2(n).
  */
 export function ceilLog2(n: number): number {
-  if (!Number.isInteger(n) || n < 0) {
-    throw new RangeError(`ceilLog2 expects a non-negative integer, got ${String(n)}`);
+  if (!Number.isSafeInteger(n) || n < 0) {
+    throw new RangeError(`ceilLog2 expects a non-negative safe integer, got ${String(n)}`);
   }
-  // log2(0) is -Infinity; every other n, including 1, needs no special case.
-  if (n === 0) {
-    return 0;
+  // Doubling is exact up to 2^53, while Math.log2 rounds: Math.log2(2^50 + 1)
+  // is exactly 50, which would make the answer 50 instead of 51.
+  let k = 0;
+  for (let power = 1; power < n; power *= 2) {
+    k += 1;
   }
-  return Math.ceil(Math.log2(n));
+  return k;
 }
