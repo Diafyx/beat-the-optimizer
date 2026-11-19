@@ -1,0 +1,153 @@
+{
+  "format": 1,
+  "id": "example-authors-books",
+  "title": "Books by New Zealand authors",
+  "story": [
+    "A hand-written example of the level format. It is not one of the game's levels.",
+    "The shop wants every book by an author from New Zealand, in author order."
+  ],
+  "sql": "SELECT a.name, b.title FROM authors a JOIN books b ON b.author_id = a.author_id WHERE a.country = 'NZ' ORDER BY a.author_id",
+  "tables": [
+    {
+      "name": "authors",
+      "rows": 1000,
+      "filter": "country = 'NZ'",
+      "storedOrder": "author_id",
+      "columns": [
+        {
+          "name": "author_id",
+          "type": "integer",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 1000,
+            "mostCommon": [],
+            "histogram": [1, 250, 500, 750, 1000],
+            "correlation": 1
+          }
+        },
+        { "name": "name", "type": "text", "stats": null },
+        {
+          "name": "country",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 40,
+            "mostCommon": [
+              { "value": "US", "frequency": 0.3 },
+              { "value": "GB", "frequency": 0.15 },
+              { "value": "NZ", "frequency": 0.02 }
+            ],
+            "histogram": [],
+            "correlation": 0.05
+          }
+        }
+      ],
+      "indexes": [{ "name": "authors_pkey", "column": "author_id" }]
+    },
+    {
+      "name": "books",
+      "rows": 20000,
+      "filter": null,
+      "storedOrder": "book_id",
+      "columns": [
+        { "name": "book_id", "type": "integer", "stats": null },
+        {
+          "name": "author_id",
+          "type": "integer",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 1000,
+            "mostCommon": [],
+            "histogram": [1, 250, 500, 750, 1000],
+            "correlation": 0.01
+          }
+        },
+        { "name": "title", "type": "text", "stats": null }
+      ],
+      "indexes": [
+        { "name": "books_pkey", "column": "book_id" },
+        { "name": "books_author_id_idx", "column": "author_id" }
+      ]
+    }
+  ],
+  "joins": [
+    {
+      "left": { "table": "authors", "column": "author_id" },
+      "right": { "table": "books", "column": "author_id" }
+    }
+  ],
+  "orderBy": { "table": "authors", "column": "author_id" },
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "authors",
+        "filtered": 20,
+        "indexes": [{ "index": "authors_pkey", "matched": 1000 }]
+      },
+      {
+        "table": "books",
+        "filtered": 20000,
+        "indexes": [
+          { "index": "books_pkey", "matched": 20000 },
+          { "index": "books_author_id_idx", "matched": 20000 }
+        ]
+      }
+    ],
+    "joins": [{ "tables": ["authors", "books"], "rows": 400 }],
+    "lookups": [
+      { "outer": ["authors"], "index": "books_author_id_idx", "fetched": 400 },
+      { "outer": ["books"], "index": "authors_pkey", "fetched": 20000 }
+    ]
+  },
+  "optimizer": {
+    "postgres": "18.1",
+    "settings": {
+      "autovacuum": "off",
+      "default_statistics_target": "10000",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0"
+    },
+    "plan": {
+      "first": { "table": "authors", "access": "seq" },
+      "steps": [{ "join": "indexNestedLoop", "table": "books", "index": "books_author_id_idx" }]
+    },
+    "explain": {
+      "nodeType": "Nested Loop",
+      "relation": null,
+      "index": null,
+      "estimatedRows": 400,
+      "estimatedCost": 120.5,
+      "children": [
+        {
+          "nodeType": "Seq Scan",
+          "relation": "authors",
+          "index": null,
+          "estimatedRows": 20,
+          "estimatedCost": 20.5,
+          "children": []
+        },
+        {
+          "nodeType": "Index Scan",
+          "relation": "books",
+          "index": "books_author_id_idx",
+          "estimatedRows": 20,
+          "estimatedCost": 4.9,
+          "children": []
+        }
+      ]
+    }
+  },
+  "costs": {
+    "best": 3080,
+    "optimizer": 3080,
+    "bestPlan": {
+      "first": { "table": "authors", "access": "seq" },
+      "steps": [{ "join": "indexNestedLoop", "table": "books", "index": "books_author_id_idx" }]
+    }
+  },
+  "explanation": [
+    "Only 20 authors are from New Zealand, so looking up their books through the index on books.author_id touches far fewer rows than reading all 20,000 books.",
+    "The seq scan of authors already returns rows in author_id order, and a nested loop keeps that order, so the ORDER BY needs no sort."
+  ]
+}
