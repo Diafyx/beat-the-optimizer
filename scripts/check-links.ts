@@ -24,7 +24,19 @@ if (files.length === 0) {
   console.log(`check-links: checking ${files.join(', ')}`);
   const result = spawnSync(
     'npx',
-    ['linkinator', ...files, '--markdown', '--retry', '--verbosity', 'error'],
+    // linkinator serves from the files' common folder unless told otherwise,
+    // so a lone docs/ file would break every ../ link. linkinator 8 resolves
+    // a relative root wrongly, so pass an absolute one.
+    [
+      'linkinator',
+      ...files,
+      '--markdown',
+      '--server-root',
+      process.cwd(),
+      '--retry',
+      '--verbosity',
+      'error',
+    ],
     { stdio: 'inherit' },
   );
   process.exitCode = result.status ?? 1;
