@@ -259,6 +259,9 @@ a required check.
   `type/ci`, `area/ci` and `status/triage`. Later failures comment on that
   issue while it is open; close it when the workflow passes again. To test
   this, start a run by hand with **force-failure** checked.
+- **One run at a time**: each workflow keeps at most one run waiting behind
+  the running one, so a newly queued run cancels the one already waiting.
+  When starting runs by hand, wait for one to start before queuing the next.
 
 ## Tests
 

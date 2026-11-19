@@ -17,7 +17,8 @@ done. Then your plan runs against the plan PostgreSQL chose for the same query.
   scan or an index) and a join method for each join (hash, nested loop, index
   nested loop or merge).
 - **The score**: every operator costs the rows it touches, plus the rows each
-  join produces. The cost model is small enough to explain on one page; see
+  join produces. The cost model is small enough to explain on one page:
+  [docs/cost-model.md](docs/cost-model.md), with the reasons in
   [ADR 0002](docs/adr/0002-cost-model-rows-touched.md).
 - **The opponent**: every level stores the plan PostgreSQL 18 actually chose,
   recorded against synthetic data. Your plan and Postgres's are scored with the
