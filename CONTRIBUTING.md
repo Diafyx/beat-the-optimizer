@@ -227,7 +227,9 @@ Each coverage exclusion comment needs a reason on the same line.
   and patch updates are grouped into one pull request per ecosystem, and each
   major update has its own. Titles start with `build(deps)` or `ci(deps)` and
   the labels are set, so these pull requests pass `pr-hygiene`. They are never
-  merged automatically. Two majors are ignored: `@types/node`, which stays on
+  merged automatically. A `@playwright/test` update also needs the e2e
+  container image in `ci.yml` (tag and digest) to match; a unit test fails
+  until it does. Two majors are ignored: `@types/node`, which stays on
   the oldest supported Node (22), and `typescript` until typescript-eslint
   supports TypeScript 7.
 - **Overrides**: when a development tool depends on a vulnerable package and

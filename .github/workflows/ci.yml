@@ -207,22 +207,23 @@ jobs:
       - run: npm ci
       - run: npm run docs
 
-  # Browser gates against the production build (playwright.config.ts). The
-  # browsers come from Playwright, with their system libraries.
+  # Browser gates against the production build (playwright.config.ts). They run
+  # in Playwright's image, which has every browser and its system libraries:
+  # installing WebKit's with apt took up to 18 minutes on hosted runners. The
+  # tag must match @playwright/test (tests/scripts/playwright-image.test.ts).
   e2e:
     name: e2e (${{ matrix.project }})
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.0-noble@sha256:9beb546099e11f52d62e505537914870e01a67e0e6b00ae41da4775324e73dbe
+      options: --user 1001 # the runner's user, which owns the workspace
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { project: chromium, browser: chromium }
-          - { project: firefox, browser: firefox }
-          - { project: webkit, browser: webkit }
-          - { project: mobile, browser: chromium }
+        project: [chromium, firefox, webkit, mobile]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -232,9 +233,6 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps "$BROWSER"
-        env:
-          BROWSER: ${{ matrix.browser }}
       - run: npm run e2e -- --project="$PROJECT"
         env:
           PROJECT: ${{ matrix.project }}
