@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+# A small spec that uses every kind of values, for the tests. Real level specs
+# are in levels/specs/.
+seed: 7
+tables:
+  - name: customers
+    rows: 20
+    order: customer_id
+    columns:
+      - name: customer_id
+        type: integer
+        values: { kind: sequence }
+      - name: name
+        type: text
+        values: { kind: label, prefix: 'customer ' }
+      # A quarter of the customers live in Reykjavik.
+      - name: city
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: reykjavik, weight: 1 }
+            - { value: lisbon, weight: 3 }
+      # Fully correlated with city.
+      - name: country
+        type: text
+        values:
+          kind: derived
+          column: city
+          map:
+            - { from: reykjavik, to: IS }
+            - { from: lisbon, to: PT }
+    indexes:
+      - { name: customers_pkey, column: customer_id, unique: true }
+  - name: orders
+    rows: 200
+    order: shuffled
+    columns:
+      - name: order_id
+        type: bigint
+        values: { kind: sequence, start: 1000 }
+      - name: customer_id
+        type: integer
+        values: { kind: reference, table: customers, column: customer_id }
+      - name: amount
+        type: integer
+        values: { kind: uniform, min: 0, max: 100 }
+      - name: created_at
+        type: date
+        values: { kind: dateRange, from: '2024-01-01', to: '2024-12-31' }
+    indexes:
+      - { name: orders_customer_id_idx, column: customer_id }
+afterAnalyze:
+  - UPDATE orders SET amount = 0 WHERE order_id % 10 = 0

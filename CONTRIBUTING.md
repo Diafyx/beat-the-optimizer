@@ -197,6 +197,7 @@ because the path filters said it was not needed:
 | Gate                                              | Threshold                                                                                                                  |
 | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | Line and branch coverage, `src/engine`            | 100%                                                                                                                       |
+| Line and branch coverage, `authoring`             | 100%                                                                                                                       |
 | Line and branch coverage, whole project           | 95% or more                                                                                                                |
 | Diff coverage (lines changed in the pull request) | 100%                                                                                                                       |
 | Warnings                                          | Errors: ESLint `--max-warnings 0`; a `console.warn` or `console.error` in a test fails it                                  |

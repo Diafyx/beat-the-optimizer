@@ -8,7 +8,7 @@ export default defineConfig({
     sourcemap: true,
   },
   test: {
-    include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'tests/**/*.test.ts', 'authoring/**/*.test.ts'],
     environment: 'node',
     setupFiles: ['tests/setup/fail-on-console.ts'],
     sequence: { shuffle: true },
@@ -23,8 +23,8 @@ export default defineConfig({
     outputFile: { junit: 'reports/junit.xml' },
     coverage: {
       provider: 'v8',
-      include: ['src/**/*.ts', 'scripts/lib/**/*.ts'],
-      exclude: ['src/**/*.test.ts'],
+      include: ['src/**/*.ts', 'scripts/lib/**/*.ts', 'authoring/**/*.ts'],
+      exclude: ['src/**/*.test.ts', 'authoring/**/*.test.ts'],
       reporter: ['text', 'lcov', 'json-summary'],
       reportsDirectory: 'coverage',
       thresholds: {
@@ -33,6 +33,7 @@ export default defineConfig({
         functions: 95,
         statements: 95,
         'src/engine/**': full,
+        'authoring/**': full,
       },
     },
   },
