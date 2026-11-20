@@ -141,7 +141,8 @@ one plan with cost `best`; when several plans tie, any of them may be stored.
 
 Level validation (`npm run levels`) checks these:
 
-1. Table names are unique, and index names are unique across the level.
+1. Table names are unique, column names are unique in their table, and index
+   names are unique across the level.
 2. Every table, column and index reference resolves, and every index's column
    exists.
 3. The join predicates form a tree that connects every table: one table needs
