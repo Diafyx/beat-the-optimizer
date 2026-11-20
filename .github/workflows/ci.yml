@@ -53,6 +53,7 @@ jobs:
           APP: ${{ steps.filter.outputs.app }}
           TESTS: ${{ steps.filter.outputs.tests }}
           SCRIPTS: ${{ steps.filter.outputs.scripts }}
+          AUTHORING: ${{ steps.filter.outputs.authoring }}
           LEVELS: ${{ steps.filter.outputs.levels }}
           DOCS: ${{ steps.filter.outputs.docs }}
         run: |
@@ -63,7 +64,7 @@ jobs:
             full=true
           fi
           code=false
-          if [[ $full == true || $ENGINE == true || $APP == true || $TESTS == true || $SCRIPTS == true || $LEVELS == true ]]; then
+          if [[ $full == true || $ENGINE == true || $APP == true || $TESTS == true || $SCRIPTS == true || $AUTHORING == true || $LEVELS == true ]]; then
             code=true
           fi
           docs=false

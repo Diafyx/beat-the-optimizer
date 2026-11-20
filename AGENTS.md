@@ -32,12 +32,16 @@ npm run build       # production build into dist/
 - `src/`: the web app.
 - `tests/`: test setup and cross-cutting tests.
 - `e2e/`: Playwright browser and accessibility tests against `vite preview`.
+- `authoring/`: the level authoring pipeline (MIT), run by Node: specs in
+  `levels/specs/` (format in `docs/level-spec.md`) become level files; 100%
+  line and branch coverage.
 - `scripts/`: repository tooling in TypeScript, run directly by Node; logic in
   `scripts/lib/` is unit-tested and covered.
 - `.github/filters.yml`: CI path filters. A new folder needs a filter group in
   the same pull request.
-- `schema/`: the level format's JSON Schema (MIT). The format is in
-  `docs/level-format.md` and the cost model in `docs/cost-model.md`.
+- `schema/`: the JSON Schemas of level files and level specs (MIT). The formats
+  are in `docs/level-format.md` and `docs/level-spec.md`, and the cost model in
+  `docs/cost-model.md`.
 - `levels/`: level content, **all rights reserved**. Do not create or edit level
   content unless the maintainer asks.
 - `docs/adr/`: architecture decision records.

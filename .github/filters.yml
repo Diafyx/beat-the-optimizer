@@ -39,6 +39,10 @@ tests:
 scripts:
   - 'scripts/**'
 
+# The generator, EXPLAIN mapper and level writer (MIT). Level specs are in levels/.
+authoring:
+  - 'authoring/**'
+
 # The level format's schema runs the same jobs as the levels it describes.
 levels:
   - 'levels/**'
