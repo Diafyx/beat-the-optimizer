@@ -2,8 +2,9 @@
  * Level validation: the rules in docs/level-format.md that the JSON Schema
  * cannot express. The level must already match the schema.
  */
-import { joinPredicate } from './cost.ts';
-import type { ColumnRef, Level, Plan, Scan, Table } from './level.ts';
+import { joinPredicate, planCost } from './cost.ts';
+import type { ColumnRef, ExplainNode, Level, Plan, Scan, Table } from './level.ts';
+import { allowedByLocks, bestPlan, joinOrder } from './plans.ts';
 
 export interface LevelError {
   /** The rule's number in docs/level-format.md. */
@@ -249,11 +250,78 @@ class Validator {
       fail(`does not read ${name}`);
     }
   }
+
+  /** Rule 6: the stored costs match the engine. Needs rules 1 to 5. */
+  costs(): void {
+    const { costs, optimizer } = this.level;
+    try {
+      const best = bestPlan(this.level).cost.total;
+      if (costs.best !== best) {
+        this.add(6, `costs.best is ${String(costs.best)}, but the best plan costs ${String(best)}`);
+      }
+      const stored = planCost(this.level, costs.bestPlan).total;
+      if (stored !== costs.best) {
+        this.add(6, `costs.bestPlan costs ${String(stored)}, not costs.best`);
+      }
+      const chosen = planCost(this.level, optimizer.plan).total;
+      if (costs.optimizer !== chosen) {
+        this.add(
+          6,
+          `costs.optimizer is ${String(costs.optimizer)}, but optimizer.plan costs ${String(chosen)}`,
+        );
+      }
+    } catch (error) {
+      // planCost refuses a total above 2^53 - 1.
+      this.add(6, (error as Error).message);
+    }
+  }
+
+  /** Rule 7: the player can always match PostgreSQL. */
+  solvable(): void {
+    const { costs, optimizer } = this.level;
+    if (costs.best > costs.optimizer) {
+      this.add(
+        7,
+        `costs.best (${String(costs.best)}) is above costs.optimizer (${String(costs.optimizer)})`,
+      );
+    }
+    if (!allowedByLocks(this.level, optimizer.plan)) {
+      this.add(7, 'The locks do not allow optimizer.plan, so the player cannot match it');
+    }
+  }
+
+  /** Rule 8: optimizer.explain reads the tables and indexes of optimizer.plan. */
+  explain(): void {
+    const { plan, explain } = this.level.optimizer;
+    const nodes = (node: ExplainNode): ExplainNode[] => [node, ...node.children.flatMap(nodes)];
+    const indexes = [
+      plan.first,
+      ...plan.steps.map((step) => ('scan' in step ? step.scan : step)),
+    ].flatMap((part) => ('index' in part ? [part.index] : []));
+    const compare = (what: string, inPlan: readonly string[], inExplain: readonly string[]) => {
+      for (const name of inPlan.filter((name) => !inExplain.includes(name))) {
+        this.add(8, `optimizer.plan uses the ${what} ${name}, but optimizer.explain does not`);
+      }
+      for (const name of new Set(inExplain.filter((name) => !inPlan.includes(name)))) {
+        this.add(8, `optimizer.explain uses the ${what} ${name}, but optimizer.plan does not`);
+      }
+    };
+    compare(
+      'table',
+      joinOrder(plan),
+      nodes(explain).flatMap(({ relation }) => (relation === null ? [] : [relation])),
+    );
+    compare(
+      'index',
+      indexes,
+      nodes(explain).flatMap(({ index }) => (index === null ? [] : [index])),
+    );
+  }
 }
 
 /**
- * Every structural rule of docs/level-format.md (rules 1 to 5) that `level`
- * breaks, in rule order; empty if it keeps them all.
+ * Every rule of docs/level-format.md that `level` breaks, in rule order; empty
+ * if it is valid. The costs are checked only if rules 1 to 5 pass.
  */
 export function validateLevel(level: Level): LevelError[] {
   const validator = new Validator(level);
@@ -263,5 +331,10 @@ export function validateLevel(level: Level): LevelError[] {
   validator.cardinalities();
   validator.plan('optimizer.plan', level.optimizer.plan);
   validator.plan('costs.bestPlan', level.costs.bestPlan);
+  if (validator.errors.length === 0) {
+    validator.costs();
+  }
+  validator.solvable();
+  validator.explain();
   return validator.errors;
 }

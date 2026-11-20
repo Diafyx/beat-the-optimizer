@@ -66,7 +66,7 @@ its own:
 | `typecheck`      | `tsc --strict` for the app, and again for `src/engine` without DOM types |
 | `unit`           | Vitest with coverage gates                                               |
 | `coverage`       | diff-cover: 100% coverage of the lines changed since `origin/main`       |
-| `levels`         | Validates every level file                                               |
+| `levels`         | Every level file in `levels/` against the schema and the format's rules  |
 | `docs`           | markdownlint on every Markdown file, then a link check on changed ones   |
 | `check-filters`  | Fails if a file matches no group in `.github/filters.yml`                |
 | `check-lockfile` | Fails if a `package-lock.json` URL is not on `registry.npmjs.org`        |
@@ -80,9 +80,8 @@ its own:
 | `pr-size`        | CI only: counts the changed lines and sets the `size/*` label            |
 | `pr-hygiene`     | CI only: checks the pull request rules below through the GitHub API      |
 
-Scripts whose CI job has not landed yet print "not configured yet" and exit
-successfully. `pr-size` and `pr-hygiene` need a pull request and a GitHub
-token, so they run only in CI; their rules are in `scripts/lib/pr-size.ts` and
+`pr-size` and `pr-hygiene` need a pull request and a GitHub token, so they run
+only in CI; their rules are in `scripts/lib/pr-size.ts` and
 `scripts/lib/pr-rules.ts`, and `npm run unit` tests them.
 
 ## Branches

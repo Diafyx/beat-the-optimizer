@@ -130,6 +130,10 @@ describe('validateLevel', () => {
       ),
     ],
     [
+      'a level whose explain names a table twice',
+      variant(example, ['optimizer', 'explain', 'children', 2], scanNode('books')),
+    ],
+    [
       'a three-table chain whose predicates are listed backwards',
       variant(
         chain,
@@ -330,6 +334,11 @@ describe('validateLevel', () => {
           5,
           'optimizer.plan looks up books through books_pkey, which is on books.book_id, not on the join column books.author_id',
         ),
+        error(8, 'optimizer.plan uses the index books_pkey, but optimizer.explain does not'),
+        error(
+          8,
+          'optimizer.explain uses the index books_author_id_idx, but optimizer.plan does not',
+        ),
       ],
     ],
     [
@@ -374,9 +383,86 @@ describe('validateLevel', () => {
       }),
       [error(5, 'costs.bestPlan scans books through authors_pkey, which is not an index on books')],
     ],
+    // Rule 6: stored costs match the engine.
+    [
+      'a wrong best cost',
+      variant(example, ['costs', 'best'], 3000),
+      [
+        error(6, 'costs.best is 3000, but the best plan costs 3080'),
+        error(6, 'costs.bestPlan costs 3080, not costs.best'),
+      ],
+    ],
+    [
+      'a stored best plan that is not the best',
+      variant(example, ['costs', 'bestPlan'], {
+        first: { table: 'authors', access: 'seq' },
+        steps: [{ join: 'hash', scan: { table: 'books', access: 'seq' } }],
+      }),
+      [error(6, 'costs.bestPlan costs 45020, not costs.best')],
+    ],
+    [
+      'a wrong optimizer cost',
+      variant(example, ['costs', 'optimizer'], 5000),
+      [error(6, 'costs.optimizer is 5000, but optimizer.plan costs 3080')],
+    ],
+    [
+      'a level whose plans cost more than 2^53 - 1',
+      variant(example, [...books, 'rows'], Number.MAX_SAFE_INTEGER),
+      [error(6, 'The plan costs more than 2^53 - 1')],
+    ],
+    // Rule 7: the player can match PostgreSQL.
+    [
+      'a best cost above the optimizer cost',
+      variant(variant(example, ['costs', 'best'], 4000), ['costs', 'optimizer'], 3999),
+      [
+        error(6, 'costs.best is 4000, but the best plan costs 3080'),
+        error(6, 'costs.bestPlan costs 3080, not costs.best'),
+        error(6, 'costs.optimizer is 3999, but optimizer.plan costs 3080'),
+        error(7, 'costs.best (4000) is above costs.optimizer (3999)'),
+      ],
+    ],
+    [
+      'locks that rule out the optimizer plan',
+      variant(example, ['locks'], [{ kind: 'joinMethod', method: 'hash' }]),
+      [error(7, 'The locks do not allow optimizer.plan, so the player cannot match it')],
+    ],
+    // Rule 8: explain matches the optimizer plan.
+    [
+      'an explain on another table',
+      variant(example, ['optimizer', 'explain', 'children', 0, 'relation'], 'readers'),
+      [
+        error(8, 'optimizer.plan uses the table authors, but optimizer.explain does not'),
+        error(8, 'optimizer.explain uses the table readers, but optimizer.plan does not'),
+      ],
+    ],
+    [
+      'an explain without the index of a joined index scan',
+      variant(example, [...optimizerSteps, 0], {
+        join: 'hash',
+        scan: { table: 'books', access: 'index', index: 'books_pkey' },
+      }),
+      [
+        error(8, 'optimizer.plan uses the index books_pkey, but optimizer.explain does not'),
+        error(
+          8,
+          'optimizer.explain uses the index books_author_id_idx, but optimizer.plan does not',
+        ),
+      ],
+    ],
   ])('rejects %s', (_, level, errors) => {
     // Only the rules under test: a broken level often breaks later rules too.
     const rules = new Set(errors.map(({ rule }) => rule));
     expect(validateLevel(level).filter(({ rule }) => rules.has(rule))).toEqual(errors);
+  });
+
+  it('checks the costs only when rules 1 to 5 pass', () => {
+    const level = variant(example, ['costs', 'best'], 3000);
+    const broken = variant(
+      level,
+      ['cardinalities', 'lookups', 2],
+      example.cardinalities.lookups[0],
+    );
+    expect(validateLevel(level).map(({ rule }) => rule)).toEqual([6, 6]);
+    expect(validateLevel(broken).map(({ rule }) => rule)).toEqual([4]);
   });
 });

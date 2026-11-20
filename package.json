@@ -18,7 +18,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.engine.json",
     "unit": "vitest run --coverage",
     "coverage": "uvx --from diff-cover==11.0.3 diff-cover coverage/lcov.info --compare-branch=origin/main --fail-under=100 --show-uncovered --format markdown:coverage/diff-cover.md",
-    "levels": "node scripts/not-configured.mjs levels 15",
+    "levels": "node scripts/check-levels.ts",
     "e2e": "playwright test --grep-invert @a11y",
     "a11y": "playwright test --grep @a11y --project=chromium --project=mobile",
     "lighthouse": "vite build && node scripts/lighthouse.ts",

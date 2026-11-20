@@ -139,7 +139,10 @@ one plan with cost `best`; when several plans tie, any of them may be stored.
 
 ## Rules the schema cannot express
 
-Level validation (`npm run levels`) checks these:
+Level validation checks these. `npm run levels` runs it on every `.json` file
+in `levels/` (or on the files given, as in
+`npm run levels -- path/to/level.json`), after the schema; the rules are in
+[`src/engine/validate.ts`](../src/engine/validate.ts).
 
 1. Table names are unique, column names are unique in their table, and index
    names are unique across the level.
@@ -159,3 +162,8 @@ Level validation (`npm run levels`) checks these:
    `bestPlan` costs `best`.
 7. `best ≤ optimizer`, and PostgreSQL's plan is allowed by the locks, so the
    player can always match it.
+8. `optimizer.explain` names the same tables (`relation`) and indexes as
+   `optimizer.plan`.
+
+Rule 6 needs rules 1 to 5, so validation recomputes the costs only when they
+pass.
