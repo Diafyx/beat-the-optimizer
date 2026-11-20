@@ -89,6 +89,28 @@ class EqualColumns {
   }
 }
 
+/**
+ * The first join predicate between `tables` and the table `next`, as
+ * [column of `tables`, column of `next`], or undefined if there is none.
+ */
+export function joinPredicate(
+  level: Level,
+  tables: readonly string[],
+  next: string,
+): readonly [ColumnRef, ColumnRef] | undefined {
+  const predicate = level.joins.find(
+    ({ left, right }) =>
+      (tables.includes(left.table) && right.table === next) ||
+      (tables.includes(right.table) && left.table === next),
+  );
+  if (predicate === undefined) {
+    return undefined;
+  }
+  return predicate.right.table === next
+    ? [predicate.left, predicate.right]
+    : [predicate.right, predicate.left];
+}
+
 interface ScanResult {
   readonly operator: Operator;
   readonly rows: number;
@@ -208,18 +230,12 @@ class PlanCoster {
     return find(table.indexes, (index) => index.name === name, `index ${name} on ${table.name}`);
   }
 
-  /** The join predicate between the tables so far and the next table, oriented. */
   private predicate(tables: readonly string[], next: string): readonly [ColumnRef, ColumnRef] {
-    const predicate = find(
-      this.level.joins,
-      ({ left, right }) =>
-        (tables.includes(left.table) && right.table === next) ||
-        (tables.includes(right.table) && left.table === next),
-      `join predicate between ${tables.join(', ')} and ${next}`,
-    );
-    return predicate.right.table === next
-      ? [predicate.left, predicate.right]
-      : [predicate.right, predicate.left];
+    const predicate = joinPredicate(this.level, tables, next);
+    if (predicate === undefined) {
+      throw new Error(`The level has no join predicate between ${tables.join(', ')} and ${next}`);
+    }
+    return predicate;
   }
 
   private joinRows(tables: readonly string[]): number {

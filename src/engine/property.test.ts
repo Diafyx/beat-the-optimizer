@@ -2,6 +2,7 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { planCost } from './cost.ts';
 import type { ColumnRef, JoinPredicate, Level, Plan, Scan, Step, Table } from './level.ts';
+import { allowedByLocks, bestPlan, enumeratePlans } from './plans.ts';
 
 /** Row counts small enough that no plan's cost passes 2^53 - 1. */
 const count = fc.nat({ max: 1_000_000 });
@@ -213,6 +214,66 @@ describe('planCost properties', () => {
       fc.property(levelArbitrary, choices, (level, picks) => {
         const plan = planFrom(level, picks);
         expect(planCost(level, plan)).toEqual(planCost(level, structuredClone(plan)));
+      }),
+    );
+  });
+});
+
+describe('enumeratePlans and bestPlan properties', () => {
+  it('enumerates every valid plan, each once', () => {
+    fc.assert(
+      fc.property(levelArbitrary, choices, (level, picks) => {
+        const plans = enumeratePlans(level).map((plan) => JSON.stringify(plan));
+        expect(new Set(plans).size).toBe(plans.length);
+        expect(plans).toContain(JSON.stringify(planFrom(level, picks)));
+      }),
+    );
+  });
+
+  it("finds a best plan at most the optimizer's cost and any enumerated plan's cost", () => {
+    fc.assert(
+      fc.property(levelArbitrary, choices, (generated, picks) => {
+        // A random valid plan stands in for PostgreSQL's.
+        const level = {
+          ...generated,
+          optimizer: { ...generated.optimizer, plan: planFrom(generated, picks) },
+        };
+        const best = bestPlan(level);
+        expect(best.cost).toEqual(planCost(level, best.plan));
+        expect(best.cost.total).toBeLessThanOrEqual(planCost(level, level.optimizer.plan).total);
+        for (const plan of enumeratePlans(level)) {
+          expect(best.cost.total).toBeLessThanOrEqual(planCost(level, plan).total);
+        }
+      }),
+    );
+  });
+
+  it("allows a plan under locks built from that plan's own choices", () => {
+    fc.assert(
+      fc.property(levelArbitrary, choices, (generated, picks) => {
+        const plan = planFrom(generated, picks);
+        const order = [
+          plan.first.table,
+          ...plan.steps.map((step) => ('scan' in step ? step.scan.table : step.table)),
+        ];
+        const methods = new Set(plan.steps.map((step) => step.join));
+        const level: Level = {
+          ...generated,
+          locks: [
+            { kind: 'joinOrder', tables: order },
+            { kind: 'access', scan: plan.first },
+            // A join method lock applies to every join, so only when they all match.
+            ...(methods.size === 1
+              ? [...methods].map((method) => ({ kind: 'joinMethod', method }) as const)
+              : []),
+          ],
+        };
+        const allowed = enumeratePlans(level).filter((candidate) =>
+          allowedByLocks(level, candidate),
+        );
+        expect(allowed.map((candidate) => JSON.stringify(candidate))).toContain(
+          JSON.stringify(plan),
+        );
       }),
     );
   });
