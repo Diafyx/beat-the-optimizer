@@ -72,7 +72,7 @@ jobs:
           fi
           # Jobs ci-gate may accept as skipped: only the ones not selected here.
           skippable=()
-          [[ $code == true ]] || skippable+=(typecheck unit coverage e2e a11y lighthouse bundle-size)
+          [[ $code == true ]] || skippable+=(typecheck unit coverage levels e2e a11y lighthouse bundle-size)
           [[ $docs == true ]] || skippable+=(docs)
           skippable_csv=$(IFS=,; echo "${skippable[*]}")
           {
@@ -188,6 +188,25 @@ jobs:
       - run: npm run coverage
       - if: ${{ !cancelled() }}
         run: cat coverage/diff-cover.md >> "$GITHUB_STEP_SUMMARY"
+
+  # Every level file against the schema and the rules in docs/level-format.md.
+  # The engine recomputes the costs, so engine changes run it too.
+  levels:
+    name: levels
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run levels
 
   docs:
     name: docs
@@ -318,7 +337,8 @@ jobs:
   ci-gate:
     name: ci-gate
     if: always()
-    needs: [changes, lint, typecheck, unit, coverage, docs, e2e, a11y, lighthouse, bundle-size]
+    needs:
+      [changes, lint, typecheck, unit, coverage, levels, docs, e2e, a11y, lighthouse, bundle-size]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
