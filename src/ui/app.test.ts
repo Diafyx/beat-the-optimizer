@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { readFileSync } from 'node:fs';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LAUNCH_DATE } from '../daily.ts';
 import type { Level } from '../engine/index.ts';
 import { KEY, type Progress } from '../progress.ts';
@@ -39,6 +39,10 @@ function chooseSeqScan(root: HTMLElement): void {
 describe('start', () => {
   let root: HTMLElement;
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   beforeEach(() => {
     document.title = SITE_TITLE;
     root = document.createElement('main');
@@ -72,14 +76,44 @@ describe('start', () => {
     root.querySelector<HTMLButtonElement>('.run-button')?.click();
     expect(JSON.parse(String(storage.getItem(KEY)))).toEqual({
       ...seen,
-      puzzles: { '2': { runs: 1, best: 100_000 } },
+      puzzles: { '2': { costs: [100_000] } },
       streak: { last: 2, days: 2 },
     });
     expect(text(root.querySelector('.puzzle p'))).toContain('Streak: 2 days');
   });
 
+  it('offers the share card once the result is shown', async () => {
+    vi.useFakeTimers();
+    const share = vi.fn(() => Promise.resolve());
+    const storage = memoryStorage(seen);
+    await start(root, '', { now: day(2), storage, shareTarget: { share }, url: 'https://x.org/' });
+    const section = root.querySelector<HTMLElement>('.share');
+    expect(section?.hidden).toBe(true);
+    chooseSeqScan(root);
+    root.querySelector<HTMLButtonElement>('.run-button')?.click();
+    expect(section?.hidden).toBe(true);
+    await vi.runAllTimersAsync();
+    expect(section?.hidden).toBe(false);
+    expect(section?.querySelector('pre')?.textContent).toBe(
+      'Beat the Optimizer #3\n🟩\n🤝 I tied with PostgreSQL with the best plan\nMe: 1× best · PostgreSQL: 1× best\nhttps://x.org/',
+    );
+  });
+
+  it('offers the share card at once after an earlier run today', async () => {
+    const storage = memoryStorage({ ...seen, puzzles: { '3': { costs: [280_000] } } });
+    await start(root, '', { now: day(2), storage, url: 'https://x.org/' });
+    expect(root.querySelector<HTMLElement>('.share')?.hidden).toBe(false);
+    expect(root.querySelector('.share pre')?.textContent).toContain('🐘 PostgreSQL won');
+  });
+
+  it('offers no share card for practice', async () => {
+    const storage = memoryStorage({ ...seen, puzzles: { '1': { costs: [1] } } });
+    await start(root, '?level=needle', { now: day(0), storage });
+    expect(root.querySelector<HTMLElement>('.share')?.hidden).toBe(true);
+  });
+
   it('remembers the runs already used today', async () => {
-    const storage = memoryStorage({ ...seen, puzzles: { '1': { runs: 4, best: 1 } } });
+    const storage = memoryStorage({ ...seen, puzzles: { '1': { costs: [1, 1, 1, 1] } } });
     await start(root, '', { now: day(0), storage });
     chooseSeqScan(root);
     expect(root.querySelector<HTMLButtonElement>('.run-button')?.disabled).toBe(true);

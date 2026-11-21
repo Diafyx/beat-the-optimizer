@@ -108,6 +108,8 @@ export interface RunOptions {
   readonly used?: number;
   /** Called with the plan's cost when a run starts. */
   readonly onRun?: (cost: number) => void;
+  /** Called with the plan's cost once its result is shown. */
+  readonly onResult?: (cost: number) => void;
 }
 
 export interface RunView {
@@ -124,6 +126,7 @@ export function renderRun(
     wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     used = 0,
     onRun = () => undefined,
+    onResult = () => undefined,
   }: RunOptions = {},
 ): RunView {
   let plan: Plan | null = null;
@@ -183,6 +186,7 @@ export function renderRun(
     outcome.replaceChildren(result(level, cost.total));
     running = false;
     update();
+    onResult(cost.total);
   }
 
   update();

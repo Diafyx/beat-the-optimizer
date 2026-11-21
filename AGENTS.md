@@ -24,7 +24,7 @@ npm run check-filters # every file matches a group in .github/filters.yml
 npm run check-lockfile # every lockfile URL is on registry.npmjs.org
 npm run pr-size     # CI only: size label for a pull request
 npm run pr-hygiene  # CI only: pull request rules
-npm run build       # production build into dist/
+npm run build       # production build into dist/; SITE_URL sets its public address
 ```
 
 ## Layout
