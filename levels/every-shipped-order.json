@@ -1,0 +1,148 @@
+{
+  "format": 1,
+  "id": "every-shipped-order",
+  "title": "Every shipped order",
+  "story": [
+    "Finance wants every shipped order with the name of its customer.",
+    "Last time an index nested loop was the answer. This time there is no single customer to start from."
+  ],
+  "sql": "SELECT customers.name, orders.order_id, orders.amount\nFROM customers\nJOIN orders ON orders.customer_id = customers.customer_id\nWHERE orders.status = 'shipped'",
+  "tables": [
+    {
+      "name": "customers",
+      "rows": 10000,
+      "filter": null,
+      "storedOrder": "customer_id",
+      "columns": [
+        { "name": "customer_id", "type": "integer", "stats": null },
+        { "name": "name", "type": "text", "stats": null }
+      ],
+      "indexes": [{ "name": "customers_pkey", "column": "customer_id" }]
+    },
+    {
+      "name": "orders",
+      "rows": 100000,
+      "filter": "status = 'shipped'",
+      "storedOrder": "order_id",
+      "columns": [
+        { "name": "order_id", "type": "integer", "stats": null },
+        { "name": "customer_id", "type": "integer", "stats": null },
+        {
+          "name": "status",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 3,
+            "mostCommon": [
+              { "value": "shipped", "frequency": 0.7 },
+              { "value": "pending", "frequency": 0.2 },
+              { "value": "cancelled", "frequency": 0.1 }
+            ],
+            "histogram": [],
+            "correlation": 0.53724194
+          }
+        },
+        { "name": "amount", "type": "integer", "stats": null }
+      ],
+      "indexes": [
+        { "name": "orders_pkey", "column": "order_id" },
+        { "name": "orders_customer_id_idx", "column": "customer_id" }
+      ]
+    }
+  ],
+  "joins": [
+    {
+      "left": { "table": "customers", "column": "customer_id" },
+      "right": { "table": "orders", "column": "customer_id" }
+    }
+  ],
+  "orderBy": null,
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "customers",
+        "filtered": 10000,
+        "indexes": [{ "index": "customers_pkey", "matched": 10000 }]
+      },
+      {
+        "table": "orders",
+        "filtered": 70000,
+        "indexes": [
+          { "index": "orders_pkey", "matched": 100000 },
+          { "index": "orders_customer_id_idx", "matched": 100000 }
+        ]
+      }
+    ],
+    "joins": [{ "tables": ["customers", "orders"], "rows": 70000 }],
+    "lookups": [
+      { "outer": ["customers"], "index": "orders_customer_id_idx", "fetched": 100000 },
+      { "outer": ["orders"], "index": "customers_pkey", "fetched": 70000 }
+    ]
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": {
+      "first": { "table": "orders", "access": "seq" },
+      "steps": [{ "join": "hash", "scan": { "table": "customers", "access": "seq" } }]
+    },
+    "explain": {
+      "nodeType": "Hash Join",
+      "relation": null,
+      "index": null,
+      "estimatedRows": 70000,
+      "estimatedCost": 2458.83,
+      "children": [
+        {
+          "nodeType": "Seq Scan",
+          "relation": "orders",
+          "index": null,
+          "estimatedRows": 70000,
+          "estimatedCost": 1938,
+          "children": []
+        },
+        {
+          "nodeType": "Hash",
+          "relation": null,
+          "index": null,
+          "estimatedRows": 10000,
+          "estimatedCost": 212,
+          "children": [
+            {
+              "nodeType": "Seq Scan",
+              "relation": "customers",
+              "index": null,
+              "estimatedRows": 10000,
+              "estimatedCost": 212,
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "costs": {
+    "best": 260000,
+    "optimizer": 260000,
+    "bestPlan": {
+      "first": { "table": "customers", "access": "seq" },
+      "steps": [{ "join": "hash", "scan": { "table": "orders", "access": "seq" } }]
+    }
+  },
+  "explanation": [
+    "PostgreSQL expected 70,000 shipped orders, exactly right, and joined them to the customers in a hash join: 100,000 + 10,000 to read both tables, 70,000 + 10,000 for the join and 70,000 for the result, 260,000 in all. An index nested loop from the customers looks up all 100,000 of their orders, 4 × (10,000 + 100,000) = 440,000, and costs 520,000. When neither side is small, read each table once and hash one of them."
+  ]
+}

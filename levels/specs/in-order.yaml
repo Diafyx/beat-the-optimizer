@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1007
+tables:
+  - name: orders
+    rows: 100000
+    order: order_id
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      - name: amount
+        type: integer
+        values: { kind: uniform, min: 1, max: 500 }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+  # The warehouse writes its parcels in order number order, one or more for
+  # most orders.
+  - name: parcels
+    rows: 150000
+    order: order_id
+    columns:
+      - name: parcel_id
+        type: integer
+        values: { kind: sequence }
+      - name: order_id
+        type: integer
+        values: { kind: reference, table: orders, column: order_id }
+      - name: weight_grams
+        type: integer
+        values: { kind: uniform, min: 100, max: 20000 }
+    indexes:
+      - { name: parcels_pkey, column: parcel_id, unique: true }
+      - { name: parcels_order_id_idx, column: order_id }
+afterAnalyze: []
+level:
+  id: in-order
+  title: In order
+  story:
+    - The auditors want every parcel next to its order, sorted by order number.
+    - Both tables are already stored in order number order.
+  select:
+    - { table: orders, column: order_id }
+    - { table: orders, column: amount }
+    - { table: parcels, column: parcel_id }
+    - { table: parcels, column: weight_grams }
+  filters: []
+  joins:
+    - left: { table: orders, column: order_id }
+      right: { table: parcels, column: order_id }
+  orderBy: { table: orders, column: order_id }
+  locks: []
+  stats: []
+  explanation:
+    - 'PostgreSQL walked orders_pkey and parcels_order_id_idx side by side in a merge join. Both tables are stored in order number order, so each index reads its table in order, one row at a time: 100,000 + 150,000, then 250,000 for the merge and 150,000 for the result, 650,000 in all, already sorted for the ORDER BY. A hash join costs the same until then, but has to sort its 150,000 rows afterwards, 150,000 × 18 = 2,700,000 more.'

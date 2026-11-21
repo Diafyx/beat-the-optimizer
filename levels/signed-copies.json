@@ -1,0 +1,207 @@
+{
+  "format": 1,
+  "id": "signed-copies",
+  "title": "Signed copies",
+  "story": [
+    "The author is sending a thank-you card to every customer who bought a signed copy.",
+    "The query reads customers, then orders, then order lines. You can join them in any order."
+  ],
+  "sql": "SELECT customers.name, orders.order_id\nFROM customers\nJOIN orders ON orders.customer_id = customers.customer_id\nJOIN order_lines ON order_lines.order_id = orders.order_id\nWHERE order_lines.edition = 'signed'",
+  "tables": [
+    {
+      "name": "customers",
+      "rows": 10000,
+      "filter": null,
+      "storedOrder": "customer_id",
+      "columns": [
+        { "name": "customer_id", "type": "integer", "stats": null },
+        { "name": "name", "type": "text", "stats": null }
+      ],
+      "indexes": [{ "name": "customers_pkey", "column": "customer_id" }]
+    },
+    {
+      "name": "orders",
+      "rows": 100000,
+      "filter": null,
+      "storedOrder": "order_id",
+      "columns": [
+        { "name": "order_id", "type": "integer", "stats": null },
+        { "name": "customer_id", "type": "integer", "stats": null }
+      ],
+      "indexes": [
+        { "name": "orders_pkey", "column": "order_id" },
+        { "name": "orders_customer_id_idx", "column": "customer_id" }
+      ]
+    },
+    {
+      "name": "order_lines",
+      "rows": 300000,
+      "filter": "edition = 'signed'",
+      "storedOrder": "line_id",
+      "columns": [
+        { "name": "line_id", "type": "integer", "stats": null },
+        { "name": "order_id", "type": "integer", "stats": null },
+        {
+          "name": "edition",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 4,
+            "mostCommon": [
+              { "value": "paperback", "frequency": 0.6 },
+              { "value": "hardback", "frequency": 0.3 },
+              { "value": "ebook", "frequency": 0.099 },
+              { "value": "signed", "frequency": 0.001 }
+            ],
+            "histogram": [],
+            "correlation": 0.45999625
+          }
+        }
+      ],
+      "indexes": [
+        { "name": "order_lines_pkey", "column": "line_id" },
+        { "name": "order_lines_order_id_idx", "column": "order_id" },
+        { "name": "order_lines_edition_idx", "column": "edition" }
+      ]
+    }
+  ],
+  "joins": [
+    {
+      "left": { "table": "customers", "column": "customer_id" },
+      "right": { "table": "orders", "column": "customer_id" }
+    },
+    {
+      "left": { "table": "orders", "column": "order_id" },
+      "right": { "table": "order_lines", "column": "order_id" }
+    }
+  ],
+  "orderBy": null,
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "customers",
+        "filtered": 10000,
+        "indexes": [{ "index": "customers_pkey", "matched": 10000 }]
+      },
+      {
+        "table": "orders",
+        "filtered": 100000,
+        "indexes": [
+          { "index": "orders_pkey", "matched": 100000 },
+          { "index": "orders_customer_id_idx", "matched": 100000 }
+        ]
+      },
+      {
+        "table": "order_lines",
+        "filtered": 300,
+        "indexes": [
+          { "index": "order_lines_pkey", "matched": 300000 },
+          { "index": "order_lines_order_id_idx", "matched": 300000 },
+          { "index": "order_lines_edition_idx", "matched": 300 }
+        ]
+      }
+    ],
+    "joins": [
+      { "tables": ["customers", "orders"], "rows": 100000 },
+      { "tables": ["orders", "order_lines"], "rows": 300 },
+      { "tables": ["customers", "orders", "order_lines"], "rows": 300 }
+    ],
+    "lookups": [
+      { "outer": ["customers"], "index": "orders_customer_id_idx", "fetched": 100000 },
+      { "outer": ["orders"], "index": "customers_pkey", "fetched": 100000 },
+      { "outer": ["orders"], "index": "order_lines_order_id_idx", "fetched": 300000 },
+      { "outer": ["customers", "orders"], "index": "order_lines_order_id_idx", "fetched": 300000 },
+      { "outer": ["order_lines"], "index": "orders_pkey", "fetched": 300 },
+      { "outer": ["orders", "order_lines"], "index": "customers_pkey", "fetched": 300 }
+    ]
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": {
+      "first": { "table": "order_lines", "access": "index", "index": "order_lines_edition_idx" },
+      "steps": [
+        { "join": "indexNestedLoop", "table": "orders", "index": "orders_pkey" },
+        { "join": "indexNestedLoop", "table": "customers", "index": "customers_pkey" }
+      ]
+    },
+    "explain": {
+      "nodeType": "Nested Loop",
+      "relation": null,
+      "index": null,
+      "estimatedRows": 300,
+      "estimatedCost": 2679.55,
+      "children": [
+        {
+          "nodeType": "Nested Loop",
+          "relation": null,
+          "index": null,
+          "estimatedRows": 300,
+          "estimatedCost": 2587.1,
+          "children": [
+            {
+              "nodeType": "Bitmap Heap Scan",
+              "relation": "order_lines",
+              "index": null,
+              "estimatedRows": 300,
+              "estimatedCost": 806.1,
+              "children": [
+                {
+                  "nodeType": "Bitmap Index Scan",
+                  "relation": null,
+                  "index": "order_lines_edition_idx",
+                  "estimatedRows": 300,
+                  "estimatedCost": 6.67,
+                  "children": []
+                }
+              ]
+            },
+            {
+              "nodeType": "Index Scan",
+              "relation": "orders",
+              "index": "orders_pkey",
+              "estimatedRows": 1,
+              "estimatedCost": 5.94,
+              "children": []
+            }
+          ]
+        },
+        {
+          "nodeType": "Index Scan",
+          "relation": "customers",
+          "index": "customers_pkey",
+          "estimatedRows": 1,
+          "estimatedCost": 0.31,
+          "children": []
+        }
+      ]
+    }
+  },
+  "costs": {
+    "best": 6600,
+    "optimizer": 6600,
+    "bestPlan": {
+      "first": { "table": "order_lines", "access": "index", "index": "order_lines_edition_idx" },
+      "steps": [
+        { "join": "indexNestedLoop", "table": "orders", "index": "orders_pkey" },
+        { "join": "indexNestedLoop", "table": "customers", "index": "customers_pkey" }
+      ]
+    }
+  },
+  "explanation": [
+    "PostgreSQL started at the end of the query. order_lines_edition_idx finds the 300 signed lines, 4 × 300 = 1,200; orders_pkey looks up their orders, 4 × (300 + 300) = 2,400 plus 300 for the result, and customers_pkey their customers, another 2,400 + 300: 6,600 in all. The cheapest plan that starts from customers, as the query is written, joins all 100,000 orders before the signed lines remove most of them, and costs 421,800. Start from the table whose filter keeps the fewest rows, wherever it is in the query."
+  ]
+}
