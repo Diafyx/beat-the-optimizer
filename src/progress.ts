@@ -6,9 +6,8 @@
 
 /** What the player did on one daily puzzle. */
 export interface PuzzleProgress {
-  readonly runs: number;
-  /** The lowest cost of their runs. */
-  readonly best: number;
+  /** The cost of each run, in order. */
+  readonly costs: readonly number[];
 }
 
 export interface Progress {
@@ -43,12 +42,14 @@ function parse(text: string): Progress {
   if (!isRecord(data) || !isRecord(data['puzzles']) || !isRecord(data['streak'])) return EMPTY;
   const { last, days } = data['streak'];
   const puzzles = Object.entries(data['puzzles']).filter(
-    (entry): entry is [string, PuzzleProgress] =>
-      isRecord(entry[1]) && isCount(entry[1]['runs']) && isCount(entry[1]['best']),
+    (entry): entry is [string, PuzzleProgress] => {
+      const costs = isRecord(entry[1]) ? entry[1]['costs'] : undefined;
+      return Array.isArray(costs) && costs.every(isCount);
+    },
   );
   return {
     tutorialSeen: data['tutorialSeen'] === true,
-    puzzles: Object.fromEntries(puzzles.map(([n, { runs, best }]) => [n, { runs, best }])),
+    puzzles: Object.fromEntries(puzzles.map(([n, { costs }]) => [n, { costs: [...costs] }])),
     streak: isCount(last) && isCount(days) ? { last, days } : EMPTY.streak,
   };
 }
@@ -80,10 +81,7 @@ export function recordRun(progress: Progress, number: number, cost: number): Pro
     ...progress,
     puzzles: {
       ...progress.puzzles,
-      [String(number)]: {
-        runs: (before?.runs ?? 0) + 1,
-        best: Math.min(before?.best ?? cost, cost),
-      },
+      [String(number)]: { costs: [...(before?.costs ?? []), cost] },
     },
     streak:
       last === number

@@ -15,7 +15,9 @@ import {
 import { el } from './dom.ts';
 import { renderLevel } from './level-view.ts';
 import { renderPlanBuilder } from './plan-builder.ts';
+import { shareText } from '../share.ts';
 import { renderRun } from './run.ts';
+import { renderShare, type ShareTarget } from './share.ts';
 import { renderTutorial } from './tutorial.ts';
 
 export const SITE_TITLE = 'Beat the Optimizer';
@@ -41,13 +43,23 @@ export interface AppOptions {
   readonly loaders?: ReadonlyMap<string, LevelLoader>;
   readonly now?: () => Date;
   readonly storage?: Storage | null;
+  /** Where sharing goes; by default, `navigator`. */
+  readonly shareTarget?: ShareTarget;
+  /** The link in the share card; by default, this page without its query. */
+  readonly url?: string;
 }
 
 /** Shows today's puzzle, or the level that `search` (such as `?level=needle`) names, in `root`. */
 export async function start(
   root: HTMLElement,
   search: string,
-  { loaders = LEVEL_FILES, now = () => new Date(), storage = browserStorage() }: AppOptions = {},
+  {
+    loaders = LEVEL_FILES,
+    now = () => new Date(),
+    storage = browserStorage(),
+    shareTarget = navigator,
+    url = `${location.origin}${location.pathname}`,
+  }: AppOptions = {},
 ): Promise<void> {
   const practice = new URLSearchParams(search).get('level');
   const daily: Daily | null = practice === null ? dailyPuzzle(now()) : null;
@@ -68,6 +80,13 @@ export async function start(
     }
     document.title = `${level.title} · ${SITE_TITLE}`;
     const streak = el('span');
+    const share = renderShare(shareTarget);
+    const showShare = (): void => {
+      const costs = daily === null ? [] : (progress.puzzles[String(daily.number)]?.costs ?? []);
+      if (daily === null || costs.length === 0) return;
+      const { optimizer, best } = level.costs;
+      share.show(shareText({ puzzle: daily.number, costs, optimizer, best, url }));
+    };
     const showStreak = (today: number): void => {
       streak.textContent = `Streak: ${days(currentStreak(progress, today))}`;
     };
@@ -76,12 +95,13 @@ export async function start(
       daily === null
         ? {}
         : {
-            used: progress.puzzles[String(daily.number)]?.runs ?? 0,
+            used: progress.puzzles[String(daily.number)]?.costs.length ?? 0,
             onRun: (cost) => {
               progress = recordRun(progress, daily.number, cost);
               saveProgress(progress, storage);
               showStreak(daily.number);
             },
+            onResult: showShare,
           },
     );
     const tutorial = renderTutorial(() => {
@@ -113,7 +133,10 @@ export async function start(
         run.setPlan(plan);
       }),
       run.element,
+      share.element,
     );
+    // A run earlier today: its result has been seen, so it can be shared.
+    showShare();
     root.replaceChildren(banner, view, tutorial);
     if (!progress.tutorialSeen) tutorial.showModal();
   } catch {

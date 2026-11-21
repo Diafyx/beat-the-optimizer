@@ -21,7 +21,7 @@ function storageWith(text: string | null): Storage {
 
 const saved: Progress = {
   tutorialSeen: true,
-  puzzles: { '3': { runs: 2, best: 6600 } },
+  puzzles: { '3': { costs: [9000, 6600] } },
   streak: { last: 3, days: 2 },
 };
 
@@ -53,13 +53,13 @@ describe('loadProgress and saveProgress', () => {
   it('keeps the valid parts of progress and drops the rest', () => {
     const text = JSON.stringify({
       tutorialSeen: 'yes',
-      puzzles: { '1': { runs: 1, best: 5 }, '2': { runs: -1, best: 5 }, '3': 7, '4': { runs: 1 } },
+      puzzles: { '1': { costs: [5, 3] }, '2': { costs: [-1] }, '3': 7, '4': { runs: 1 } },
       streak: { last: 1.5, days: 1 },
       extra: true,
     });
     expect(loadProgress(storageWith(text))).toEqual({
       tutorialSeen: false,
-      puzzles: { '1': { runs: 1, best: 5 } },
+      puzzles: { '1': { costs: [5, 3] } },
       streak: EMPTY.streak,
     });
   });
@@ -95,12 +95,10 @@ describe('loadProgress and saveProgress', () => {
 });
 
 describe('recordRun', () => {
-  it('counts runs and keeps the lowest cost', () => {
+  it('keeps the cost of each run, in order', () => {
     const once = recordRun(EMPTY, 5, 300);
-    expect(once.puzzles).toEqual({ '5': { runs: 1, best: 300 } });
-    const twice = recordRun(once, 5, 200);
-    expect(twice.puzzles).toEqual({ '5': { runs: 2, best: 200 } });
-    expect(recordRun(twice, 5, 900).puzzles).toEqual({ '5': { runs: 3, best: 200 } });
+    expect(once.puzzles).toEqual({ '5': { costs: [300] } });
+    expect(recordRun(once, 5, 200).puzzles).toEqual({ '5': { costs: [300, 200] } });
   });
 
   it('grows the streak on consecutive days and restarts it after a gap', () => {
