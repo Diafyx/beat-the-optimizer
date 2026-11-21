@@ -1,0 +1,181 @@
+{
+  "format": 1,
+  "id": "reykjavik-orders",
+  "title": "Orders from Reykjavik",
+  "story": [
+    "A quarter of the customers live in Reykjavik.",
+    "List their orders from the second half of the year, oldest first."
+  ],
+  "sql": "SELECT customers.name, orders.amount\nFROM customers\nJOIN orders ON orders.customer_id = customers.customer_id\nWHERE customers.city = 'reykjavik'\n  AND orders.created_at >= '2024-07-01'\n  AND orders.amount IN (10, 20, 30)\nORDER BY orders.created_at",
+  "tables": [
+    {
+      "name": "customers",
+      "rows": 20,
+      "filter": "city = 'reykjavik'",
+      "storedOrder": "customer_id",
+      "columns": [
+        { "name": "customer_id", "type": "integer", "stats": null },
+        { "name": "name", "type": "text", "stats": null },
+        {
+          "name": "city",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 2,
+            "mostCommon": [
+              { "value": "lisbon", "frequency": 0.75 },
+              { "value": "reykjavik", "frequency": 0.25 }
+            ],
+            "histogram": [],
+            "correlation": 0.26165414
+          }
+        },
+        { "name": "country", "type": "text", "stats": null }
+      ],
+      "indexes": [{ "name": "customers_pkey", "column": "customer_id" }]
+    },
+    {
+      "name": "orders",
+      "rows": 200,
+      "filter": "created_at >= '2024-07-01' AND amount IN (10, 20, 30)",
+      "storedOrder": null,
+      "columns": [
+        { "name": "order_id", "type": "bigint", "stats": null },
+        {
+          "name": "customer_id",
+          "type": "integer",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 20,
+            "mostCommon": [
+              { "value": 2, "frequency": 0.075 },
+              { "value": 6, "frequency": 0.075 },
+              { "value": 3, "frequency": 0.065 },
+              { "value": 4, "frequency": 0.065 },
+              { "value": 9, "frequency": 0.065 },
+              { "value": 19, "frequency": 0.06 },
+              { "value": 20, "frequency": 0.06 },
+              { "value": 10, "frequency": 0.055 },
+              { "value": 7, "frequency": 0.05 },
+              { "value": 11, "frequency": 0.05 },
+              { "value": 12, "frequency": 0.05 },
+              { "value": 13, "frequency": 0.05 },
+              { "value": 8, "frequency": 0.045 },
+              { "value": 16, "frequency": 0.045 },
+              { "value": 14, "frequency": 0.04 },
+              { "value": 17, "frequency": 0.04 },
+              { "value": 1, "frequency": 0.035 },
+              { "value": 5, "frequency": 0.03 },
+              { "value": 18, "frequency": 0.025 },
+              { "value": 15, "frequency": 0.02 }
+            ],
+            "histogram": [],
+            "correlation": 0.11737193
+          }
+        },
+        { "name": "amount", "type": "integer", "stats": null },
+        { "name": "created_at", "type": "date", "stats": null }
+      ],
+      "indexes": [{ "name": "orders_customer_id_idx", "column": "customer_id" }]
+    }
+  ],
+  "joins": [
+    {
+      "left": { "table": "customers", "column": "customer_id" },
+      "right": { "table": "orders", "column": "customer_id" }
+    }
+  ],
+  "orderBy": { "table": "orders", "column": "created_at" },
+  "locks": [{ "kind": "access", "scan": { "table": "customers", "access": "seq" } }],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "customers",
+        "filtered": 5,
+        "indexes": [{ "index": "customers_pkey", "matched": 20 }]
+      },
+      {
+        "table": "orders",
+        "filtered": 6,
+        "indexes": [{ "index": "orders_customer_id_idx", "matched": 200 }]
+      }
+    ],
+    "joins": [{ "tables": ["customers", "orders"], "rows": 1 }],
+    "lookups": [
+      { "outer": ["customers"], "index": "orders_customer_id_idx", "fetched": 54 },
+      { "outer": ["orders"], "index": "customers_pkey", "fetched": 6 }
+    ]
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": {
+      "first": { "table": "orders", "access": "seq" },
+      "steps": [{ "join": "hash", "scan": { "table": "customers", "access": "seq" } }]
+    },
+    "explain": {
+      "nodeType": "Sort",
+      "relation": null,
+      "index": null,
+      "estimatedRows": 1,
+      "estimatedCost": 6.59,
+      "children": [
+        {
+          "nodeType": "Hash Join",
+          "relation": null,
+          "index": null,
+          "estimatedRows": 1,
+          "estimatedCost": 6.57,
+          "children": [
+            {
+              "nodeType": "Seq Scan",
+              "relation": "orders",
+              "index": null,
+              "estimatedRows": 3,
+              "estimatedCost": 5.25,
+              "children": []
+            },
+            {
+              "nodeType": "Hash",
+              "relation": null,
+              "index": null,
+              "estimatedRows": 5,
+              "estimatedCost": 1.25,
+              "children": [
+                {
+                  "nodeType": "Seq Scan",
+                  "relation": "customers",
+                  "index": null,
+                  "estimatedRows": 5,
+                  "estimatedCost": 1.25,
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "costs": {
+    "best": 232,
+    "optimizer": 232,
+    "bestPlan": {
+      "first": { "table": "customers", "access": "seq" },
+      "steps": [{ "join": "hash", "scan": { "table": "orders", "access": "seq" } }]
+    }
+  },
+  "explanation": ["Written after the first authoring run, from what PostgreSQL estimated."]
+}
