@@ -72,4 +72,4 @@ level:
   stats:
     - { table: order_lines, column: edition }
   explanation:
-    - DRAFT
+    - 'PostgreSQL started at the end of the query. order_lines_edition_idx finds the 300 signed lines, 4 × 300 = 1,200; orders_pkey looks up their orders, 4 × (300 + 300) = 2,400 plus 300 for the result, and customers_pkey their customers, another 2,400 + 300: 6,600 in all. The cheapest plan that starts from customers, as the query is written, joins all 100,000 orders before the signed lines remove most of them, and costs 421,800. Start from the table whose filter keeps the fewest rows, wherever it is in the query.'

@@ -47,4 +47,5 @@ level:
   stats:
     - { table: orders, column: status }
   explanation:
-    - DRAFT
+    - "PostgreSQL's most common values for status still said what they said when ANALYZE ran: one order in a thousand is pending. So it expected 149 pending orders and used orders_status_idx. After the migration 60,333 are pending, and the index costs 4 × 60,333 = 241,332, against 100,000 for a seq scan."
+    - 'Autovacuum would analyze the table again in time, but a query can run first. After a batch that changes this many rows, run ANALYZE orders yourself.'

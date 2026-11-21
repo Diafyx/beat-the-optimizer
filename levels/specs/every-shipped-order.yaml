@@ -59,4 +59,4 @@ level:
   stats:
     - { table: orders, column: status }
   explanation:
-    - DRAFT
+    - 'PostgreSQL expected 70,000 shipped orders, exactly right, and joined them to the customers in a hash join: 100,000 + 10,000 to read both tables, 70,000 + 10,000 for the join and 70,000 for the result, 260,000 in all. An index nested loop from the customers looks up all 100,000 of their orders, 4 × (10,000 + 100,000) = 440,000, and costs 520,000. When neither side is small, read each table once and hash one of them.'

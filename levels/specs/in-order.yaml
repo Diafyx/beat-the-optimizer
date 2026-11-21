@@ -51,4 +51,4 @@ level:
   locks: []
   stats: []
   explanation:
-    - DRAFT
+    - 'PostgreSQL walked orders_pkey and parcels_order_id_idx side by side in a merge join. Both tables are stored in order number order, so each index reads its table in order, one row at a time: 100,000 + 150,000, then 250,000 for the merge and 150,000 for the result, 650,000 in all, already sorted for the ORDER BY. A hash join costs the same until then, but has to sort its 150,000 rows afterwards, 150,000 × 18 = 2,700,000 more.'
