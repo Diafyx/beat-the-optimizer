@@ -135,3 +135,24 @@ two files for `psql`:
 The authoring pipeline runs `load.sql`, then `ANALYZE`, then
 `after-analyze.sql`. A unique index on a column with repeated values fails
 before anything is written.
+
+## Authoring
+
+`npm run author-level -- <spec.yaml> <level.json>` writes the level file. It
+needs PostgreSQL, so it runs only in CI, through `psql` with the `PG*`
+environment variables of a superuser. It:
+
+1. applies the [authoring settings](level-format.md#optimizer) with
+   `ALTER SYSTEM`, and waits until new connections have them;
+2. drops and recreates the schema `authoring`, and loads `load.sql` there;
+3. runs `ANALYZE` on the tables, then `after-analyze.sql`;
+4. reads the PostgreSQL version, the settings, the statistics of the
+   `level.stats` columns, the true counts, and `EXPLAIN (FORMAT JSON)` of the
+   level's query;
+5. builds the level in [`authoring/level.ts`](../authoring/level.ts), with
+   costs from the engine, fails if it breaks any rule of the
+   [level format](level-format.md), and writes it formatted by Prettier.
+
+A table inserted in order of a column is stored in that order, its
+`storedOrder`. An `afterAnalyze` statement that updates rows moves them, so a
+level should not rely on both.

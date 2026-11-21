@@ -19,6 +19,7 @@ npm run docs        # markdownlint and a link check on changed Markdown
 npm run links-all   # the link check on every Markdown file (nightly)
 npm run mutation    # Stryker on src/engine, 90% killed or more (nightly)
 npm run generate-data -- <spec> <dir> # a level spec as SQL for psql
+npm run author-level -- <spec> <level.json> # CI only: a level file from PostgreSQL
 npm run check-filters # every file matches a group in .github/filters.yml
 npm run check-lockfile # every lockfile URL is on registry.npmjs.org
 npm run pr-size     # CI only: size label for a pull request
