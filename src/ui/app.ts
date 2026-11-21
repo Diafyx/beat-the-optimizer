@@ -6,6 +6,7 @@
 import { FIRST_LEVEL, LEVEL_FILES, loadLevel, type LevelLoader } from '../levels.ts';
 import { el } from './dom.ts';
 import { renderLevel } from './level-view.ts';
+import { renderPlanBuilder } from './plan-builder.ts';
 
 export const SITE_TITLE = 'Beat the Optimizer';
 
@@ -34,7 +35,9 @@ export async function start(
       return;
     }
     document.title = `${level.title} · ${SITE_TITLE}`;
-    root.replaceChildren(renderLevel(level));
+    const view = renderLevel(level);
+    view.append(renderPlanBuilder(level));
+    root.replaceChildren(view);
   } catch {
     root.replaceChildren(
       message('The level could not be loaded. Check your connection and reload the page.'),
