@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../../schema/level-spec.schema.json
-# A small spec that uses every kind of values, for the tests. Real level specs
-# are in levels/specs/.
+# A small spec that uses every kind of values and every kind of filter, for
+# the tests. Real level specs are in levels/specs/.
 seed: 7
 tables:
   - name: customers
@@ -52,3 +52,27 @@ tables:
       - { name: orders_customer_id_idx, column: customer_id }
 afterAnalyze:
   - UPDATE orders SET amount = 0 WHERE order_id % 10 = 0
+level:
+  id: reykjavik-orders
+  title: Orders from Reykjavik
+  story:
+    - A quarter of the customers live in Reykjavik.
+    - List their orders from the second half of the year, oldest first.
+  select:
+    - { table: customers, column: name }
+    - { table: orders, column: amount }
+  filters:
+    - { table: customers, column: city, op: '=', value: reykjavik }
+    - { table: orders, column: created_at, op: '>=', value: '2024-07-01' }
+    - { table: orders, column: amount, op: in, values: [10, 20, 30] }
+  joins:
+    - left: { table: customers, column: customer_id }
+      right: { table: orders, column: customer_id }
+  orderBy: { table: orders, column: created_at }
+  locks:
+    - { kind: access, scan: { table: customers, access: seq } }
+  stats:
+    - { table: customers, column: city }
+    - { table: orders, column: customer_id }
+  explanation:
+    - Written after the first authoring run, from what PostgreSQL estimated.

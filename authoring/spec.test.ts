@@ -18,6 +18,7 @@ function variant(path: Path, value: unknown): string {
 
 const customers = ['tables', 0];
 const orders = ['tables', 1];
+const level = ['level'];
 
 describe('parseSpec', () => {
   it('reads the example spec', () => {
@@ -28,6 +29,14 @@ describe('parseSpec', () => {
       ['orders', 200],
     ]);
     expect(spec.afterAnalyze).toHaveLength(1);
+    expect(spec.level.id).toBe('reykjavik-orders');
+  });
+
+  it('accepts a level without ORDER BY and with a join method lock', () => {
+    const text = variant(['level', 'orderBy'], null);
+    const spec = parseSpec(variant(['level', 'locks'], [{ kind: 'joinMethod', method: 'hash' }]));
+    expect(parseSpec(text).level.orderBy).toBeNull();
+    expect(spec.level.locks).toEqual([{ kind: 'joinMethod', method: 'hash' }]);
   });
 
   it('lists every schema error', () => {
@@ -114,6 +123,84 @@ describe('parseSpec', () => {
       [...customers, 'columns', 3, 'values', 'column'],
       'zone',
       'customers.country is derived from zone, which is not an earlier column',
+    ],
+    [
+      'a selected column that does not exist',
+      [...level, 'select', 0, 'column'],
+      'nme',
+      'select names customers.nme, which is not a column',
+    ],
+    [
+      'a filter on a column that does not exist',
+      [...level, 'filters', 0, 'table'],
+      'shops',
+      'A filter names shops.city, which is not a column',
+    ],
+    [
+      'a text filter on an integer column',
+      [...level, 'filters', 2, 'values', 1],
+      '20',
+      'The filter on orders.amount compares it with "20", which is not an integer',
+    ],
+    [
+      'a number filter on a text column',
+      [...level, 'filters', 0, 'value'],
+      7,
+      'The filter on customers.city compares it with 7, which is not a string',
+    ],
+    [
+      'a date filter that is not a date',
+      [...level, 'filters', 1, 'value'],
+      'July',
+      'The filter on orders.created_at compares it with "July", which is not a date',
+    ],
+    [
+      'a join on a column that does not exist',
+      [...level, 'joins', 0, 'right', 'column'],
+      'customer',
+      'The join customers.customer_id = orders.customer names orders.customer, which is not a column',
+    ],
+    [
+      'an ORDER BY on a column that does not exist',
+      [...level, 'orderBy', 'table'],
+      'customers',
+      'orderBy names customers.created_at, which is not a column',
+    ],
+    [
+      'statistics of a column that does not exist',
+      [...level, 'stats', 1, 'column'],
+      'town',
+      'stats names orders.town, which is not a column',
+    ],
+    [
+      'a join order lock on a table that does not exist',
+      [...level, 'locks', 0],
+      { kind: 'joinOrder', tables: ['customers', 'shops'] },
+      'A join order lock names shops, which is not a table',
+    ],
+    [
+      'an access lock on a table that does not exist',
+      [...level, 'locks', 0, 'scan', 'table'],
+      'shops',
+      'An access lock scans shops, which is not a table',
+    ],
+    [
+      'an access lock through an index that does not exist',
+      [...level, 'locks', 0, 'scan'],
+      { table: 'customers', access: 'index', index: 'orders_customer_id_idx' },
+      'An access lock scans customers through orders_customer_id_idx, which is not an index on customers',
+    ],
+    [
+      'two tables without a join',
+      [...level, 'joins'],
+      [],
+      'The joins must connect every table as a tree, with one join fewer than tables',
+    ],
+    [
+      'a table joined to itself',
+      [...level, 'joins', 0, 'right'],
+      { table: 'customers', column: 'name' },
+      'The joins must connect every table as a tree, with one join fewer than tables',
     ],
   ])('rejects %s', (_, path, value, problem) => {
     expect(() => parseSpec(variant(path, value))).toThrow(`Invalid level spec:\n  ${problem}`);

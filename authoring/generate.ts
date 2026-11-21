@@ -5,7 +5,7 @@
  * change the others.
  */
 import { Random } from './random.ts';
-import { dayNumber, type Spec, type TableSpec, type Value, type Values } from './spec.ts';
+import { dayNumber, type Dataset, type TableSpec, type Value, type Values } from './spec.ts';
 
 export interface TableData {
   readonly name: string;
@@ -57,9 +57,9 @@ const compare = (x: Value, y: Value): number => (x < y ? -1 : x > y ? 1 : 0);
 class Generator {
   /** Generated columns, by "table.column", in generation order. */
   private readonly done = new Map<string, readonly Value[]>();
-  private readonly spec: Spec;
+  private readonly spec: Dataset;
 
-  constructor(spec: Spec) {
+  constructor(spec: Dataset) {
     this.spec = spec;
   }
 
@@ -137,7 +137,7 @@ class Generator {
 }
 
 /** Every table of `spec`, generated in spec order. The spec must be valid. */
-export function generate(spec: Spec): TableData[] {
+export function generate(spec: Dataset): TableData[] {
   const generator = new Generator(spec);
   return spec.tables.map((table) => generator.table(table));
 }

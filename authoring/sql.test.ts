@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { generate } from './generate.ts';
-import { parseSpec, type Spec } from './spec.ts';
+import { parseSpec, type Dataset } from './spec.ts';
 import { afterAnalyzeSql, copyValue, literal, loadSql } from './sql.ts';
 
 const example = parseSpec(
@@ -10,9 +10,9 @@ const example = parseSpec(
 
 const HEADER = '-- Generated from a level spec by scripts/generate-data.ts. Do not edit.\n';
 
-const load = (spec: Spec): string => [...loadSql(spec, generate(spec))].join('');
+const load = (spec: Dataset): string => [...loadSql(spec, generate(spec))].join('');
 
-const small: Spec = {
+const small: Dataset = {
   seed: 1,
   tables: [
     {
@@ -66,7 +66,7 @@ describe('loadSql', () => {
   });
 
   it('fails before writing anything if a unique index has repeated values', () => {
-    const spec: Spec = {
+    const spec: Dataset = {
       ...small,
       tables: [
         {

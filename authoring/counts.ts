@@ -6,17 +6,8 @@
 import { joinPredicate } from '../src/engine/cost.ts';
 import type { Cardinalities, ColumnRef, Index, JoinPredicate } from '../src/engine/level.ts';
 import { connectedSets } from '../src/engine/validate.ts';
-import type { Value } from './spec.ts';
+import type { Filter } from './spec.ts';
 import { literal, quote } from './sql.ts';
-
-/** A predicate on one column of a table. */
-export type Filter =
-  | {
-      readonly column: string;
-      readonly op: '=' | '<' | '<=' | '>' | '>=';
-      readonly value: Value;
-    }
-  | { readonly column: string; readonly op: 'in'; readonly values: readonly Value[] };
 
 export interface QueryTable {
   readonly name: string;
@@ -35,13 +26,15 @@ const column = ({ table, column: name }: ColumnRef): string => `${quote(table)}.
 
 const equal = (left: ColumnRef, right: ColumnRef): string => `${column(left)} = ${column(right)}`;
 
-/** `filter` as SQL, on a column of `table`. */
-function filterSql(table: string, filter: Filter): string {
-  const target = column({ table, column: filter.column });
+/** `filter` as SQL, on `target`, its column as SQL. */
+export function condition(target: string, filter: Filter): string {
   return filter.op === 'in'
     ? `${target} IN (${filter.values.map(literal).join(', ')})`
     : `${target} ${filter.op} ${literal(filter.value)}`;
 }
+
+const filterSql = (table: string, filter: Filter): string =>
+  condition(column({ table, column: filter.column }), filter);
 
 const countSql = (tables: readonly string[], where: readonly string[]): string =>
   `SELECT count(*) FROM ${tables.map(quote).join(', ')}` +
