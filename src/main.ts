@@ -1,6 +1,7 @@
-import { renderPlaceholder } from './ui/placeholder.ts';
+import './style.css';
+import { start } from './ui/app.ts';
 
 const root = document.querySelector<HTMLElement>('#app');
 if (root) {
-  renderPlaceholder(root);
+  void start(root, window.location.search);
 }

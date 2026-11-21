@@ -7,10 +7,12 @@ describe('main', () => {
     document.body.replaceChildren();
   });
 
-  it('renders the placeholder into #app', async () => {
+  it('starts the app in #app', async () => {
     document.body.innerHTML = '<main id="app"></main>';
     await import('./main.ts');
-    expect(document.querySelector('#app h1')?.textContent).toBe('Beat the Optimizer');
+    await vi.waitFor(() => {
+      expect(document.querySelector('#app h2')?.textContent).toBe('Needle');
+    });
   });
 
   it('does nothing when #app is missing', async () => {

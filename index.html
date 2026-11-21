@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
     <meta
       name="description"
       content="A daily puzzle: pick a join plan and beat the PostgreSQL optimizer."
@@ -10,8 +11,12 @@
     <title>Beat the Optimizer</title>
   </head>
   <body>
-    <main id="app">
+    <header class="site">
       <h1>Beat the Optimizer</h1>
+      <p>Pick a plan for the query. Beat the one PostgreSQL chose.</p>
+    </header>
+    <main id="app">
+      <p class="message">Loading the level…</p>
       <noscript>This puzzle needs JavaScript.</noscript>
     </main>
     <script type="module" src="/src/main.ts"></script>
