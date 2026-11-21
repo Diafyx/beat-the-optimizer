@@ -74,6 +74,9 @@ holds what PostgreSQL's `pg_stats` says after `ANALYZE`:
 | `correlation`  | number, −1 to 1, or `null`    | `correlation`                                        |
 
 Values are strings, numbers or booleans. Dates and times are ISO 8601 strings.
+A negative `n_distinct` is minus a fraction of the rows, so `distinct` is that
+fraction times the true row count, rounded.
+[`authoring/stats.ts`](../authoring/stats.ts) reads `pg_stats`.
 
 ### Plans
 
@@ -118,6 +121,16 @@ True row counts, measured on the generated data. The engine never estimates.
 
 Sets of tables are listed in any order and mean the same set.
 
+[`authoring/counts.ts`](../authoring/counts.ts) measures each entry with one
+`SELECT count(*)` on the generated data:
+
+- `filtered`: the table with its filters;
+- `matched`: the table with only its filters on the index's column;
+- `rows`: the tables with their join predicates and filters;
+- `fetched`: the `outer` tables with their join predicates and filters, joined
+  to the inner table by the predicate the index is on, without the inner
+  table's filters.
+
 ### Optimizer
 
 | Field      | Type         | Meaning                                                                                                                               |
@@ -147,6 +160,13 @@ into the plan space; `explain` keeps every node.
 
 A plan that joins two joins, or a nested loop whose inner input is a join, is
 not left-deep, and authoring fails.
+
+Every level is authored with the settings in
+[`authoring/settings.ts`](../authoring/settings.ts), which `settings` records:
+`autovacuum` off, so only the pipeline's `ANALYZE` sets the statistics;
+`default_statistics_target` at its largest, 10000, so `ANALYZE` reads up to
+3,000,000 rows of each table; no parallel workers and no JIT, which the plan
+space does not have; and PostgreSQL's default cost, cache and memory settings.
 
 ### Costs
 

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { generate } from './generate.ts';
 import { parseSpec, type Spec } from './spec.ts';
-import { afterAnalyzeSql, copyValue, loadSql } from './sql.ts';
+import { afterAnalyzeSql, copyValue, literal, loadSql } from './sql.ts';
 
 const example = parseSpec(
   readFileSync(new URL('fixtures/example-spec.yaml', import.meta.url), 'utf8'),
@@ -95,6 +95,18 @@ describe('copyValue', () => {
     ['\\N', '\\\\N'],
   ])('writes %j as %j', (value, expected) => {
     expect(copyValue(value)).toBe(expected);
+  });
+});
+
+describe('literal', () => {
+  it.each([
+    [42, '42'],
+    [-1.5, '-1.5'],
+    ['NZ', "'NZ'"],
+    ["o'brien", "'o''brien'"],
+    ['a\\b', "'a\\b'"],
+  ])('writes %s as %s', (value, sql) => {
+    expect(literal(value)).toBe(sql);
   });
 });
 

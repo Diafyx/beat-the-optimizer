@@ -9,7 +9,11 @@ import type { Spec, Value } from './spec.ts';
 const HEADER = '-- Generated from a level spec by scripts/generate-data.ts. Do not edit.\n';
 
 /** Names match ^[a-z_][a-z0-9_]*$, so quoting needs no escaping; it allows reserved words. */
-const quote = (name: string): string => `"${name}"`;
+export const quote = (name: string): string => `"${name}"`;
+
+/** A value as an SQL literal: a number as it is, a string quoted with quotes doubled. */
+export const literal = (value: Value): string =>
+  typeof value === 'number' ? String(value) : `'${value.replaceAll("'", "''")}'`;
 
 /** A value in COPY's text format: backslash, tab, newline and carriage return escaped. */
 export function copyValue(value: Value): string {

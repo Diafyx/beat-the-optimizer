@@ -94,7 +94,7 @@ class EqualColumns {
  * [column of `tables`, column of `next`], or undefined if there is none.
  */
 export function joinPredicate(
-  level: Level,
+  level: Pick<Level, 'joins'>,
   tables: readonly string[],
   next: string,
 ): readonly [ColumnRef, ColumnRef] | undefined {

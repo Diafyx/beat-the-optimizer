@@ -27,9 +27,9 @@ interface Part {
   readonly aliases: readonly string[];
 }
 
-type Json = Readonly<Record<string, unknown>>;
+export type Json = Readonly<Record<string, unknown>>;
 
-const isObject = (value: unknown): value is Json =>
+export const isObject = (value: unknown): value is Json =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
 function text(node: Json, key: string): string | null {
