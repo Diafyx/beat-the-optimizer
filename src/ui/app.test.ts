@@ -17,6 +17,7 @@ describe('start', () => {
   it('shows the first level when the address names none', async () => {
     await start(root, '');
     expect(root.querySelector('h2')?.textContent).toBe('Needle');
+    expect(root.querySelector('#builder-title')?.textContent).toBe('Your plan');
     expect(document.title).toBe('Needle · Beat the Optimizer');
     expect(root.hasAttribute('aria-busy')).toBe(false);
   });

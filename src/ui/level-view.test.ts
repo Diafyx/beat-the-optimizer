@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import type { Level, Lock } from '../engine/index.ts';
 import { LEVEL_IDS, loadLevel } from '../levels.ts';
 import { renderLevel } from './level-view.ts';
+import { renderPlanBuilder } from './plan-builder.ts';
 
 const example = JSON.parse(readFileSync('tests/fixtures/example-level.json', 'utf8')) as Level;
 
@@ -134,7 +135,7 @@ describe('renderLevel', () => {
   });
 
   // docs/level-format.md: these give away the answer before the run.
-  it('never reads what PostgreSQL chose, the true counts, the costs or the explanation', async () => {
+  it('never reads, nor lets the builder read, what PostgreSQL chose, the true counts, the costs or the explanation', async () => {
     for (const id of LEVEL_IDS) {
       const level = must(await loadLevel(id));
       const hidden = ['cardinalities', 'optimizer', 'costs', 'explanation'];
@@ -145,6 +146,7 @@ describe('renderLevel', () => {
         },
       });
       expect(renderLevel(guarded).querySelector('h2')?.textContent).toBe(level.title);
+      expect(renderPlanBuilder(guarded).querySelector('legend')).not.toBeNull();
     }
   });
 });
