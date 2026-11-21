@@ -71,3 +71,19 @@ Loading a spec checks the schema, then:
 - `uniform` has `min ≤ max`, and `dateRange` has two real dates in order;
 - a `reference` names a column of an earlier table, and `derived` an earlier
   column of the same table.
+
+## Output
+
+`npm run generate-data -- <spec.yaml> <out-dir>` generates the data and writes
+two files for `psql`:
+
+- `load.sql` creates each table, with every column `NOT NULL`, copies its rows
+  in insert order with `COPY … FROM stdin`, then builds its indexes. Only the
+  indexes in the spec are created: a `reference` is not declared as a foreign
+  key, so PostgreSQL does not use it in join estimates.
+- `after-analyze.sql` holds the `afterAnalyze` statements, each ending in a
+  semicolon.
+
+The authoring pipeline runs `load.sql`, then `ANALYZE`, then
+`after-analyze.sql`. A unique index on a column with repeated values fails
+before anything is written.
