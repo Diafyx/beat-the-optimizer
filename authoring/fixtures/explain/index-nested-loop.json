@@ -1,0 +1,45 @@
+[
+  {
+    "Plan": {
+      "Node Type": "Nested Loop",
+      "Parallel Aware": false,
+      "Async Capable": false,
+      "Join Type": "Inner",
+      "Startup Cost": 0.29,
+      "Total Cost": 120.5,
+      "Plan Rows": 400,
+      "Plan Width": 36,
+      "Inner Unique": false,
+      "Plans": [
+        {
+          "Node Type": "Seq Scan",
+          "Parent Relationship": "Outer",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "authors",
+          "Alias": "a",
+          "Startup Cost": 0.0,
+          "Total Cost": 20.5,
+          "Plan Rows": 20,
+          "Plan Width": 18,
+          "Filter": "(country = 'NZ'::text)"
+        },
+        {
+          "Node Type": "Index Scan",
+          "Parent Relationship": "Inner",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Scan Direction": "Forward",
+          "Index Name": "books_author_id_idx",
+          "Relation Name": "books",
+          "Alias": "b",
+          "Startup Cost": 0.29,
+          "Total Cost": 4.9,
+          "Plan Rows": 20,
+          "Plan Width": 22,
+          "Index Cond": "(author_id = a.author_id)"
+        }
+      ]
+    }
+  }
+]
