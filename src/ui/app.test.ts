@@ -18,8 +18,20 @@ describe('start', () => {
     await start(root, '');
     expect(root.querySelector('h2')?.textContent).toBe('Needle');
     expect(root.querySelector('#builder-title')?.textContent).toBe('Your plan');
+    expect(root.querySelector('#run-title')?.textContent).toBe('Run it');
     expect(document.title).toBe('Needle · Beat the Optimizer');
     expect(root.hasAttribute('aria-busy')).toBe(false);
+  });
+
+  it('lets the player run the plan once it is built', async () => {
+    await start(root, '');
+    const button = root.querySelector<HTMLButtonElement>('.run-button');
+    expect(button?.disabled).toBe(true);
+    const seq = [...root.querySelectorAll('input')].find(({ value }) => value === 'seq');
+    if (seq === undefined) throw new Error('no seq scan option');
+    seq.checked = true;
+    seq.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(button?.disabled).toBe(false);
   });
 
   it('shows the level named by ?level=', async () => {

@@ -7,6 +7,7 @@ import { FIRST_LEVEL, LEVEL_FILES, loadLevel, type LevelLoader } from '../levels
 import { el } from './dom.ts';
 import { renderLevel } from './level-view.ts';
 import { renderPlanBuilder } from './plan-builder.ts';
+import { renderRun } from './run.ts';
 
 export const SITE_TITLE = 'Beat the Optimizer';
 
@@ -36,7 +37,13 @@ export async function start(
     }
     document.title = `${level.title} · ${SITE_TITLE}`;
     const view = renderLevel(level);
-    view.append(renderPlanBuilder(level));
+    const run = renderRun(level);
+    view.append(
+      renderPlanBuilder(level, (plan) => {
+        run.setPlan(plan);
+      }),
+      run.element,
+    );
     root.replaceChildren(view);
   } catch {
     root.replaceChildren(
