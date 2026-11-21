@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1004
+tables:
+  - name: orders
+    rows: 100000
+    order: order_id
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      # Half a percent of the orders come from Iceland.
+      - name: country
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: US, weight: 40 }
+            - { value: DE, weight: 30 }
+            - { value: FR, weight: 29.5 }
+            - { value: IS, weight: 0.5 }
+      # Spread evenly over ten years, so nine in ten are from 2016 on.
+      - name: created_at
+        type: date
+        values: { kind: dateRange, from: '2015-01-01', to: '2024-12-31' }
+      - name: amount
+        type: integer
+        values: { kind: uniform, min: 1, max: 500 }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+      - { name: orders_country_idx, column: country }
+      - { name: orders_created_at_idx, column: created_at }
+afterAnalyze: []
+level:
+  id: pick-your-index
+  title: Pick your index
+  story:
+    - The orders go back ten years, spread evenly over them.
+    - The Reykjavik office wants its orders from 2016 on. Two indexes could help, but you can use only one.
+  select:
+    - { table: orders, column: order_id }
+    - { table: orders, column: amount }
+  filters:
+    - { table: orders, column: country, op: '=', value: IS }
+    - { table: orders, column: created_at, op: '>=', value: '2016-01-01' }
+  joins: []
+  orderBy: null
+  locks: []
+  stats:
+    - { table: orders, column: country }
+  explanation:
+    - DRAFT

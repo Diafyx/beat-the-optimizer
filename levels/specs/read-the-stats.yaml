@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1002
+tables:
+  - name: reviews
+    rows: 100000
+    order: review_id
+    columns:
+      - name: review_id
+        type: integer
+        values: { kind: sequence }
+      - name: product_id
+        type: integer
+        values: { kind: uniform, min: 1, max: 5000 }
+      # Half a percent of the reviews give one or two stars.
+      - name: stars
+        type: integer
+        values:
+          kind: weighted
+          weights:
+            - { value: 5, weight: 60 }
+            - { value: 4, weight: 30 }
+            - { value: 3, weight: 9.5 }
+            - { value: 2, weight: 0.3 }
+            - { value: 1, weight: 0.2 }
+    indexes:
+      - { name: reviews_pkey, column: review_id, unique: true }
+      - { name: reviews_stars_idx, column: stars }
+afterAnalyze: []
+level:
+  id: read-the-stats
+  title: Read the statistics
+  story:
+    - The support team reads every review of one or two stars.
+    - The statistics show how the stars are spread. How many reviews is that?
+  select:
+    - { table: reviews, column: review_id }
+    - { table: reviews, column: product_id }
+  filters:
+    - { table: reviews, column: stars, op: '<=', value: 2 }
+  joins: []
+  orderBy: null
+  locks: []
+  stats:
+    - { table: reviews, column: stars }
+  explanation:
+    - DRAFT

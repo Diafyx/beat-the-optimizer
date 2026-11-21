@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1003
+tables:
+  - name: orders
+    rows: 100000
+    order: order_id
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      - name: customer_id
+        type: integer
+        values: { kind: uniform, min: 1, max: 10000 }
+      # Most orders have shipped.
+      - name: status
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: shipped, weight: 70 }
+            - { value: pending, weight: 20 }
+            - { value: cancelled, weight: 10 }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+      - { name: orders_status_idx, column: status }
+afterAnalyze: []
+level:
+  id: haystack
+  title: Haystack
+  story:
+    - Finance wants every order that has shipped.
+    - There is an index on status. Should you use it?
+  select:
+    - { table: orders, column: order_id }
+    - { table: orders, column: customer_id }
+  filters:
+    - { table: orders, column: status, op: '=', value: shipped }
+  joins: []
+  orderBy: null
+  locks: []
+  stats:
+    - { table: orders, column: status }
+  explanation:
+    - DRAFT
