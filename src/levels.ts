@@ -19,9 +19,6 @@ export const LEVEL_IDS = [
   'last-nights-migration',
 ] as const;
 
-/** The level shown when the address names none. */
-export const FIRST_LEVEL = LEVEL_IDS[0];
-
 export type LevelLoader = () => Promise<Level>;
 
 const files = import.meta.glob<Level>('../levels/*.json', { import: 'default' });

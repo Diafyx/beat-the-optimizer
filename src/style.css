@@ -323,3 +323,41 @@ code {
 .costs td {
   text-align: right;
 }
+
+/* Today's puzzle, the streak and the tutorial. */
+.puzzle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 1rem;
+  color: var(--muted);
+}
+
+.link-button {
+  min-height: 2.75rem;
+  padding: 0 0.25rem;
+  font: inherit;
+  color: var(--accent);
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.tutorial {
+  max-width: min(32rem, calc(100vw - 2rem));
+  padding: 1rem 1.25rem 1.25rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+
+.tutorial h2 {
+  margin-top: 0;
+}
+
+.tutorial::backdrop {
+  background: rgb(0 0 0 / 50%);
+}

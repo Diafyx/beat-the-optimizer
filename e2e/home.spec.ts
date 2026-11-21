@@ -1,13 +1,17 @@
 import { readdirSync } from 'node:fs';
-import { expect, test } from './fixtures.ts';
+import { LAUNCH_NOON, expect, test } from './fixtures.ts';
 
 const levels = readdirSync('levels')
   .filter((name) => name.endsWith('.json'))
   .map((name) => name.replace(/\.json$/, ''));
 
 test.describe('app shell', () => {
-  test('shows the first level by default', async ({ page }) => {
+  test('shows today’s puzzle by default', async ({ page }) => {
+    await page.clock.setFixedTime(LAUNCH_NOON);
     await page.goto('/');
+    await expect(
+      page.getByText('Puzzle #1 · Tuesday, December 1, 2026 · Streak: 0 days'),
+    ).toBeVisible();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Beat the Optimizer');
     await expect(page.getByRole('heading', { level: 2 })).toHaveText('Needle');
     await expect(page).toHaveTitle('Needle · Beat the Optimizer');
@@ -28,8 +32,8 @@ test.describe('app shell', () => {
   test('says so when there is no such level', async ({ page }) => {
     await page.goto('/?level=nope');
     await expect(page.getByRole('alert')).toContainText('There is no level called “nope”.');
-    await page.getByRole('link', { name: 'Play the first level' }).click();
-    await expect(page.getByRole('heading', { level: 2 })).toHaveText('Needle');
+    await page.getByRole('link', { name: 'Play today’s puzzle' }).click();
+    await expect(page.getByText(/^Puzzle #\d+ · /)).toBeVisible();
   });
 });
 

@@ -1,10 +1,17 @@
 // @vitest-environment happy-dom
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('main', () => {
   beforeEach(() => {
     vi.resetModules();
     document.body.replaceChildren();
+    // The launch date, so that today's puzzle is the first level.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 11, 1, 12));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('starts the app in #app', async () => {

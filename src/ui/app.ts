@@ -1,27 +1,58 @@
 /**
- * The app shell: picks the level from the address, loads it and shows it in
- * `root`. Until the daily rotation (#24), `?level=<id>` picks a level and the
- * first level is the default.
+ * The app shell: shows today's puzzle, or with `?level=<id>` a level to
+ * practise, with the player's streak and the first-run tutorial.
  */
-import { FIRST_LEVEL, LEVEL_FILES, loadLevel, type LevelLoader } from '../levels.ts';
+import { dailyPuzzle, type Daily } from '../daily.ts';
+import { LEVEL_FILES, loadLevel, type LevelLoader } from '../levels.ts';
+import {
+  browserStorage,
+  currentStreak,
+  loadProgress,
+  recordRun,
+  saveProgress,
+  type Progress,
+} from '../progress.ts';
 import { el } from './dom.ts';
 import { renderLevel } from './level-view.ts';
 import { renderPlanBuilder } from './plan-builder.ts';
 import { renderRun } from './run.ts';
+import { renderTutorial } from './tutorial.ts';
 
 export const SITE_TITLE = 'Beat the Optimizer';
+
+const dates = new Intl.DateTimeFormat('en-US', {
+  weekday: 'long',
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  timeZone: 'UTC',
+});
+
+/** A YYYY-MM-DD date for display, such as `Tuesday, December 1, 2026`. */
+export const formatDate = (date: string): string => dates.format(new Date(`${date}T00:00:00Z`));
+
+const days = (n: number): string => `${String(n)} ${n === 1 ? 'day' : 'days'}`;
 
 function message(...children: readonly (Node | string)[]): HTMLElement {
   return el('p', { class: 'message', role: 'alert' }, ...children);
 }
 
-/** Shows the level that `search` (such as `?level=needle`) names in `root`. */
+export interface AppOptions {
+  readonly loaders?: ReadonlyMap<string, LevelLoader>;
+  readonly now?: () => Date;
+  readonly storage?: Storage | null;
+}
+
+/** Shows today's puzzle, or the level that `search` (such as `?level=needle`) names, in `root`. */
 export async function start(
   root: HTMLElement,
   search: string,
-  loaders: ReadonlyMap<string, LevelLoader> = LEVEL_FILES,
+  { loaders = LEVEL_FILES, now = () => new Date(), storage = browserStorage() }: AppOptions = {},
 ): Promise<void> {
-  const id = new URLSearchParams(search).get('level') ?? FIRST_LEVEL;
+  const practice = new URLSearchParams(search).get('level');
+  const daily: Daily | null = practice === null ? dailyPuzzle(now()) : null;
+  const id = daily?.level ?? String(practice);
+  let progress: Progress = loadProgress(storage);
   root.setAttribute('aria-busy', 'true');
   try {
     const level = await loadLevel(id, loaders);
@@ -29,22 +60,62 @@ export async function start(
       root.replaceChildren(
         message(
           `There is no level called “${id}”. `,
-          el('a', { href: './' }, 'Play the first level'),
+          el('a', { href: './' }, 'Play today’s puzzle'),
           '.',
         ),
       );
       return;
     }
     document.title = `${level.title} · ${SITE_TITLE}`;
+    const streak = el('span');
+    const showStreak = (today: number): void => {
+      streak.textContent = `Streak: ${days(currentStreak(progress, today))}`;
+    };
+    const run = renderRun(
+      level,
+      daily === null
+        ? {}
+        : {
+            used: progress.puzzles[String(daily.number)]?.runs ?? 0,
+            onRun: (cost) => {
+              progress = recordRun(progress, daily.number, cost);
+              saveProgress(progress, storage);
+              showStreak(daily.number);
+            },
+          },
+    );
+    const tutorial = renderTutorial(() => {
+      progress = { ...progress, tutorialSeen: true };
+      saveProgress(progress, storage);
+    });
+    const help = el('button', { type: 'button', class: 'link-button' }, 'How to play');
+    help.addEventListener('click', () => {
+      tutorial.showModal();
+    });
+    if (daily !== null) showStreak(daily.number);
+    const banner = el(
+      'div',
+      { class: 'puzzle' },
+      daily === null
+        ? el(
+            'p',
+            {},
+            'Practice: this is not today’s puzzle, and it does not count towards your streak. ',
+            el('a', { href: './' }, 'Play today’s puzzle'),
+            '.',
+          )
+        : el('p', {}, `Puzzle #${String(daily.number)} · ${formatDate(daily.date)} · `, streak),
+      help,
+    );
     const view = renderLevel(level);
-    const run = renderRun(level);
     view.append(
       renderPlanBuilder(level, (plan) => {
         run.setPlan(plan);
       }),
       run.element,
     );
-    root.replaceChildren(view);
+    root.replaceChildren(banner, view, tutorial);
+    if (!progress.tutorialSeen) tutorial.showModal();
   } catch {
     root.replaceChildren(
       message('The level could not be loaded. Check your connection and reload the page.'),

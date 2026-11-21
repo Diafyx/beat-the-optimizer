@@ -36,6 +36,16 @@ test.describe('accessibility @a11y', () => {
     }
   }
 
+  test.describe('first visit', () => {
+    test.use({ firstVisit: true });
+
+    test('the tutorial has no serious or critical violations', async ({ page }, testInfo) => {
+      await page.goto('/');
+      await expect(page.getByRole('dialog', { name: 'How to play' })).toBeVisible();
+      expect(await blockingViolations(page, testInfo, 'tutorial')).toEqual([]);
+    });
+  });
+
   test('the unknown-level message has no serious or critical violations', async ({
     page,
   }, testInfo) => {

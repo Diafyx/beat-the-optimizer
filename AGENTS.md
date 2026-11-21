@@ -34,7 +34,9 @@ npm run build       # production build into dist/
 - `src/`: the web app, in TypeScript with no framework: `src/ui/` builds the
   DOM with `el()` from `src/ui/dom.ts`, and `src/levels.ts` lists the levels in
   play order. It uses the engine only through `src/engine/index.ts` (ESLint
-  enforces it). `?level=<id>` opens a level.
+  enforces it). Today's puzzle comes from `src/daily.ts` (launch date and
+  rotation); `?level=<id>` opens a level for practice. Progress is in
+  localStorage through `src/progress.ts`, which works without storage.
 - `tests/`: test setup and cross-cutting tests.
 - `e2e/`: Playwright browser and accessibility tests against `vite preview`.
 - `authoring/`: the level authoring pipeline (MIT), run by Node: specs in
