@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { Level, Plan, Table } from './level.ts';
 import { bestPlan } from './plans.ts';
 import { planCost } from './cost.ts';
-import { validateLevel, type LevelError } from './validate.ts';
+import { connectedSets, validateLevel, type LevelError } from './validate.ts';
 
 const example = JSON.parse(
   readFileSync(new URL('../../tests/fixtures/example-level.json', import.meta.url), 'utf8'),
@@ -464,5 +464,12 @@ describe('validateLevel', () => {
     );
     expect(validateLevel(level).map(({ rule }) => rule)).toEqual([6, 6]);
     expect(validateLevel(broken).map(({ rule }) => rule)).toEqual([4]);
+  });
+});
+
+describe('connectedSets', () => {
+  it('lists every connected set of tables, without the empty set', () => {
+    const sets = connectedSets(chain).map((set) => set.join(' '));
+    expect(sets).toEqual(['a', 'b', 'a b', 'c', 'b c', 'a b c']);
   });
 });

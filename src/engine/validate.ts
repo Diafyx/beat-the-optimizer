@@ -20,7 +20,7 @@ function repeated(values: readonly string[]): string[] {
   return [...new Set(values.filter((value, i) => values.indexOf(value) !== i))];
 }
 
-/** Every subset of `names`. The empty set yields no cardinality. */
+/** Every subset of `names`, the empty one first. */
 function subsets(names: readonly string[]): string[][] {
   const all: string[][] = [[]];
   for (const name of names) {
@@ -32,7 +32,7 @@ function subsets(names: readonly string[]): string[][] {
 }
 
 /** Whether the level's predicates between `names` connect all of them. */
-function connected(level: Level, names: readonly string[]): boolean {
+function connected(level: Pick<Level, 'joins'>, names: readonly string[]): boolean {
   const reached = new Set(names.slice(0, 1));
   let grew = true;
   while (grew) {
@@ -50,6 +50,19 @@ function connected(level: Level, names: readonly string[]): boolean {
     }
   }
   return names.every((name) => reached.has(name));
+}
+
+/**
+ * Every set of the level's tables that its join predicates connect, single
+ * tables included, with each set in the order of `level.tables`.
+ */
+export function connectedSets(level: {
+  readonly tables: readonly { readonly name: string }[];
+  readonly joins: Level['joins'];
+}): string[][] {
+  return subsets(level.tables.map(({ name }) => name)).filter(
+    (set) => set.length > 0 && connected(level, set),
+  );
 }
 
 class Validator {
@@ -160,9 +173,7 @@ class Validator {
   /** Rule 4: every cardinality the cost model needs, once, and no others. */
   cardinalities(): void {
     const { tables, cardinalities } = this.level;
-    const sets = subsets(tables.map(({ name }) => name)).filter((set) =>
-      connected(this.level, set),
-    );
+    const sets = connectedSets(this.level);
     const lookups = sets.flatMap((outer) =>
       tables.flatMap((table) => {
         const predicate = outer.includes(table.name)
