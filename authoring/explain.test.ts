@@ -122,7 +122,7 @@ describe('mapExplain', () => {
       'an index scan on its own filter, with the alias only in a string',
       index('Index Scan', 'b', 'b_idx', "(name = 'x a.y''a.z')"),
     ],
-    ['an index scan naming a longer alias', index('Index Scan', 'b', 'b_idx', '(x = ba.x)')],
+    ['an index scan naming a longer alias', index('Index Scan', 'b', 'b_idx', '(x = xa.x)')],
   ])('maps a nested loop over %s to a plain nested loop', (_, inner) => {
     const [step] = plan(node('Nested Loop', {}, seq('a'), inner)).steps;
     expect(step?.join).toBe('nestedLoop');
