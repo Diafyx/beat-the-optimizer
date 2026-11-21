@@ -20,6 +20,11 @@ byte-identical data. Each column, and each table's insert order, draws from its
 own random stream named after it (`orders.status`, `orders#order`), so editing
 one column does not change the values of the others.
 
+The generator in `authoring/random.ts` is sfc32, seeded through splitmix32 with
+`seed` XOR the FNV-1a hash of the stream name. It uses only 32-bit integer
+arithmetic, so every Node version gives the same numbers. Changing it changes
+every level's data.
+
 ## Fields
 
 | Field          | Type                   | Meaning                                                     |
