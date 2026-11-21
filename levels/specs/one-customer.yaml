@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1005
+tables:
+  - name: customers
+    rows: 10000
+    order: customer_id
+    columns:
+      - name: customer_id
+        type: integer
+        values: { kind: sequence }
+      - name: name
+        type: text
+        values: { kind: label, prefix: 'customer ' }
+    indexes:
+      - { name: customers_pkey, column: customer_id, unique: true }
+      - { name: customers_name_idx, column: name, unique: true }
+  - name: orders
+    rows: 100000
+    order: order_id
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      # About ten orders for each customer.
+      - name: customer_id
+        type: integer
+        values: { kind: reference, table: customers, column: customer_id }
+      - name: amount
+        type: integer
+        values: { kind: uniform, min: 1, max: 500 }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+      - { name: orders_customer_id_idx, column: customer_id }
+afterAnalyze: []
+level:
+  id: one-customer
+  title: One customer
+  story:
+    - Customer 4711 asks for a list of their orders.
+    - There are 10,000 customers and 100,000 orders. Join them without reading them all.
+  select:
+    - { table: customers, column: name }
+    - { table: orders, column: order_id }
+    - { table: orders, column: amount }
+  filters:
+    - { table: customers, column: name, op: '=', value: customer 4711 }
+  joins:
+    - left: { table: customers, column: customer_id }
+      right: { table: orders, column: customer_id }
+  orderBy: null
+  locks: []
+  stats: []
+  explanation:
+    - 'PostgreSQL found the customer through customers_name_idx, estimated about 10 orders for them (there are 9), and looked those up through orders_customer_id_idx in an index nested loop: 4 for the customer, 4 × (1 + 9) = 40 for the lookups and 9 for the result, 53 in all. A hash join has to read all 100,000 orders to find those 9, and costs 200,014.'

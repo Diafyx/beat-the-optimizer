@@ -1,0 +1,108 @@
+{
+  "format": 1,
+  "id": "read-the-stats",
+  "title": "Read the statistics",
+  "story": [
+    "The support team reads every review of one or two stars.",
+    "The statistics show how the stars are spread. How many reviews is that?"
+  ],
+  "sql": "SELECT reviews.review_id, reviews.product_id\nFROM reviews\nWHERE reviews.stars <= 2",
+  "tables": [
+    {
+      "name": "reviews",
+      "rows": 100000,
+      "filter": "stars <= 2",
+      "storedOrder": "review_id",
+      "columns": [
+        { "name": "review_id", "type": "integer", "stats": null },
+        { "name": "product_id", "type": "integer", "stats": null },
+        {
+          "name": "stars",
+          "type": "integer",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 5,
+            "mostCommon": [
+              { "value": 5, "frequency": 0.6 },
+              { "value": 4, "frequency": 0.3 },
+              { "value": 3, "frequency": 0.095 },
+              { "value": 2, "frequency": 0.003 },
+              { "value": 1, "frequency": 0.002 }
+            ],
+            "histogram": [],
+            "correlation": 0.4571524
+          }
+        }
+      ],
+      "indexes": [
+        { "name": "reviews_pkey", "column": "review_id" },
+        { "name": "reviews_stars_idx", "column": "stars" }
+      ]
+    }
+  ],
+  "joins": [],
+  "orderBy": null,
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "reviews",
+        "filtered": 500,
+        "indexes": [
+          { "index": "reviews_pkey", "matched": 100000 },
+          { "index": "reviews_stars_idx", "matched": 500 }
+        ]
+      }
+    ],
+    "joins": [],
+    "lookups": []
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": {
+      "first": { "table": "reviews", "access": "index", "index": "reviews_stars_idx" },
+      "steps": []
+    },
+    "explain": {
+      "nodeType": "Bitmap Heap Scan",
+      "relation": "reviews",
+      "index": null,
+      "estimatedRows": 500,
+      "estimatedCost": 569.34,
+      "children": [
+        {
+          "nodeType": "Bitmap Index Scan",
+          "relation": null,
+          "index": "reviews_stars_idx",
+          "estimatedRows": 500,
+          "estimatedCost": 8.04,
+          "children": []
+        }
+      ]
+    }
+  },
+  "costs": {
+    "best": 2000,
+    "optimizer": 2000,
+    "bestPlan": {
+      "first": { "table": "reviews", "access": "index", "index": "reviews_stars_idx" },
+      "steps": []
+    }
+  },
+  "explanation": [
+    "The statistics list every value of stars: 2 stars is 0.3% of the reviews and 1 star 0.2%, so stars <= 2 matches 0.5%, or 500 of 100,000. PostgreSQL added the two frequencies, estimated exactly 500 rows and read them through reviews_stars_idx. 500 jumps into the table at 4 each cost 2,000, against 100,000 for reading every review. A range is no reason to skip an index."
+  ]
+}

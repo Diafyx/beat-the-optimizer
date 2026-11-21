@@ -1,0 +1,139 @@
+{
+  "format": 1,
+  "id": "one-customer",
+  "title": "One customer",
+  "story": [
+    "Customer 4711 asks for a list of their orders.",
+    "There are 10,000 customers and 100,000 orders. Join them without reading them all."
+  ],
+  "sql": "SELECT customers.name, orders.order_id, orders.amount\nFROM customers\nJOIN orders ON orders.customer_id = customers.customer_id\nWHERE customers.name = 'customer 4711'",
+  "tables": [
+    {
+      "name": "customers",
+      "rows": 10000,
+      "filter": "name = 'customer 4711'",
+      "storedOrder": "customer_id",
+      "columns": [
+        { "name": "customer_id", "type": "integer", "stats": null },
+        { "name": "name", "type": "text", "stats": null }
+      ],
+      "indexes": [
+        { "name": "customers_pkey", "column": "customer_id" },
+        { "name": "customers_name_idx", "column": "name" }
+      ]
+    },
+    {
+      "name": "orders",
+      "rows": 100000,
+      "filter": null,
+      "storedOrder": "order_id",
+      "columns": [
+        { "name": "order_id", "type": "integer", "stats": null },
+        { "name": "customer_id", "type": "integer", "stats": null },
+        { "name": "amount", "type": "integer", "stats": null }
+      ],
+      "indexes": [
+        { "name": "orders_pkey", "column": "order_id" },
+        { "name": "orders_customer_id_idx", "column": "customer_id" }
+      ]
+    }
+  ],
+  "joins": [
+    {
+      "left": { "table": "customers", "column": "customer_id" },
+      "right": { "table": "orders", "column": "customer_id" }
+    }
+  ],
+  "orderBy": null,
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "customers",
+        "filtered": 1,
+        "indexes": [
+          { "index": "customers_pkey", "matched": 10000 },
+          { "index": "customers_name_idx", "matched": 1 }
+        ]
+      },
+      {
+        "table": "orders",
+        "filtered": 100000,
+        "indexes": [
+          { "index": "orders_pkey", "matched": 100000 },
+          { "index": "orders_customer_id_idx", "matched": 100000 }
+        ]
+      }
+    ],
+    "joins": [{ "tables": ["customers", "orders"], "rows": 9 }],
+    "lookups": [
+      { "outer": ["customers"], "index": "orders_customer_id_idx", "fetched": 9 },
+      { "outer": ["orders"], "index": "customers_pkey", "fetched": 100000 }
+    ]
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": {
+      "first": { "table": "customers", "access": "index", "index": "customers_name_idx" },
+      "steps": [{ "join": "indexNestedLoop", "table": "orders", "index": "orders_customer_id_idx" }]
+    },
+    "explain": {
+      "nodeType": "Nested Loop",
+      "relation": null,
+      "index": null,
+      "estimatedRows": 10,
+      "estimatedCost": 48.83,
+      "children": [
+        {
+          "nodeType": "Index Scan",
+          "relation": "customers",
+          "index": "customers_name_idx",
+          "estimatedRows": 1,
+          "estimatedCost": 8.3,
+          "children": []
+        },
+        {
+          "nodeType": "Bitmap Heap Scan",
+          "relation": "orders",
+          "index": null,
+          "estimatedRows": 10,
+          "estimatedCost": 40.43,
+          "children": [
+            {
+              "nodeType": "Bitmap Index Scan",
+              "relation": null,
+              "index": "orders_customer_id_idx",
+              "estimatedRows": 10,
+              "estimatedCost": 4.37,
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "costs": {
+    "best": 53,
+    "optimizer": 53,
+    "bestPlan": {
+      "first": { "table": "customers", "access": "index", "index": "customers_name_idx" },
+      "steps": [{ "join": "indexNestedLoop", "table": "orders", "index": "orders_customer_id_idx" }]
+    }
+  },
+  "explanation": [
+    "PostgreSQL found the customer through customers_name_idx, estimated about 10 orders for them (there are 9), and looked those up through orders_customer_id_idx in an index nested loop: 4 for the customer, 4 × (1 + 9) = 40 for the lookups and 9 for the result, 53 in all. A hash join has to read all 100,000 orders to find those 9, and costs 200,014."
+  ]
+}

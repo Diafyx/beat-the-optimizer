@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1001
+tables:
+  - name: orders
+    rows: 100000
+    order: order_id
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      - name: customer_id
+        type: integer
+        values: { kind: uniform, min: 1, max: 10000 }
+      - name: amount
+        type: integer
+        values: { kind: uniform, min: 1, max: 500 }
+      - name: created_at
+        type: date
+        values: { kind: dateRange, from: '2024-01-01', to: '2024-12-31' }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+afterAnalyze: []
+level:
+  id: needle
+  title: Needle
+  story:
+    - A customer is on the phone about order 42. There are 100,000 orders.
+    - Find it before they hang up.
+  select:
+    - { table: orders, column: customer_id }
+    - { table: orders, column: amount }
+    - { table: orders, column: created_at }
+  filters:
+    - { table: orders, column: order_id, op: '=', value: 42 }
+  joins: []
+  orderBy: null
+  locks: []
+  stats: []
+  explanation:
+    - 'orders_pkey is unique, so PostgreSQL estimated exactly 1 row and used an index scan on it. The table is stored in order_id order, so the lookup reads one row: a cost of 1, against 100,000 for a seq scan that reads every order.'

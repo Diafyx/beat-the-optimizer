@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1002
+tables:
+  - name: reviews
+    rows: 100000
+    order: review_id
+    columns:
+      - name: review_id
+        type: integer
+        values: { kind: sequence }
+      - name: product_id
+        type: integer
+        values: { kind: uniform, min: 1, max: 5000 }
+      # Half a percent of the reviews give one or two stars.
+      - name: stars
+        type: integer
+        values:
+          kind: weighted
+          weights:
+            - { value: 5, weight: 60 }
+            - { value: 4, weight: 30 }
+            - { value: 3, weight: 9.5 }
+            - { value: 2, weight: 0.3 }
+            - { value: 1, weight: 0.2 }
+    indexes:
+      - { name: reviews_pkey, column: review_id, unique: true }
+      - { name: reviews_stars_idx, column: stars }
+afterAnalyze: []
+level:
+  id: read-the-stats
+  title: Read the statistics
+  story:
+    - The support team reads every review of one or two stars.
+    - The statistics show how the stars are spread. How many reviews is that?
+  select:
+    - { table: reviews, column: review_id }
+    - { table: reviews, column: product_id }
+  filters:
+    - { table: reviews, column: stars, op: '<=', value: 2 }
+  joins: []
+  orderBy: null
+  locks: []
+  stats:
+    - { table: reviews, column: stars }
+  explanation:
+    - 'The statistics list every value of stars: 2 stars is 0.3% of the reviews and 1 star 0.2%, so stars <= 2 matches 0.5%, or 500 of 100,000. PostgreSQL added the two frequencies, estimated exactly 500 rows and read them through reviews_stars_idx. 500 jumps into the table at 4 each cost 2,000, against 100,000 for reading every review. A range is no reason to skip an index.'
