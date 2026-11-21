@@ -43,4 +43,4 @@ level:
   stats:
     - { table: reviews, column: stars }
   explanation:
-    - DRAFT
+    - 'The statistics list every value of stars: 2 stars is 0.3% of the reviews and 1 star 0.2%, so stars <= 2 matches 0.5%, or 500 of 100,000. PostgreSQL added the two frequencies, estimated exactly 500 rows and read them through reviews_stars_idx. 500 jumps into the table at 4 each cost 2,000, against 100,000 for reading every review. A range is no reason to skip an index.'

@@ -48,4 +48,4 @@ level:
   stats:
     - { table: orders, column: country }
   explanation:
-    - DRAFT
+    - "PostgreSQL treats the two filters as independent: Iceland is 0.5% of the orders, and nine in ten are from 2016 on, so it estimated 451 rows; 456 match. It read orders_country_idx, which finds the 500 orders from Iceland, and checked each one's date: 4 × 500 = 2,000. The date index finds 90,163 orders, 360,652 in jumps, more than three times a seq scan. Start from the filter that keeps the fewest rows."

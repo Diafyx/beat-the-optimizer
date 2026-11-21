@@ -1,0 +1,74 @@
+{
+  "format": 1,
+  "id": "needle",
+  "title": "Needle",
+  "story": [
+    "A customer is on the phone about order 42. There are 100,000 orders.",
+    "Find it before they hang up."
+  ],
+  "sql": "SELECT orders.customer_id, orders.amount, orders.created_at\nFROM orders\nWHERE orders.order_id = 42",
+  "tables": [
+    {
+      "name": "orders",
+      "rows": 100000,
+      "filter": "order_id = 42",
+      "storedOrder": "order_id",
+      "columns": [
+        { "name": "order_id", "type": "integer", "stats": null },
+        { "name": "customer_id", "type": "integer", "stats": null },
+        { "name": "amount", "type": "integer", "stats": null },
+        { "name": "created_at", "type": "date", "stats": null }
+      ],
+      "indexes": [{ "name": "orders_pkey", "column": "order_id" }]
+    }
+  ],
+  "joins": [],
+  "orderBy": null,
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      { "table": "orders", "filtered": 1, "indexes": [{ "index": "orders_pkey", "matched": 1 }] }
+    ],
+    "joins": [],
+    "lookups": []
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": {
+      "first": { "table": "orders", "access": "index", "index": "orders_pkey" },
+      "steps": []
+    },
+    "explain": {
+      "nodeType": "Index Scan",
+      "relation": "orders",
+      "index": "orders_pkey",
+      "estimatedRows": 1,
+      "estimatedCost": 8.31,
+      "children": []
+    }
+  },
+  "costs": {
+    "best": 1,
+    "optimizer": 1,
+    "bestPlan": {
+      "first": { "table": "orders", "access": "index", "index": "orders_pkey" },
+      "steps": []
+    }
+  },
+  "explanation": [
+    "orders_pkey is unique, so PostgreSQL estimated exactly 1 row and used an index scan on it. The table is stored in order_id order, so the lookup reads one row: a cost of 1, against 100,000 for a seq scan that reads every order."
+  ]
+}

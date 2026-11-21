@@ -37,4 +37,4 @@ level:
   locks: []
   stats: []
   explanation:
-    - DRAFT
+    - 'orders_pkey is unique, so PostgreSQL estimated exactly 1 row and used an index scan on it. The table is stored in order_id order, so the lookup reads one row: a cost of 1, against 100,000 for a seq scan that reads every order.'

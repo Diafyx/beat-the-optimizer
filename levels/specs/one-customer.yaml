@@ -51,4 +51,4 @@ level:
   locks: []
   stats: []
   explanation:
-    - DRAFT
+    - 'PostgreSQL found the customer through customers_name_idx, estimated about 10 orders for them (there are 9), and looked those up through orders_customer_id_idx in an index nested loop: 4 for the customer, 4 × (1 + 9) = 40 for the lookups and 9 for the result, 53 in all. A hash join has to read all 100,000 orders to find those 9, and costs 200,014.'

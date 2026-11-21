@@ -41,4 +41,4 @@ level:
   stats:
     - { table: orders, column: status }
   explanation:
-    - DRAFT
+    - 'Shipped is 70% of the orders, so the index finds 70,000 rows, each a jump to a random place in the table: 4 × 70,000 = 280,000, against 100,000 for reading the table once, in order. PostgreSQL read the same 70% in the statistics, estimated 70,000 rows and chose a seq scan. An index pays off only when it skips most of the table.'
