@@ -31,7 +31,10 @@ npm run build       # production build into dist/
 
 - `src/engine/`: the pure TypeScript engine and cost model. No DOM, no Node APIs
   and no runtime dependencies; 100% line and branch coverage.
-- `src/`: the web app.
+- `src/`: the web app, in TypeScript with no framework: `src/ui/` builds the
+  DOM with `el()` from `src/ui/dom.ts`, and `src/levels.ts` lists the levels in
+  play order. It uses the engine only through `src/engine/index.ts` (ESLint
+  enforces it). `?level=<id>` opens a level.
 - `tests/`: test setup and cross-cutting tests.
 - `e2e/`: Playwright browser and accessibility tests against `vite preview`.
 - `authoring/`: the level authoring pipeline (MIT), run by Node: specs in

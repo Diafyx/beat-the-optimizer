@@ -49,5 +49,23 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // The app uses the engine only through its public API.
+    files: ['src/**/*.ts'],
+    ignores: ['src/engine/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: '(^|/)engine/(?!index\\.ts$)',
+              message: "Import the engine through its public API, 'src/engine/index.ts'.",
+            },
+          ],
+        },
+      ],
+    },
+  },
   prettier,
 );
