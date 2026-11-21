@@ -26,6 +26,11 @@ test.describe('plan builder', () => {
     const tab = browserName === 'webkit' ? 'Alt+Tab' : 'Tab';
     await page.goto('/?level=in-order');
     await expect(page.getByRole('heading', { name: 'Your plan' })).toBeVisible();
+    // The practice banner's link and the How to play button come first.
+    await page.keyboard.press(tab);
+    await expect(page.getByRole('link', { name: 'Play today’s puzzle' })).toBeFocused();
+    await page.keyboard.press(tab);
+    await expect(page.getByRole('button', { name: 'How to play' })).toBeFocused();
     await page.keyboard.press(tab);
     await expect(page.getByRole('radio', { name: 'orders', exact: true })).toBeFocused();
     await page.keyboard.press('Space');

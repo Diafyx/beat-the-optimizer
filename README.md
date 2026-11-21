@@ -32,7 +32,7 @@ You need Node.js 22.18 or later, 24 or 26 (see `.nvmrc`). No database is needed.
 
 ```bash
 npm ci
-npm run dev     # start the dev server; ?level=<id> opens a level
+npm run dev     # start the dev server; ?level=<id> opens a level for practice
 npm run check   # run the same checks as CI
 ```
 

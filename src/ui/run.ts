@@ -104,6 +104,10 @@ export interface RunOptions {
   /** Whether to skip the animation; by default, the `prefers-reduced-motion` setting. */
   readonly reducedMotion?: () => boolean;
   readonly wait?: (ms: number) => Promise<void>;
+  /** Runs already used on this puzzle. */
+  readonly used?: number;
+  /** Called with the plan's cost when a run starts. */
+  readonly onRun?: (cost: number) => void;
 }
 
 export interface RunView {
@@ -118,10 +122,12 @@ export function renderRun(
   {
     reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
     wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    used = 0,
+    onRun = () => undefined,
   }: RunOptions = {},
 ): RunView {
   let plan: Plan | null = null;
-  let left = MAX_RUNS;
+  let left = Math.max(MAX_RUNS - used, 0);
   let running = false;
   const button = el('button', { type: 'button', class: 'run-button' }, 'Run your plan');
   const status = el('p', { class: 'label' });
@@ -150,6 +156,7 @@ export function renderRun(
     left -= 1;
     update();
     const cost = planCost(level, chosen);
+    onRun(cost.total);
     // The bar fills relative to the larger of the two plans' costs.
     const scale = Math.max(cost.total, level.costs.optimizer, 1);
     const still = reducedMotion();
