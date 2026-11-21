@@ -245,7 +245,7 @@ Both run on `main` and can be started by hand from the Actions tab. Neither is
 a required check.
 
 - **Nightly** (`nightly.yml`, daily): every CI job (`ci.yml` with
-  `full: true`), Stryker mutation testing of `src/engine` (`npm run mutation`,
+  `full: true`, so the authoring drift check too), Stryker mutation testing of `src/engine` (`npm run mutation`,
   report in the `mutation` artifact) and the link check on every Markdown file
   (`npm run links-all`).
 - **Canary** (`canary.yml`, weekly): type check, unit tests and build on the

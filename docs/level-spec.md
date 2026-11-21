@@ -138,13 +138,17 @@ before anything is written.
 
 ## Authoring
 
-`npm run author-level -- <spec.yaml> <level.json>` writes the level file. It
-needs PostgreSQL, so it runs only in CI, through `psql` with the `PG*`
-environment variables of a superuser. It:
+`npm run author-level` writes `levels/<name>.json` for each
+`levels/specs/<name>.yaml`, and `authoring/fixtures/example-level.json` from
+the example spec, so that changes to the pipeline run against PostgreSQL even
+without levels. It fails if a level file in `levels/` has no spec. It needs
+PostgreSQL, so it runs only in CI, through `psql` with the `PG*` environment
+variables of a superuser. It:
 
 1. applies the [authoring settings](level-format.md#optimizer) with
    `ALTER SYSTEM`, and waits until new connections have them;
-2. drops and recreates the schema `authoring`, and loads `load.sql` there;
+2. for each spec, drops and recreates the schema `authoring`, and loads
+   `load.sql` there;
 3. runs `ANALYZE` on the tables, then `after-analyze.sql`;
 4. reads the PostgreSQL version, the settings, the statistics of the
    `level.stats` columns, the true counts, and `EXPLAIN (FORMAT JSON)` of the
@@ -152,6 +156,20 @@ environment variables of a superuser. It:
 5. builds the level in [`authoring/level.ts`](../authoring/level.ts), with
    costs from the engine, fails if it breaks any rule of the
    [level format](level-format.md), and writes it formatted by Prettier.
+
+The [Authoring workflow](../.github/workflows/authoring.yml) runs it twice
+against PostgreSQL 18, pinned by digest, and fails if the two runs differ. Its
+`levels` artifact holds the files. On a pull request that touches `authoring/`
+or `levels/`, the `authoring-check` job runs it and also fails if the files
+differ from the committed ones. To add or change a level, push the spec, then
+download that run's files into the repository and commit them:
+
+```bash
+gh run download <run-id> --name levels
+```
+
+To get the files without a pull request, start the workflow by hand:
+`gh workflow run authoring.yml --ref <branch>`.
 
 A table inserted in order of a column is stored in that order, its
 `storedOrder`. An `afterAnalyze` statement that updates rows moves them, so a
