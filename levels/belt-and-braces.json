@@ -1,0 +1,210 @@
+{
+  "format": 1,
+  "id": "belt-and-braces",
+  "title": "Belt and braces",
+  "story": [
+    "The report form sends every field it has. For the Reykjavik shop that is the city, the country, the currency and the language.",
+    "Every order from Reykjavik is in Iceland, paid in krónur and written in Icelandic, but nothing tells PostgreSQL that."
+  ],
+  "sql": "SELECT customers.name, orders.order_id, orders.amount\nFROM customers\nJOIN orders ON orders.customer_id = customers.customer_id\nWHERE orders.city = 'reykjavik'\n  AND orders.country = 'IS'\n  AND orders.currency = 'ISK'\n  AND orders.language = 'is'",
+  "tables": [
+    {
+      "name": "customers",
+      "rows": 10000,
+      "filter": null,
+      "storedOrder": "customer_id",
+      "columns": [
+        { "name": "customer_id", "type": "integer", "stats": null },
+        { "name": "name", "type": "text", "stats": null }
+      ],
+      "indexes": [{ "name": "customers_pkey", "column": "customer_id" }]
+    },
+    {
+      "name": "orders",
+      "rows": 100000,
+      "filter": "city = 'reykjavik' AND country = 'IS' AND currency = 'ISK' AND language = 'is'",
+      "storedOrder": "city",
+      "columns": [
+        { "name": "order_id", "type": "integer", "stats": null },
+        { "name": "customer_id", "type": "integer", "stats": null },
+        {
+          "name": "city",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 10,
+            "mostCommon": [
+              { "value": "berlin", "frequency": 0.1 },
+              { "value": "copenhagen", "frequency": 0.1 },
+              { "value": "helsinki", "frequency": 0.1 },
+              { "value": "lisbon", "frequency": 0.1 },
+              { "value": "madrid", "frequency": 0.1 },
+              { "value": "oslo", "frequency": 0.1 },
+              { "value": "paris", "frequency": 0.1 },
+              { "value": "reykjavik", "frequency": 0.1 },
+              { "value": "rome", "frequency": 0.1 },
+              { "value": "stockholm", "frequency": 0.1 }
+            ],
+            "histogram": [],
+            "correlation": 1
+          }
+        },
+        {
+          "name": "country",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 10,
+            "mostCommon": [
+              { "value": "DE", "frequency": 0.1 },
+              { "value": "DK", "frequency": 0.1 },
+              { "value": "ES", "frequency": 0.1 },
+              { "value": "FI", "frequency": 0.1 },
+              { "value": "FR", "frequency": 0.1 },
+              { "value": "IS", "frequency": 0.1 },
+              { "value": "IT", "frequency": 0.1 },
+              { "value": "NO", "frequency": 0.1 },
+              { "value": "PT", "frequency": 0.1 },
+              { "value": "SE", "frequency": 0.1 }
+            ],
+            "histogram": [],
+            "correlation": 0.724
+          }
+        },
+        {
+          "name": "currency",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 5,
+            "mostCommon": [
+              { "value": "EUR", "frequency": 0.6 },
+              { "value": "DKK", "frequency": 0.1 },
+              { "value": "ISK", "frequency": 0.1 },
+              { "value": "NOK", "frequency": 0.1 },
+              { "value": "SEK", "frequency": 0.1 }
+            ],
+            "histogram": [],
+            "correlation": 0.904
+          }
+        },
+        {
+          "name": "language",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 10,
+            "mostCommon": [
+              { "value": "da", "frequency": 0.1 },
+              { "value": "de", "frequency": 0.1 },
+              { "value": "es", "frequency": 0.1 },
+              { "value": "fi", "frequency": 0.1 },
+              { "value": "fr", "frequency": 0.1 },
+              { "value": "is", "frequency": 0.1 },
+              { "value": "it", "frequency": 0.1 },
+              { "value": "no", "frequency": 0.1 },
+              { "value": "pt", "frequency": 0.1 },
+              { "value": "sv", "frequency": 0.1 }
+            ],
+            "histogram": [],
+            "correlation": 0.712
+          }
+        },
+        { "name": "amount", "type": "integer", "stats": null }
+      ],
+      "indexes": [
+        { "name": "orders_pkey", "column": "order_id" },
+        { "name": "orders_city_idx", "column": "city" }
+      ]
+    }
+  ],
+  "joins": [
+    {
+      "left": { "table": "customers", "column": "customer_id" },
+      "right": { "table": "orders", "column": "customer_id" }
+    }
+  ],
+  "orderBy": null,
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "customers",
+        "filtered": 10000,
+        "indexes": [{ "index": "customers_pkey", "matched": 10000 }]
+      },
+      {
+        "table": "orders",
+        "filtered": 10000,
+        "indexes": [
+          { "index": "orders_pkey", "matched": 100000 },
+          { "index": "orders_city_idx", "matched": 10000 }
+        ]
+      }
+    ],
+    "joins": [{ "tables": ["customers", "orders"], "rows": 10000 }],
+    "lookups": [{ "outer": ["orders"], "index": "customers_pkey", "fetched": 10000 }]
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": {
+      "first": { "table": "orders", "access": "index", "index": "orders_city_idx" },
+      "steps": [{ "join": "indexNestedLoop", "table": "customers", "index": "customers_pkey" }]
+    },
+    "explain": {
+      "nodeType": "Nested Loop",
+      "relation": null,
+      "index": null,
+      "estimatedRows": 10,
+      "estimatedCost": 445.32,
+      "children": [
+        {
+          "nodeType": "Index Scan",
+          "relation": "orders",
+          "index": "orders_city_idx",
+          "estimatedRows": 10,
+          "estimatedCost": 366.29,
+          "children": []
+        },
+        {
+          "nodeType": "Index Scan",
+          "relation": "customers",
+          "index": "customers_pkey",
+          "estimatedRows": 1,
+          "estimatedCost": 7.9,
+          "children": []
+        }
+      ]
+    }
+  },
+  "costs": {
+    "best": 50000,
+    "optimizer": 100000,
+    "bestPlan": {
+      "first": { "table": "customers", "access": "seq" },
+      "steps": [
+        {
+          "join": "hash",
+          "scan": { "table": "orders", "access": "index", "index": "orders_city_idx" }
+        }
+      ]
+    }
+  },
+  "explanation": [
+    "PostgreSQL treats the four filters as independent. A tenth of the orders are from Reykjavik, a tenth are in Iceland, a tenth in krónur and a tenth in Icelandic, so it expected 100,000 × 0.1 × 0.1 × 0.1 × 0.1 = 10 rows. They are the same 10,000 orders. Expecting 10, it looked up each order's customer through customers_pkey: 4 × (10,000 + 10,000) = 80,000, and 100,000 in all. A hash join reads the 10,000 customers once instead: 10,000 + 20,000 for the join, 50,000 in all.",
+    "PostgreSQL keeps statistics for each column on its own. Extended statistics tell it that the columns depend on each other: CREATE STATISTICS orders_place (dependencies) ON city, country, currency, language FROM orders, then ANALYZE orders."
+  ]
+}
