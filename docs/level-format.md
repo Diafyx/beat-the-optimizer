@@ -132,6 +132,22 @@ units, kept so the explanation can show what PostgreSQL believed. Scores never
 use them. The example file's `optimizer` section is hand-written; in real
 levels the authoring pipeline writes it.
 
+[`authoring/explain.ts`](../authoring/explain.ts) maps `EXPLAIN (FORMAT JSON)`
+into the plan space; `explain` keeps every node.
+
+| EXPLAIN node                                              | In `plan`                                                                                     |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Seq Scan                                                  | `seq` scan                                                                                    |
+| Index Scan, Index Only Scan, Bitmap Heap Scan (one index) | `index` scan                                                                                  |
+| Hash Join, Merge Join                                     | `hash`, `merge`; the input that is a join comes first, as both are symmetric in cost          |
+| Nested Loop                                               | `indexNestedLoop` if its inner index scan's condition names an outer table, else `nestedLoop` |
+| Hash, Materialize, Memoize                                | Folded into their join                                                                        |
+| Sort, Incremental Sort                                    | Dropped: the cost model adds sorts where they are needed                                      |
+| BitmapAnd, BitmapOr, Gather, Gather Merge, any other node | Authoring fails, naming the node                                                              |
+
+A plan that joins two joins, or a nested loop whose inner input is a join, is
+not left-deep, and authoring fails.
+
 ### Costs
 
 `best` and `optimizer` are integer costs under the cost model. `bestPlan` is
