@@ -1,7 +1,7 @@
 name: Nightly
 
-# The slow checks, daily on main: every CI job, mutation testing of the engine
-# and the links in every Markdown file. A failure opens one tracking issue, or
+# The slow checks, daily on main: every CI job (with the authoring drift
+# check), mutation testing of the engine and the links in every Markdown file. A failure opens one tracking issue, or
 # comments on the open one (scripts/report-failure.ts).
 on:
   schedule:

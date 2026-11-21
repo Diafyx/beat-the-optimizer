@@ -1,0 +1,99 @@
+name: Authoring
+
+# Authors every level against PostgreSQL 18 (scripts/author-level.ts) twice,
+# and fails if the two runs differ. The files are in the `levels` artifact.
+# Run it by hand to get them; ci.yml's authoring-check job calls it with
+# `check: true`, which also fails on any difference from the committed files.
+on:
+  workflow_dispatch:
+    inputs:
+      check:
+        description: Fail if the authored files differ from the committed ones
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      check:
+        description: Fail if the authored files differ from the committed ones
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  author:
+    name: author
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    services:
+      postgres:
+        # Every level file records the version, so a new image regenerates
+        # every level (tests/scripts/authoring.test.ts checks the pin).
+        image: postgres:18.7-trixie@sha256:eb63372c1e05c755f55fa30cbd07aecc443676fc6c0fa90b9002d01537841e1a
+        env:
+          # No password: the database is reachable only from this job.
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 2s --health-timeout 5s --health-retries 30
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # Inside a node:test test, so Node's own coverage records the script's
+      # lines as lcov; ci.yml's coverage job merges them with the unit tests'.
+      - name: Author the levels
+        run: >-
+          mkdir -p coverage &&
+          node --experimental-test-coverage
+          --test-coverage-include=scripts/author-level.ts
+          --test-reporter=spec --test-reporter-destination=stdout
+          --test-reporter=lcov --test-reporter-destination=coverage/authoring.info
+          --input-type=module
+          --eval "import { test } from 'node:test'; test('author-level', () => import('./scripts/author-level.ts'));"
+      # The index holds the first run, so `git diff` shows what the second changed.
+      - run: git add --all -- levels authoring/fixtures
+      - name: Author the levels again
+        run: npm run author-level
+      - name: Compare the two runs
+        run: |
+          if ! git diff --exit-code -- levels authoring/fixtures; then
+            echo "::error title=Authoring is not deterministic::Two runs on the same commit wrote different level files."
+            exit 1
+          fi
+      - name: Compare with the committed files
+        if: inputs.check
+        run: |
+          if ! git diff --cached --exit-code HEAD -- levels authoring/fixtures; then
+            echo "::error title=Level files are out of date::Commit the files from this run's levels artifact (see docs/level-spec.md#authoring)."
+            exit 1
+          fi
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: levels
+          # levels/LICENSE keeps the repository's layout in the artifact, so
+          # `gh run download` into the repository puts each file in place.
+          path: |
+            levels/LICENSE
+            levels/*.json
+            authoring/fixtures/example-level.json
+          if-no-files-found: error
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-authoring
+          path: coverage/authoring.info
+          if-no-files-found: error

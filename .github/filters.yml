@@ -39,9 +39,12 @@ tests:
 scripts:
   - 'scripts/**'
 
-# The generator, EXPLAIN mapper and level writer (MIT). Level specs are in levels/.
+# The generator, EXPLAIN mapper and level writer (MIT), and the script that
+# runs them against PostgreSQL. Level specs are in levels/.
 authoring:
   - 'authoring/**'
+  - 'scripts/author-level.ts'
+  - 'scripts/lib/authoring.ts'
 
 # The level format's schema runs the same jobs as the levels it describes.
 levels:

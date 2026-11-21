@@ -32,6 +32,7 @@ jobs:
       pull-requests: read # paths-filter lists the PR's files through the API
     outputs:
       code: ${{ steps.select.outputs.code }}
+      authoring: ${{ steps.select.outputs.authoring }}
       docs: ${{ steps.select.outputs.docs }}
       skippable: ${{ steps.select.outputs.skippable }}
     steps:
@@ -67,6 +68,10 @@ jobs:
           if [[ $full == true || $ENGINE == true || $APP == true || $TESTS == true || $SCRIPTS == true || $AUTHORING == true || $LEVELS == true ]]; then
             code=true
           fi
+          authoring=false
+          if [[ $full == true || $AUTHORING == true || $LEVELS == true ]]; then
+            authoring=true
+          fi
           docs=false
           if [[ $full == true || $DOCS == true ]]; then
             docs=true
@@ -74,18 +79,20 @@ jobs:
           # Jobs ci-gate may accept as skipped: only the ones not selected here.
           skippable=()
           [[ $code == true ]] || skippable+=(typecheck unit coverage levels e2e a11y lighthouse bundle-size)
+          [[ $authoring == true ]] || skippable+=(authoring-check)
           [[ $docs == true ]] || skippable+=(docs)
           skippable_csv=$(IFS=,; echo "${skippable[*]}")
           {
             echo "code=$code"
+            echo "authoring=$authoring"
             echo "docs=$docs"
             echo "skippable=$skippable_csv"
           } >> "$GITHUB_OUTPUT"
           {
             echo "### Selected jobs"
-            echo "| full | code | docs | allowed skips |"
-            echo "|---|---|---|---|"
-            echo "| $full | $code | $docs | ${skippable_csv:-none} |"
+            echo "| full | code | authoring | docs | allowed skips |"
+            echo "|---|---|---|---|---|"
+            echo "| $full | $code | $authoring | $docs | ${skippable_csv:-none} |"
           } >> "$GITHUB_STEP_SUMMARY"
 
   lint:
@@ -170,8 +177,9 @@ jobs:
 
   coverage:
     name: coverage
-    needs: [changes, unit]
-    if: needs.changes.outputs.code == 'true'
+    needs: [changes, unit, authoring-check]
+    # Waits for authoring-check, which is skipped unless authoring is selected.
+    if: ${{ !cancelled() && needs.changes.outputs.code == 'true' && needs.unit.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -183,6 +191,15 @@ jobs:
         with:
           name: coverage-unit
           path: coverage
+      # The authoring run's coverage of scripts/author-level.ts, which the unit
+      # tests cannot reach. The files differ, so the reports simply concatenate.
+      - if: needs.authoring-check.result == 'success'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: coverage-authoring
+          path: coverage
+      - if: needs.authoring-check.result == 'success'
+        run: cat coverage/authoring.info >> coverage/lcov.info
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
       # The unit job already applied the line and branch thresholds; this adds
       # 100% diff coverage on the lines this pull request changes.
@@ -208,6 +225,19 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run levels
+
+  # Authors every level against PostgreSQL and fails on any difference from
+  # the committed files (authoring.yml). Nightly runs it through the full run.
+  authoring-check:
+    name: authoring-check
+    needs: changes
+    if: needs.changes.outputs.authoring == 'true'
+    # A job-level call has no earlier steps that could change `./`.
+    uses: ./.github/workflows/authoring.yml # zizmor: ignore[self-repository]
+    with:
+      check: true
+    permissions:
+      contents: read
 
   docs:
     name: docs
@@ -339,7 +369,20 @@ jobs:
     name: ci-gate
     if: always()
     needs:
-      [changes, lint, typecheck, unit, coverage, levels, docs, e2e, a11y, lighthouse, bundle-size]
+      [
+        changes,
+        lint,
+        typecheck,
+        unit,
+        coverage,
+        levels,
+        authoring-check,
+        docs,
+        e2e,
+        a11y,
+        lighthouse,
+        bundle-size,
+      ]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
