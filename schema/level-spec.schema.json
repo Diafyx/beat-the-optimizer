@@ -2,10 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/Diafyx/beat-the-optimizer/blob/main/schema/level-spec.schema.json",
   "title": "Beat the Optimizer level spec",
-  "description": "The dataset of one level, generated from a seed. The format is in docs/level-spec.md.",
+  "description": "The dataset of one level, generated from a seed, and the puzzle around it. The format is in docs/level-spec.md.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["seed", "tables", "afterAnalyze"],
+  "required": ["seed", "tables", "afterAnalyze", "level"],
   "properties": {
     "seed": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
     "tables": {
@@ -18,20 +18,87 @@
       "description": "SQL statements run after ANALYZE, so the statistics no longer match the data.",
       "type": "array",
       "items": { "$ref": "#/$defs/text" }
-    }
+    },
+    "level": { "$ref": "#/$defs/level" }
   },
   "$defs": {
     "text": { "type": "string", "minLength": 1 },
     "name": { "type": "string", "pattern": "^[a-z_][a-z0-9_]*$" },
     "value": { "anyOf": [{ "type": "string" }, { "type": "integer" }] },
     "date": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+    "level": {
+      "description": "The puzzle: the text the player reads, and the query PostgreSQL plans, built from its parts.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "story",
+        "select",
+        "filters",
+        "joins",
+        "orderBy",
+        "locks",
+        "stats",
+        "explanation"
+      ],
+      "properties": {
+        "id": { "$ref": "level.schema.json#/properties/id" },
+        "title": { "$ref": "#/$defs/text" },
+        "story": { "$ref": "level.schema.json#/$defs/paragraphs" },
+        "select": {
+          "description": "The columns the query returns.",
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "level.schema.json#/$defs/columnRef" }
+        },
+        "filters": { "type": "array", "items": { "$ref": "#/$defs/filter" } },
+        "joins": { "type": "array", "items": { "$ref": "level.schema.json#/$defs/join" } },
+        "orderBy": { "$ref": "level.schema.json#/properties/orderBy" },
+        "locks": { "$ref": "level.schema.json#/properties/locks" },
+        "stats": {
+          "description": "The columns whose statistics the player is shown.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "level.schema.json#/$defs/columnRef" }
+        },
+        "explanation": { "$ref": "level.schema.json#/$defs/paragraphs" }
+      }
+    },
+    "filter": {
+      "description": "A predicate on one column; a row must pass every filter.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["table", "column", "op", "value"],
+          "properties": {
+            "table": { "$ref": "#/$defs/name" },
+            "column": { "$ref": "#/$defs/name" },
+            "op": { "enum": ["=", "<", "<=", ">", ">="] },
+            "value": { "$ref": "#/$defs/value" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["table", "column", "op", "values"],
+          "properties": {
+            "table": { "$ref": "#/$defs/name" },
+            "column": { "$ref": "#/$defs/name" },
+            "op": { "const": "in" },
+            "values": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/value" } }
+          }
+        }
+      ]
+    },
     "table": {
       "type": "object",
       "additionalProperties": false,
       "required": ["name", "rows", "order", "columns", "indexes"],
       "properties": {
         "name": { "$ref": "#/$defs/name" },
-        "rows": { "type": "integer", "minimum": 1, "maximum": 10000000 },
+        "rows": { "type": "integer", "minimum": 1, "maximum": 3000000 },
         "order": {
           "description": "The insert order: \"shuffled\", or the name of a column to insert in ascending order of.",
           "$ref": "#/$defs/name"

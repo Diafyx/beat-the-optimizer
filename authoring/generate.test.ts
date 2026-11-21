@@ -2,14 +2,14 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { at, exactCounts, generate, type TableData } from './generate.ts';
 import { hash } from './random.ts';
-import { dayNumber, parseSpec, type ColumnSpec, type Spec } from './spec.ts';
+import { dayNumber, parseSpec, type ColumnSpec, type Dataset } from './spec.ts';
 
 const example = parseSpec(
   readFileSync(new URL('fixtures/example-spec.yaml', import.meta.url), 'utf8'),
 );
 
 /** A one-table spec with `rows` rows and the given columns. */
-const single = (rows: number, order: string, ...columns: ColumnSpec[]): Spec => ({
+const single = (rows: number, order: string, ...columns: ColumnSpec[]): Dataset => ({
   seed: 1,
   tables: [{ name: 't', rows, order, columns, indexes: [] }],
   afterAnalyze: [],
@@ -58,7 +58,7 @@ describe('generate', () => {
 
   it('keeps the other columns when one column changes', () => {
     const table = at(example.tables, 1);
-    const changed: Spec = {
+    const changed: Dataset = {
       ...example,
       tables: [
         at(example.tables, 0),

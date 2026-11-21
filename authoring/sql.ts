@@ -4,7 +4,7 @@
  * `after-analyze.sql` holds the statements the spec runs after `ANALYZE`.
  */
 import { at, type TableData } from './generate.ts';
-import type { Spec, Value } from './spec.ts';
+import type { Dataset, Value } from './spec.ts';
 
 const HEADER = '-- Generated from a level spec by scripts/generate-data.ts. Do not edit.\n';
 
@@ -25,7 +25,7 @@ export function copyValue(value: Value): string {
 }
 
 /** Throws if a unique index's column has a repeated value, which would fail the load. */
-function checkUnique(spec: Spec, tables: readonly TableData[]): void {
+function checkUnique(spec: Dataset, tables: readonly TableData[]): void {
   spec.tables.forEach((table, t) => {
     const data = at(tables, t);
     for (const index of table.indexes.filter(({ unique }) => unique === true)) {
@@ -39,7 +39,7 @@ function checkUnique(spec: Spec, tables: readonly TableData[]): void {
   });
 }
 
-function* loadLines(spec: Spec, tables: readonly TableData[]): Generator<string> {
+function* loadLines(spec: Dataset, tables: readonly TableData[]): Generator<string> {
   yield HEADER;
   yield "SET client_encoding = 'UTF8';\n";
   for (const [t, table] of spec.tables.entries()) {
@@ -65,13 +65,13 @@ function* loadLines(spec: Spec, tables: readonly TableData[]): Generator<string>
  * The lines of `load.sql` for `tables`, the output of `generate(spec)`. Checks
  * unique indexes first, so a bad spec fails before anything is written.
  */
-export function loadSql(spec: Spec, tables: readonly TableData[]): Iterable<string> {
+export function loadSql(spec: Dataset, tables: readonly TableData[]): Iterable<string> {
   checkUnique(spec, tables);
   return loadLines(spec, tables);
 }
 
 /** `after-analyze.sql`: each statement of the spec, ending in one semicolon. */
-export function afterAnalyzeSql(spec: Spec): string {
+export function afterAnalyzeSql(spec: Dataset): string {
   return (
     HEADER +
     spec.afterAnalyze.map((statement) => `${statement.trim().replace(/;+$/, '')};\n`).join('')

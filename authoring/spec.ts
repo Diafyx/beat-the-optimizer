@@ -1,10 +1,13 @@
 /**
- * Level specs: the declarative description of a level's dataset, in YAML.
+ * Level specs: the declarative description of a level's dataset and the
+ * puzzle around it, in YAML.
  * The format is in docs/level-spec.md and schema/level-spec.schema.json.
  */
 import { readFileSync } from 'node:fs';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import { parse } from 'yaml';
+import type { ColumnRef, JoinPredicate, Lock } from '../src/engine/level.ts';
+import { connectedSets } from '../src/engine/validate.ts';
 
 export type Value = string | number;
 
@@ -45,16 +48,47 @@ export interface TableSpec {
   readonly indexes: readonly IndexSpec[];
 }
 
-export interface Spec {
+/** A predicate on one column of a table. */
+export type Filter =
+  | {
+      readonly column: string;
+      readonly op: '=' | '<' | '<=' | '>' | '>=';
+      readonly value: Value;
+    }
+  | { readonly column: string; readonly op: 'in'; readonly values: readonly Value[] };
+
+/** The puzzle around the dataset: its text, and the parts of its query. */
+export interface LevelSpec {
+  readonly id: string;
+  readonly title: string;
+  readonly story: readonly string[];
+  readonly select: readonly ColumnRef[];
+  readonly filters: readonly (Filter & { readonly table: string })[];
+  readonly joins: readonly JoinPredicate[];
+  readonly orderBy: ColumnRef | null;
+  readonly locks: readonly Lock[];
+  /** The columns whose statistics the player is shown. */
+  readonly stats: readonly ColumnRef[];
+  readonly explanation: readonly string[];
+}
+
+/** The part of a spec that the data is generated from. */
+export interface Dataset {
   readonly seed: number;
   readonly tables: readonly TableSpec[];
   readonly afterAnalyze: readonly string[];
 }
 
-const schema = JSON.parse(
-  readFileSync(new URL('../schema/level-spec.schema.json', import.meta.url), 'utf8'),
-) as object;
-const validate = new Ajv2020({ strict: true, allErrors: true }).compile(schema);
+export interface Spec extends Dataset {
+  readonly level: LevelSpec;
+}
+
+const schema = (name: string): object =>
+  JSON.parse(readFileSync(new URL(`../schema/${name}`, import.meta.url), 'utf8')) as object;
+// The spec schema refers to the level schema's definitions.
+const validate = new Ajv2020({ strict: true, allErrors: true })
+  .addSchema(schema('level.schema.json'))
+  .compile(schema('level-spec.schema.json'));
 
 const repeated = (values: readonly string[]): string[] => [
   ...new Set(values.filter((value, i) => values.indexOf(value) !== i)),
@@ -66,6 +100,71 @@ export function dayNumber(date: string): number {
   return Number.isNaN(time) || new Date(time).toISOString().slice(0, 10) !== date
     ? NaN
     : time / 86_400_000;
+}
+
+const KINDS = { integer: 'an integer', bigint: 'an integer', text: 'a string', date: 'a date' };
+
+/** Whether `value` can be compared with a column of `type`. */
+const fits = (type: ColumnSpec['type'], value: Value): boolean =>
+  type === 'integer' || type === 'bigint'
+    ? typeof value === 'number'
+    : typeof value === 'string' && (type === 'text' || !Number.isNaN(dayNumber(value)));
+
+/** What the schema cannot check in the level section: references and the join tree. */
+function levelProblems({ tables, level }: Spec): string[] {
+  const found: string[] = [];
+  const table = (name: string) => tables.find((candidate) => candidate.name === name);
+  const column = (where: string, { table: name, column: wanted }: ColumnRef) => {
+    const match = table(name)?.columns.find((candidate) => candidate.name === wanted);
+    if (match === undefined) found.push(`${where} names ${name}.${wanted}, which is not a column`);
+    return match;
+  };
+  for (const ref of level.select) column('select', ref);
+  for (const filter of level.filters) {
+    const type = column('A filter', filter)?.type;
+    if (type === undefined) continue;
+    for (const value of filter.op === 'in' ? filter.values : [filter.value]) {
+      if (!fits(type, value)) {
+        found.push(
+          `The filter on ${filter.table}.${filter.column} compares it with ${JSON.stringify(value)}, which is not ${KINDS[type]}`,
+        );
+      }
+    }
+  }
+  for (const { left, right } of level.joins) {
+    const where = `The join ${left.table}.${left.column} = ${right.table}.${right.column}`;
+    column(where, left);
+    column(where, right);
+  }
+  if (level.orderBy !== null) column('orderBy', level.orderBy);
+  for (const ref of level.stats) column('stats', ref);
+  for (const lock of level.locks) {
+    if (lock.kind === 'joinOrder') {
+      for (const name of lock.tables.filter((name) => table(name) === undefined)) {
+        found.push(`A join order lock names ${name}, which is not a table`);
+      }
+    } else if (lock.kind === 'access') {
+      const { scan } = lock;
+      const target = table(scan.table);
+      if (target === undefined) {
+        found.push(`An access lock scans ${scan.table}, which is not a table`);
+      } else if (
+        scan.access === 'index' &&
+        !target.indexes.some(({ name }) => name === scan.index)
+      ) {
+        found.push(
+          `An access lock scans ${scan.table} through ${scan.index}, which is not an index on ${scan.table}`,
+        );
+      }
+    }
+  }
+  const all = connectedSets({ tables, joins: level.joins }).some(
+    (set) => set.length === tables.length,
+  );
+  if (!all || level.joins.length !== tables.length - 1) {
+    found.push('The joins must connect every table as a tree, with one join fewer than tables');
+  }
+  return found;
 }
 
 /** What the schema cannot check: names, references and ranges. */
@@ -108,7 +207,7 @@ function problems(spec: Spec): string[] {
       }
     });
   });
-  return found;
+  return [...found, ...levelProblems(spec)];
 }
 
 /** Parses and checks a level spec; throws with every problem found. */
