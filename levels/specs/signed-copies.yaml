@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1008
+tables:
+  - name: customers
+    rows: 10000
+    order: customer_id
+    columns:
+      - name: customer_id
+        type: integer
+        values: { kind: sequence }
+      - name: name
+        type: text
+        values: { kind: label, prefix: 'customer ' }
+    indexes:
+      - { name: customers_pkey, column: customer_id, unique: true }
+  - name: orders
+    rows: 100000
+    order: order_id
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      - name: customer_id
+        type: integer
+        values: { kind: reference, table: customers, column: customer_id }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+      - { name: orders_customer_id_idx, column: customer_id }
+  # Three lines for each order; one line in a thousand is a signed copy.
+  - name: order_lines
+    rows: 300000
+    order: line_id
+    columns:
+      - name: line_id
+        type: integer
+        values: { kind: sequence }
+      - name: order_id
+        type: integer
+        values: { kind: reference, table: orders, column: order_id }
+      - name: edition
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: paperback, weight: 60 }
+            - { value: hardback, weight: 30 }
+            - { value: ebook, weight: 9.9 }
+            - { value: signed, weight: 0.1 }
+    indexes:
+      - { name: order_lines_pkey, column: line_id, unique: true }
+      - { name: order_lines_order_id_idx, column: order_id }
+      - { name: order_lines_edition_idx, column: edition }
+afterAnalyze: []
+level:
+  id: signed-copies
+  title: Signed copies
+  story:
+    - The author is sending a thank-you card to every customer who bought a signed copy.
+    - The query reads customers, then orders, then order lines. You can join them in any order.
+  select:
+    - { table: customers, column: name }
+    - { table: orders, column: order_id }
+  filters:
+    - { table: order_lines, column: edition, op: '=', value: signed }
+  joins:
+    - left: { table: customers, column: customer_id }
+      right: { table: orders, column: customer_id }
+    - left: { table: orders, column: order_id }
+      right: { table: order_lines, column: order_id }
+  orderBy: null
+  locks: []
+  stats:
+    - { table: order_lines, column: edition }
+  explanation:
+    - DRAFT

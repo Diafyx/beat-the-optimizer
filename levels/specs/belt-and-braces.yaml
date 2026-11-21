@@ -1,0 +1,106 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1009
+tables:
+  - name: customers
+    rows: 10000
+    order: customer_id
+    columns:
+      - name: customer_id
+        type: integer
+        values: { kind: sequence }
+      - name: name
+        type: text
+        values: { kind: label, prefix: 'customer ' }
+    indexes:
+      - { name: customers_pkey, column: customer_id, unique: true }
+  # Each shop uploads its own orders, so they are stored grouped by city.
+  # Country and currency follow from the city.
+  - name: orders
+    rows: 100000
+    order: city
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      - name: customer_id
+        type: integer
+        values: { kind: reference, table: customers, column: customer_id }
+      - name: city
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: berlin, weight: 10 }
+            - { value: copenhagen, weight: 10 }
+            - { value: helsinki, weight: 10 }
+            - { value: lisbon, weight: 10 }
+            - { value: madrid, weight: 10 }
+            - { value: oslo, weight: 10 }
+            - { value: paris, weight: 10 }
+            - { value: reykjavik, weight: 10 }
+            - { value: rome, weight: 10 }
+            - { value: stockholm, weight: 10 }
+      - name: country
+        type: text
+        values:
+          kind: derived
+          column: city
+          map:
+            - { from: berlin, to: DE }
+            - { from: copenhagen, to: DK }
+            - { from: helsinki, to: FI }
+            - { from: lisbon, to: PT }
+            - { from: madrid, to: ES }
+            - { from: oslo, to: 'NO' }
+            - { from: paris, to: FR }
+            - { from: reykjavik, to: IS }
+            - { from: rome, to: IT }
+            - { from: stockholm, to: SE }
+      - name: currency
+        type: text
+        values:
+          kind: derived
+          column: country
+          map:
+            - { from: DE, to: EUR }
+            - { from: DK, to: DKK }
+            - { from: FI, to: EUR }
+            - { from: PT, to: EUR }
+            - { from: ES, to: EUR }
+            - { from: 'NO', to: NOK }
+            - { from: FR, to: EUR }
+            - { from: IS, to: ISK }
+            - { from: IT, to: EUR }
+            - { from: SE, to: SEK }
+      - name: amount
+        type: integer
+        values: { kind: uniform, min: 1, max: 500 }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+      - { name: orders_city_idx, column: city }
+afterAnalyze: []
+level:
+  id: belt-and-braces
+  title: Belt and braces
+  story:
+    - The report form sends every field it has. For the Reykjavik shop that is the city, the country and the currency.
+    - Every order from Reykjavik is in Iceland and paid in krónur, but nothing tells PostgreSQL that.
+  select:
+    - { table: customers, column: name }
+    - { table: orders, column: order_id }
+    - { table: orders, column: amount }
+  filters:
+    - { table: orders, column: city, op: '=', value: reykjavik }
+    - { table: orders, column: country, op: '=', value: IS }
+    - { table: orders, column: currency, op: '=', value: ISK }
+  joins:
+    - left: { table: customers, column: customer_id }
+      right: { table: orders, column: customer_id }
+  orderBy: null
+  locks: []
+  stats:
+    - { table: orders, column: city }
+    - { table: orders, column: country }
+    - { table: orders, column: currency }
+  explanation:
+    - DRAFT

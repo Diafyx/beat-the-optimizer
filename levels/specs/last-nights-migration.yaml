@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1010
+tables:
+  - name: orders
+    rows: 100000
+    order: shuffled
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      # When ANALYZE ran, one order in a thousand was pending.
+      - name: status
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: shipped, weight: 99.9 }
+            - { value: pending, weight: 0.1 }
+      # Spread evenly over ten years, so six in ten are from before 2021.
+      - name: created_at
+        type: date
+        values: { kind: dateRange, from: '2015-01-01', to: '2024-12-31' }
+      - name: amount
+        type: integer
+        values: { kind: uniform, min: 1, max: 500 }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+      - { name: orders_status_idx, column: status }
+# The migration runs after ANALYZE, and autovacuum is off, so PostgreSQL's
+# statistics still say one order in a thousand is pending.
+afterAnalyze:
+  - UPDATE orders SET status = 'pending' WHERE created_at < '2021-01-01'
+level:
+  id: last-nights-migration
+  title: Last night's migration
+  story:
+    - Last night a migration marked every order from before 2021 as pending, to be checked again. The nightly ANALYZE had already run.
+    - The checkers want the pending orders.
+  select:
+    - { table: orders, column: order_id }
+    - { table: orders, column: amount }
+  filters:
+    - { table: orders, column: status, op: '=', value: pending }
+  joins: []
+  orderBy: null
+  locks: []
+  stats:
+    - { table: orders, column: status }
+  explanation:
+    - DRAFT
