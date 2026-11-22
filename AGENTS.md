@@ -24,8 +24,21 @@ npm run check-filters # every file matches a group in .github/filters.yml
 npm run check-lockfile # every lockfile URL is on registry.npmjs.org
 npm run pr-size     # CI only: size label for a pull request
 npm run pr-hygiene  # CI only: pull request rules
-npm run build       # production build into dist/; SITE_URL sets its public address
+npm run build       # production build into dist/; settings below
 ```
+
+## Build settings
+
+`vite build` reads these environment variables; the deploy sets them.
+
+- `SITE_URL`: the public address, for link previews. Default
+  `https://beat-the-optimizer.pages.dev`.
+- `GOATCOUNTER_CODE`: the GoatCounter site code. Unset, nothing is counted.
+- `CF_BEACON_TOKEN`: the Cloudflare Web Analytics token. Unset, there is no
+  beacon.
+
+The build writes `dist/_headers` with a Content-Security-Policy that allows
+only the analytics hosts in use ([ADR 0004](docs/adr/0004-measure-return-with-goatcounter.md)).
 
 ## Layout
 
@@ -37,6 +50,8 @@ npm run build       # production build into dist/; SITE_URL sets its public addr
   enforces it). Today's puzzle comes from `src/daily.ts` (launch date and
   rotation); `?level=<id>` opens a level for practice. Progress is in
   localStorage through `src/progress.ts`, which works without storage.
+  `src/analytics.ts` sends the anonymous visit and return counts, and
+  `privacy.html` (`/privacy`) says what is stored and sent.
 - `tests/`: test setup and cross-cutting tests.
 - `e2e/`: Playwright browser and accessibility tests against `vite preview`.
 - `authoring/`: the level authoring pipeline (MIT), run by Node: specs in

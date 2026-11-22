@@ -30,6 +30,9 @@ export default defineConfig({
   ],
   webServer: {
     command: `npx vite build && npx vite preview --port ${String(port)} --strictPort`,
+    // Analytics on, so the tests see what would be sent; e2e/fixtures.ts
+    // blocks every request to the analytics hosts.
+    env: { GOATCOUNTER_CODE: 'e2e-test', CF_BEACON_TOKEN: '0123456789abcdef0123456789abcdef' },
     port,
     reuseExistingServer: !ci,
     timeout: 60_000,

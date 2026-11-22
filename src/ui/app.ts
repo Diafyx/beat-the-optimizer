@@ -2,7 +2,8 @@
  * The app shell: shows today's puzzle, or with `?level=<id>` a level to
  * practise, with the player's streak and the first-run tutorial.
  */
-import { dailyPuzzle, type Daily } from '../daily.ts';
+import { createAnalytics, returnEvent, type Analytics, type MeasureEvent } from '../analytics.ts';
+import { dailyPuzzle, localDate, type Daily } from '../daily.ts';
 import { LEVEL_FILES, loadLevel, type LevelLoader } from '../levels.ts';
 import {
   browserStorage,
@@ -47,6 +48,8 @@ export interface AppOptions {
   readonly shareTarget?: ShareTarget;
   /** The link in the share card; by default, this page without its query. */
   readonly url?: string;
+  /** Where visits and return events go; by default, the analytics in this build. */
+  readonly analytics?: Analytics;
 }
 
 /** Shows today's puzzle, or the level that `search` (such as `?level=needle`) names, in `root`. */
@@ -59,12 +62,23 @@ export async function start(
     storage = browserStorage(),
     shareTarget = navigator,
     url = `${location.origin}${location.pathname}`,
+    analytics = createAnalytics(),
   }: AppOptions = {},
 ): Promise<void> {
   const practice = new URLSearchParams(search).get('level');
   const daily: Daily | null = practice === null ? dailyPuzzle(now()) : null;
   const id = daily?.level ?? String(practice);
   let progress: Progress = loadProgress(storage);
+  // Measurement: each event once, remembered in progress only when it is sent.
+  const measure = (event: MeasureEvent, changes: Partial<Progress> = {}): void => {
+    if (!analytics.enabled || progress.sent.includes(event)) return;
+    progress = { ...progress, ...changes, sent: [...progress.sent, event] };
+    saveProgress(progress, storage);
+    analytics.event(event);
+  };
+  analytics.visit();
+  const back = returnEvent(progress.firstFinish, progress.sent, localDate(now()));
+  if (back !== null) measure(back);
   root.setAttribute('aria-busy', 'true');
   try {
     const level = await loadLevel(id, loaders);
@@ -100,6 +114,9 @@ export async function start(
               progress = recordRun(progress, daily.number, cost);
               saveProgress(progress, storage);
               showStreak(daily.number);
+              if (progress.firstFinish === null) {
+                measure('first_finish', { firstFinish: daily.date });
+              }
             },
             onResult: showShare,
           },

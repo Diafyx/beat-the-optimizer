@@ -53,4 +53,15 @@ test.describe('accessibility @a11y', () => {
     await expect(page.getByRole('alert')).toBeVisible();
     expect(await blockingViolations(page, testInfo, 'unknown')).toEqual([]);
   });
+
+  for (const colorScheme of ['light', 'dark'] as const) {
+    test(`the privacy page in the ${colorScheme} theme has no serious or critical violations`, async ({
+      page,
+    }, testInfo) => {
+      await page.emulateMedia({ colorScheme });
+      await page.goto('/privacy');
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+      expect(await blockingViolations(page, testInfo, `privacy-${colorScheme}`)).toEqual([]);
+    });
+  }
 });

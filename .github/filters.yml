@@ -30,6 +30,7 @@ engine:
 app:
   - 'src/**'
   - 'index.html'
+  - 'privacy.html'
   - 'public/**'
 
 tests:

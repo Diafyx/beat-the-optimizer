@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LAUNCH_DATE } from '../daily.ts';
+import type { Analytics } from '../analytics.ts';
 import type { Level } from '../engine/index.ts';
 import { KEY, type Progress } from '../progress.ts';
 import { SITE_TITLE, formatDate, start } from './app.ts';
@@ -18,7 +19,13 @@ function memoryStorage(initial?: Progress): Storage {
   } as Storage;
 }
 
-const seen: Progress = { tutorialSeen: true, puzzles: {}, streak: { last: 0, days: 0 } };
+const seen: Progress = {
+  tutorialSeen: true,
+  puzzles: {},
+  streak: { last: 0, days: 0 },
+  firstFinish: null,
+  sent: [],
+};
 
 /** Noon on the day `days` after the launch. */
 const day = (days: number): (() => Date) => {
@@ -211,6 +218,67 @@ describe('start', () => {
     ]);
     await start(root, '', { loaders, now: day(0), storage: null });
     expect(busy).toBe('true');
+  });
+});
+
+describe('measurement', () => {
+  let root: HTMLElement;
+  const analytics = (enabled = true): Analytics & { sent: string[] } => {
+    const sent: string[] = [];
+    return {
+      enabled,
+      sent,
+      visit: () => sent.push('visit'),
+      event: (name) => sent.push(name),
+    };
+  };
+  const saved = (storage: Storage): unknown => JSON.parse(String(storage.getItem(KEY)));
+
+  beforeEach(() => {
+    root = document.createElement('main');
+    document.body.replaceChildren(root);
+  });
+
+  it('counts the visit, and the first daily puzzle finished, once', async () => {
+    const counts = analytics();
+    const storage = memoryStorage(seen);
+    await start(root, '', { now: day(2), storage, analytics: counts });
+    chooseSeqScan(root);
+    root.querySelector<HTMLButtonElement>('.run-button')?.click();
+    expect(saved(storage)).toMatchObject({ firstFinish: '2026-12-03', sent: ['first_finish'] });
+    await start(root, '', { now: day(2), storage, analytics: counts });
+    chooseSeqScan(root);
+    root.querySelector<HTMLButtonElement>('.run-button')?.click();
+    expect(counts.sent).toEqual(['visit', 'first_finish', 'visit']);
+  });
+
+  it('does not count practice as a finish', async () => {
+    const counts = analytics();
+    const storage = memoryStorage(seen);
+    await start(root, '?level=needle', { now: day(0), storage, analytics: counts });
+    chooseSeqScan(root);
+    root.querySelector<HTMLButtonElement>('.run-button')?.click();
+    expect(counts.sent).toEqual(['visit']);
+  });
+
+  it('counts a return the next day and later that week, each once', async () => {
+    const counts = analytics();
+    const storage = memoryStorage({ ...seen, firstFinish: '2026-12-01', sent: ['first_finish'] });
+    for (const days of [1, 1, 3, 4]) {
+      await start(root, '', { now: day(days), storage, analytics: counts });
+    }
+    expect(counts.sent).toEqual(['visit', 'return_d1', 'visit', 'visit', 'return_d2_7', 'visit']);
+    expect(saved(storage)).toMatchObject({ sent: ['first_finish', 'return_d1', 'return_d2_7'] });
+  });
+
+  it('stores nothing for measurement when it is off', async () => {
+    const counts = analytics(false);
+    const storage = memoryStorage(seen);
+    await start(root, '', { now: day(0), storage, analytics: counts });
+    chooseSeqScan(root);
+    root.querySelector<HTMLButtonElement>('.run-button')?.click();
+    expect(saved(storage)).toMatchObject({ firstFinish: null, sent: [] });
+    expect(counts.sent).toEqual(['visit']);
   });
 });
 
