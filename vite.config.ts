@@ -1,8 +1,19 @@
 import { defineConfig } from 'vitest/config';
+import { siteUrl, withSiteUrl } from './scripts/lib/site-url.ts';
 
 const full = { lines: 100, branches: 100, functions: 100, statements: 100 };
 
 export default defineConfig({
+  plugins: [
+    {
+      // Absolute URLs for link previews; see scripts/lib/site-url.ts.
+      name: 'site-url',
+      transformIndexHtml: {
+        order: 'pre',
+        handler: (html) => withSiteUrl(html, siteUrl(process.env['SITE_URL'])),
+      },
+    },
+  ],
   build: {
     outDir: 'dist',
     sourcemap: true,
