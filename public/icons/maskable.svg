@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- The source of maskable-192.png, maskable-512.png and apple-touch-icon.png (180 px); AGENTS.md has the command that renders them. -->
+  <title>Beat the Optimizer</title>
+  <rect width="512" height="512" fill="#0e1012"/>
+  <polygon points="112.0,112.0 354.2,112.0 400.0,157.8 400.0,400.0 157.8,400.0 112.0,354.2" fill="#ff5a1f"/>
+  <g transform="translate(112,112) scale(0.8182) translate(176 176) skewX(-12) translate(-176 -176)">
+    <rect x="92" y="84" width="184" height="184" fill="#f3f1ea"/>
+    <g fill="#0e1012"><rect x="92" y="84" width="46" height="46"/><rect x="184" y="84" width="46" height="46"/><rect x="138" y="130" width="46" height="46"/><rect x="230" y="130" width="46" height="46"/><rect x="92" y="176" width="46" height="46"/><rect x="184" y="176" width="46" height="46"/><rect x="138" y="222" width="46" height="46"/><rect x="230" y="222" width="46" height="46"/></g>
+    <rect x="78" y="84" width="10" height="244" fill="#0e1012"/>
+  </g>
+</svg>
