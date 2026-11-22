@@ -39,10 +39,18 @@ test.describe('accessibility @a11y', () => {
   test.describe('first visit', () => {
     test.use({ firstVisit: true });
 
-    test('the tutorial has no serious or critical violations', async ({ page }, testInfo) => {
+    test('every screen of How it works has no serious or critical violations', async ({
+      page,
+    }, testInfo) => {
       await page.goto('/');
-      await expect(page.getByRole('dialog', { name: 'How to play' })).toBeVisible();
-      expect(await blockingViolations(page, testInfo, 'tutorial')).toEqual([]);
+      const dialog = page.getByRole('dialog', { name: 'How it works' });
+      for (const screen of [1, 2, 3]) {
+        await expect(dialog.getByText(`${String(screen)} of 3`)).toBeVisible();
+        expect(await blockingViolations(page, testInfo, `how-it-works-${String(screen)}`)).toEqual(
+          [],
+        );
+        if (screen < 3) await dialog.getByRole('button', { name: 'Next' }).click();
+      }
     });
   });
 

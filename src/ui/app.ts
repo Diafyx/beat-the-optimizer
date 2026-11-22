@@ -1,6 +1,6 @@
 /**
  * The app shell: shows today's puzzle, or with `?level=<id>` a level to
- * practise, with the player's streak and the first-run tutorial.
+ * practise, with the player's streak, and How it works on the first visit.
  */
 import { createAnalytics, returnEvent, type Analytics, type MeasureEvent } from '../analytics.ts';
 import { dailyPuzzle, localDate, type Daily } from '../daily.ts';
@@ -125,7 +125,7 @@ export async function start(
       progress = { ...progress, tutorialSeen: true };
       saveProgress(progress, storage);
     });
-    const help = el('button', { type: 'button', class: 'link-button' }, 'How to play');
+    const help = el('button', { type: 'button', class: 'link-button' }, 'How it works');
     help.addEventListener('click', () => {
       tutorial.showModal();
     });
