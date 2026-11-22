@@ -1,8 +1,10 @@
 name: CI
 
 on:
+  # Not on `labeled`: each label set on a new pull request would start a run
+  # that cancels the one before it. ci-full.yml starts a full run for ci:full.
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened]
   push:
     branches: [main]
   workflow_call:
@@ -367,7 +369,9 @@ jobs:
 
   ci-gate:
     name: ci-gate
-    if: always()
+    # Not always(): in a cancelled run every job reads as cancelled, and a gate
+    # that ran anyway would leave a failed ci-gate on the commit.
+    if: ${{ !cancelled() }}
     needs:
       [
         changes,

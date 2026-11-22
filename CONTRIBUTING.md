@@ -188,7 +188,14 @@ because the path filters said it was not needed:
   any file matches no filter group. If you add a folder, add it to a filter group in
   the same pull request.
 - **Full runs** happen on every push to `main`, nightly, before every release,
-  on manual runs and on any pull request labelled `ci:full`.
+  on manual runs and on any pull request labelled `ci:full`. Adding `ci:full`
+  starts a full run at once: `ci-full.yml` starts `ci.yml` on the pull
+  request's branch, and its checks report on the same commit. Later pushes to
+  a pull request with the label run every job too.
+- **Labels** start no CI run: `ci.yml` runs when a pull request opens, gets a
+  push or reopens, so the labels set when it opens do not cancel its run.
+  `ci-gate` does not run in a cancelled run, so a push that cancels an older
+  run leaves no failed gate behind.
 - **Docs-only** pull requests still run `lint`, `docs`, `pr-hygiene` and the
   gate.
 
