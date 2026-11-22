@@ -72,14 +72,14 @@ test.describe('analytics', () => {
   });
 
   test('counts a return the next day, once', async ({ page, analytics }) => {
-    await finishedOn(page, '2026-11-30');
+    await finishedOn(page, '2026-11-22');
     await page.goto('/');
     await page.reload();
     await expect.poll(() => counted(analytics)).toEqual(['visit /', 'event return_d1', 'visit /']);
   });
 
   test('counts a return later in the first week', async ({ page, analytics }) => {
-    await finishedOn(page, '2026-11-26');
+    await finishedOn(page, '2026-11-18');
     await page.goto('/');
     await expect.poll(() => counted(analytics)).toEqual(['visit /', 'event return_d2_7']);
   });

@@ -7,7 +7,7 @@ describe('main', () => {
     document.body.replaceChildren();
     // The launch date, so that today's puzzle is the first level.
     vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date(2026, 11, 1, 12));
+    vi.setSystemTime(new Date(2026, 10, 23, 12));
   });
 
   afterEach(() => {

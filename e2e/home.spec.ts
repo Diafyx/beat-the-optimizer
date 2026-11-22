@@ -10,7 +10,7 @@ test.describe('app shell', () => {
     await page.clock.setFixedTime(LAUNCH_NOON);
     await page.goto('/');
     await expect(
-      page.getByText('Puzzle #1 · Tuesday, December 1, 2026 · Streak: 0 days'),
+      page.getByText('Puzzle #1 · Monday, November 23, 2026 · Streak: 0 days'),
     ).toBeVisible();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Beat the Optimizer');
     await expect(page.getByRole('heading', { level: 2 })).toHaveText('Needle');

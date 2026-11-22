@@ -49,7 +49,7 @@ describe('dailyPuzzle', () => {
   });
 
   it('goes through the levels in order, then starts again', () => {
-    const days = Array.from({ length: 21 }, (_, i) => dailyPuzzle(at(2026, 12, 1 + i)));
+    const days = Array.from({ length: 21 }, (_, i) => dailyPuzzle(at(2026, 11, 23 + i)));
     expect(days.map(({ number }) => number)).toEqual(days.map((_, i) => i + 1));
     expect(days.map(({ level }) => level)).toEqual([...LEVEL_IDS, ...LEVEL_IDS, LEVEL_IDS[0]]);
     expect(ROTATION).toEqual(LEVEL_IDS);

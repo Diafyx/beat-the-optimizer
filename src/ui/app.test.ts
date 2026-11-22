@@ -71,7 +71,7 @@ describe('start', () => {
     expect(text(root.querySelector('#builder-title'))).toBe('How do you read orders?');
     expect(root.querySelector('#run-title')?.textContent).toBe('The race');
     expect(text(root.querySelector('.puzzle p'))).toBe(
-      'Puzzle #1 · Tuesday, December 1, 2026 · Streak: 0 days',
+      'Puzzle #1 · Monday, November 23, 2026 · Streak: 0 days',
     );
     expect(document.title).toBe('Needle · Beat the Optimizer');
     expect(root.hasAttribute('aria-busy')).toBe(false);
@@ -81,7 +81,7 @@ describe('start', () => {
     await start(root, '', { now: day(2), storage: memoryStorage(seen) });
     expect(root.querySelector('h2')?.textContent).toBe('Haystack');
     expect(text(root.querySelector('.puzzle p'))).toContain(
-      'Puzzle #3 · Thursday, December 3, 2026',
+      'Puzzle #3 · Wednesday, November 25, 2026',
     );
   });
 
@@ -254,7 +254,7 @@ describe('measurement', () => {
     await start(root, '', { now: day(2), storage, analytics: counts });
     chooseSeqScan(root);
     root.querySelector<HTMLButtonElement>('.run .run-button')?.click();
-    expect(saved(storage)).toMatchObject({ firstFinish: '2026-12-03', sent: ['first_finish'] });
+    expect(saved(storage)).toMatchObject({ firstFinish: '2026-11-25', sent: ['first_finish'] });
     await start(root, '', { now: day(2), storage, analytics: counts });
     chooseSeqScan(root);
     root.querySelector<HTMLButtonElement>('.run .run-button')?.click();
@@ -272,7 +272,7 @@ describe('measurement', () => {
 
   it('counts a return the next day and later that week, each once', async () => {
     const counts = analytics();
-    const storage = memoryStorage({ ...seen, firstFinish: '2026-12-01', sent: ['first_finish'] });
+    const storage = memoryStorage({ ...seen, firstFinish: '2026-11-23', sent: ['first_finish'] });
     for (const days of [1, 1, 3, 4]) {
       await start(root, '', { now: day(days), storage, analytics: counts });
     }

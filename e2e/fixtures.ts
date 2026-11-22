@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { KEY } from '../src/progress.ts';
 
 /** The launch date at noon, when today's puzzle is the first level. */
-export const LAUNCH_NOON = new Date('2026-12-01T12:00:00');
+export const LAUNCH_NOON = new Date('2026-11-23T12:00:00');
 
 /** The analytics hosts. Requests to them never leave the test. */
 export const ANALYTICS =
