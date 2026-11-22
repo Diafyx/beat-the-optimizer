@@ -4,7 +4,7 @@ import { enumeratePlans, planCost, type Level } from './engine/index.ts';
 import { LEVEL_IDS } from './levels.ts';
 import { shareText, square } from './share.ts';
 
-const url = 'https://beat-the-optimizer.pages.dev/';
+const url = 'https://beat-the-optimizer.invalid/';
 
 describe('square', () => {
   it('colours a run by how far it is from the best plan', () => {
@@ -23,7 +23,7 @@ describe('shareText', () => {
       🟧🟩
       🏆 I beat PostgreSQL with the best plan
       Me: 1× best · PostgreSQL: 2.41× best
-      https://beat-the-optimizer.pages.dev/"
+      https://beat-the-optimizer.invalid/"
     `);
   });
 
@@ -33,7 +33,7 @@ describe('shareText', () => {
       🟥🟨🟨
       🏆 I beat PostgreSQL
       Me: 1.2× best · PostgreSQL: 2.41× best
-      https://beat-the-optimizer.pages.dev/"
+      https://beat-the-optimizer.invalid/"
     `);
   });
 
@@ -43,7 +43,7 @@ describe('shareText', () => {
       🟧
       🤝 I tied with PostgreSQL
       Me: 2.41× best · PostgreSQL: 2.41× best
-      https://beat-the-optimizer.pages.dev/"
+      https://beat-the-optimizer.invalid/"
     `);
   });
 
@@ -53,7 +53,7 @@ describe('shareText', () => {
       🟩
       🤝 I tied with PostgreSQL with the best plan
       Me: 1× best · PostgreSQL: 1× best
-      https://beat-the-optimizer.pages.dev/"
+      https://beat-the-optimizer.invalid/"
     `);
   });
 
@@ -63,7 +63,7 @@ describe('shareText', () => {
       🟥🟥🟧🟧
       🐘 PostgreSQL won
       Me: 2.8× best · PostgreSQL: 2.6× best
-      https://beat-the-optimizer.pages.dev/"
+      https://beat-the-optimizer.invalid/"
     `);
   });
 

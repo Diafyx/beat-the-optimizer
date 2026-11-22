@@ -31,8 +31,9 @@ npm run build       # production build into dist/; settings below
 
 `vite build` reads these environment variables; the deploy sets them.
 
-- `SITE_URL`: the public address, for link previews. Default
-  `https://beat-the-optimizer.pages.dev`.
+- `SITE_URL`: the public address, for link previews and canonical URLs.
+  Default `https://beat-the-optimizer.invalid`, which never resolves, so
+  production must set it.
 - `GOATCOUNTER_CODE`: the GoatCounter site code. Unset, nothing is counted.
 - `CF_BEACON_TOKEN`: the Cloudflare Web Analytics token. Unset, there is no
   beacon.
