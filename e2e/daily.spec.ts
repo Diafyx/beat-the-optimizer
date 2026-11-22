@@ -7,7 +7,7 @@ test.describe('daily puzzle', () => {
     await page.clock.setFixedTime(dayAfter(2));
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 2 })).toHaveText('Haystack');
-    await expect(page.getByText('Puzzle #3 · Thursday, December 3, 2026')).toBeVisible();
+    await expect(page.getByText('Puzzle #3 · Wednesday, November 25, 2026')).toBeVisible();
   });
 
   test('keeps the runs and the streak across a reload', async ({ page }) => {

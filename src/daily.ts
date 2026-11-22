@@ -6,7 +6,7 @@
 import { LEVEL_IDS } from './levels.ts';
 
 /** The date of puzzle #1. */
-export const LAUNCH_DATE = '2026-12-01';
+export const LAUNCH_DATE = '2026-11-23';
 
 /** The levels in the order the days go through them, then again from the start. */
 export const ROTATION: readonly string[] = LEVEL_IDS;
