@@ -1,4 +1,4 @@
-import { test as base, expect, type Page } from '@playwright/test';
+import { test as base, expect, type BrowserContext, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { KEY } from '../src/progress.ts';
 
@@ -13,6 +13,37 @@ export const ANALYTICS =
 // preview` does not read _headers, so the tests add it to every page.
 const contentSecurityPolicy = (): string | undefined =>
   /^ {2}Content-Security-Policy: (.+)$/m.exec(readFileSync('dist/_headers', 'utf8'))?.[1];
+
+/**
+ * Serves the site's pages to `target` with the Content-Security-Policy, and
+ * logs each violation as a console error.
+ */
+export async function addContentSecurityPolicy(
+  target: Page | BrowserContext,
+  baseURL: string,
+): Promise<void> {
+  await target.addInitScript(() => {
+    document.addEventListener('securitypolicyviolation', (event) => {
+      console.error(`CSP: ${event.violatedDirective} blocked ${event.blockedURI}`);
+    });
+  });
+  const csp = contentSecurityPolicy();
+  expect(csp, 'dist/_headers has a Content-Security-Policy').toBeDefined();
+  await target.route(
+    (url) => url.origin === new URL(baseURL).origin,
+    async (route) => {
+      if (route.request().resourceType() !== 'document') {
+        await route.fallback();
+        return;
+      }
+      const response = await route.fetch();
+      await route.fulfill({
+        response,
+        headers: { ...response.headers(), 'content-security-policy': String(csp) },
+      });
+    },
+  );
+}
 
 // Every browser test fails if the page logs a console error, throws or breaks
 // the Content-Security-Policy, the browser-side counterpart of
@@ -39,27 +70,7 @@ export const test = base.extend<{
         }
       }, KEY);
     }
-    await page.addInitScript(() => {
-      document.addEventListener('securitypolicyviolation', (event) => {
-        console.error(`CSP: ${event.violatedDirective} blocked ${event.blockedURI}`);
-      });
-    });
-    const csp = contentSecurityPolicy();
-    expect(csp, 'dist/_headers has a Content-Security-Policy').toBeDefined();
-    await page.route(
-      (url) => url.origin === new URL(String(baseURL)).origin,
-      async (route) => {
-        if (route.request().resourceType() !== 'document') {
-          await route.fallback();
-          return;
-        }
-        const response = await route.fetch();
-        await route.fulfill({
-          response,
-          headers: { ...response.headers(), 'content-security-policy': String(csp) },
-        });
-      },
-    );
+    await addContentSecurityPolicy(page, String(baseURL));
     await use(page);
   },
   analytics: [

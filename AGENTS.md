@@ -60,8 +60,12 @@ headers.
   `privacy.html` (`/privacy`) says what is stored and sent. `about.html`
   (`/about`) explains the scoring and its limits for players.
 - `public/`: files served as they are, including the fonts in
-  `public/fonts/` (SIL Open Font License, `public/fonts/OFL.txt`). The design
-  of the game screen is in [ADR 0005](docs/adr/0005-guided-game-screen.md).
+  `public/fonts/` (SIL Open Font License, `public/fonts/OFL.txt`), the web app
+  manifest (`manifest.webmanifest`) and the app icons in `public/icons/`, each
+  PNG rendered from `icon.svg` or `maskable.svg` at each size N with
+  `npx playwright screenshot --viewport-size=N,N file://$PWD/public/icons/<svg> public/icons/<png>`.
+  The design of the game screen is in
+  [ADR 0005](docs/adr/0005-guided-game-screen.md).
 - `tests/`: test setup and cross-cutting tests.
 - `e2e/`: Playwright browser and accessibility tests against `vite preview`.
 - `authoring/`: the level authoring pipeline (MIT), run by Node: specs in
