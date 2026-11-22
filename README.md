@@ -79,7 +79,7 @@ This repository has three licences:
 
 - **Code** (everything outside `levels/` and `public/fonts/`) is under the
   [MIT licence](LICENSE).
-- **Fonts** in `public/fonts/` (Bricolage Grotesque and IBM Plex) are under
+- **Fonts** in `public/fonts/` (Barlow and Barlow Condensed) are under
   the SIL Open Font License 1.1. See [`public/fonts/OFL.txt`](public/fonts/OFL.txt).
 - **Level content** in `levels/` (level files, level specs, stories
   and explanations) is **all rights reserved**. See

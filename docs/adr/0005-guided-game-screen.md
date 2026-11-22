@@ -18,9 +18,14 @@ about row counts, and the player tries to pick a better one.
 The game screen becomes a guided flow, built in four steps (the UI track of
 v0.1.0):
 
-1. **A visual base**: self-hosted fonts, light and dark colours, a single
-   column up to 520 px, and the main action in a bar fixed to the bottom.
-   Orange is the player and blue is PostgreSQL, everywhere.
+1. **A visual base, "Race Night"**: the game is a race against the
+   Optimizer, drawn like the timing graphics of a night race. Dark asphalt,
+   condensed italic type for headings and numbers (Barlow Condensed), Barlow
+   for text, and tiles with two cut corners. Orange is the player, blue is
+   the Optimizer (PostgreSQL's planner), yellow is a flag on a wrong
+   estimate, and purple is the perfect plan, everywhere. Phones get a single
+   column with the main action in a bar fixed to the bottom; computers get a
+   wider stage with cards side by side.
 2. **An explainer** on the first visit: what a plan is, that PostgreSQL
    guesses, and how a plan is scored.
 3. **A plan builder with one question per screen**: each answer is in plain
@@ -31,6 +36,14 @@ v0.1.0):
 
 The engine, the levels, scoring and the share card do not change.
 
+The look is dark only. A race at night is the idea, the four colours are
+chosen to stand out on dark asphalt, and a light version would be a second
+design to keep passing contrast checks. The page says `color-scheme: dark`,
+so the browser's own controls match it.
+
+The game is also planned as a Play Store app, so the shell works full screen:
+it keeps clear of the phone's safe areas and needs no browser controls.
+
 ## Alternatives
 
 - **Restyle the long page only**: cheaper, but it keeps the order that lost
@@ -39,11 +52,14 @@ The engine, the levels, scoring and the share card do not change.
   to read on a phone and does not explain the game.
 - **A drag-and-drop plan tree with animated row flows**: tried as a
   prototype; it was too much to take in at once.
+- **A calm light and dark theme**: built first. It read well but looked like
+  any form, and gave players no sense of a race.
 
 ## Consequences
 
 - The fonts are served with the site, so the Content-Security-Policy allows
-  `font-src 'self'` and nothing more. They add about 82 kB, inside the
-  Lighthouse page budget.
+  `font-src 'self'` and nothing more. Four Latin subsets add about 91 kB,
+  inside the Lighthouse page budget; each page preloads two of them.
+- Players who set their system to a light theme still get the dark page.
 - Every UI step keeps the existing gates: axe, Lighthouse, the JavaScript
   budget, and e2e tests on four browsers.
