@@ -1,15 +1,55 @@
-/* Mobile first: one column from 360 px, wider spacing from 40rem. Colours
-   follow the system's light or dark theme. */
+/* Phones first: one column up to 32.5rem (520 px), with the main action in
+   a bar fixed to the bottom of the screen. Colours follow the system's light
+   or dark theme. Orange is the player, blue is PostgreSQL. */
+
+/* Latin subsets, served with the site (public/fonts/OFL.txt). */
+@font-face {
+  font-family: 'Bricolage Grotesque';
+  src: url('/fonts/bricolage-grotesque-800.woff2') format('woff2');
+  font-weight: 800;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans';
+  src: url('/fonts/ibm-plex-sans.woff2') format('woff2');
+  font-weight: 100 700;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  src: url('/fonts/ibm-plex-mono-500.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
   color-scheme: light dark;
-  --text: #1c1e21;
-  --muted: #4a4f57;
-  --background: #fbfbfa;
+  --text: #142130;
+  --muted: #4f5f6f;
+  --background: #eef2f5;
   --surface: #ffffff;
-  --border: #d5d8dc;
-  --code-background: #f1f3f5;
-  --accent: #1d5fa8;
+  --border: #ccd6df;
+  --code-background: #f4f6f8;
+  --accent: #245fa3;
+  --you: #c2410c;
+  --you-soft: rgb(194 65 12 / 10%);
+  --on-you: #ffffff;
+  --radius: 0.75rem;
+  --display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   font-family:
+    'IBM Plex Sans',
     system-ui,
     -apple-system,
     'Segoe UI',
@@ -22,13 +62,16 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --text: #e6e8eb;
-    --muted: #b3b9c1;
-    --background: #15171a;
-    --surface: #1e2125;
-    --border: #3a3f46;
-    --code-background: #272b30;
-    --accent: #8ab8f0;
+    --text: #e5edf4;
+    --muted: #a3b3c3;
+    --background: #0d141c;
+    --surface: #152029;
+    --border: #2b3c4e;
+    --code-background: #1b2835;
+    --accent: #84b4ee;
+    --you: #ff8a5c;
+    --you-soft: rgb(255 138 92 / 14%);
+    --on-you: #1d0c03;
   }
 }
 
@@ -40,8 +83,13 @@
 
 body {
   margin: 0 auto;
-  max-width: 48rem;
-  padding: 1rem;
+  max-width: 34.5rem;
+  padding: 1rem max(1rem, env(safe-area-inset-right)) 1rem max(1rem, env(safe-area-inset-left));
+}
+
+/* Room below the footer for the bar fixed at the bottom. */
+body:has(.run-controls) {
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom));
 }
 
 h1,
@@ -53,13 +101,21 @@ h5 {
   margin: 1.5em 0 0.5em;
 }
 
+h1,
+h2 {
+  font-family: var(--display);
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
 h1 {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   margin-top: 0;
 }
 
 h2 {
-  font-size: 1.375rem;
+  font-size: 1.5rem;
 }
 
 h3 {
@@ -84,7 +140,7 @@ a {
 
 /* Long identifiers wrap rather than widen the page. */
 code {
-  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-family: var(--mono);
   font-size: 0.9em;
   overflow-wrap: anywhere;
 }
@@ -102,18 +158,19 @@ code {
 
 .sql {
   margin: 0;
-  padding: 0.75rem;
-  background: var(--code-background);
-  border-radius: 0.375rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   white-space: pre-wrap;
 }
 
 .table {
   margin: 1rem 0;
-  padding: 0 0.75rem 0.75rem;
+  padding: 0 1rem 1rem;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 0.375rem;
+  border-radius: var(--radius);
 }
 
 .table h4 {
@@ -164,28 +221,28 @@ code {
 }
 
 .message {
-  padding: 0.75rem;
+  padding: 0.75rem 1rem;
   border: 1px solid var(--border);
-  border-radius: 0.375rem;
+  border-radius: var(--radius);
   background: var(--surface);
 }
 
 @media (min-width: 40rem) {
   body {
-    padding: 2rem;
+    padding-block: 2rem;
   }
 
   h1 {
-    font-size: 2rem;
+    font-size: 2.25rem;
   }
 }
 
 /* The plan builder: every option is a tap target of at least 44 px. */
 .builder fieldset {
   margin: 1rem 0;
-  padding: 0.5rem 0.75rem 0.75rem;
+  padding: 0.5rem 1rem 1rem;
   border: 1px solid var(--border);
-  border-radius: 0.375rem;
+  border-radius: var(--radius);
   background: var(--surface);
 }
 
@@ -199,11 +256,12 @@ code {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.25rem 0.5rem;
-  min-height: 2.75rem;
+  min-height: 3rem;
   margin-top: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 0.375rem;
+  padding: 0.625rem 0.875rem;
+  background: var(--code-background);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
   cursor: pointer;
 }
 
@@ -211,16 +269,16 @@ code {
   width: 1.125rem;
   height: 1.125rem;
   margin: 0;
-  accent-color: var(--accent);
+  accent-color: var(--you);
 }
 
 .option:has(input:checked) {
-  border-color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--accent);
+  border-color: var(--you);
+  background: var(--you-soft);
 }
 
 .option:has(input:focus-visible) {
-  outline: 2px solid var(--accent);
+  outline: 3px solid var(--you);
   outline-offset: 2px;
 }
 
@@ -239,23 +297,39 @@ code {
   padding-left: 1.5rem;
 }
 
-/* Running a plan. */
+/* Running a plan: the main action, in a bar fixed to the bottom. */
 .run-controls {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 1;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem 1rem;
+  justify-content: center;
+  gap: 0.75rem 1rem;
+  padding: 0.75rem max(1rem, env(safe-area-inset-right)) calc(0.75rem + env(safe-area-inset-bottom))
+    max(1rem, env(safe-area-inset-left));
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+.run-controls p {
+  flex: 0 1 auto;
+  max-width: 18rem;
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--muted);
 }
 
 .run-button {
-  min-height: 2.75rem;
-  padding: 0.5rem 1.25rem;
-  font: inherit;
-  font-weight: 600;
-  color: var(--background);
-  background: var(--accent);
+  flex: none;
+  white-space: nowrap;
+  min-height: 3rem;
+  padding: 0.5rem 1.5rem;
+  font: 800 1.0625rem/1 var(--display);
+  color: var(--on-you);
+  background: var(--you);
   border: 0;
-  border-radius: 0.375rem;
+  border-radius: var(--radius);
   cursor: pointer;
 }
 
@@ -266,7 +340,7 @@ code {
 }
 
 .run-button:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 3px solid var(--text);
   outline-offset: 2px;
 }
 
@@ -290,7 +364,7 @@ code {
 .bar div {
   height: 100%;
   width: 0;
-  background: var(--accent);
+  background: var(--you);
   transition: width 0.3s ease-out;
 }
 
@@ -322,6 +396,8 @@ code {
 
 .costs td {
   text-align: right;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Today's puzzle, the streak and the tutorial. */
@@ -351,7 +427,7 @@ code {
   color: var(--text);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 0.5rem;
+  border-radius: var(--radius);
 }
 
 .tutorial h2 {
@@ -365,9 +441,11 @@ code {
 /* The share card. */
 .card {
   margin: 0.5rem 0 0.75rem;
-  padding: 0.75rem;
-  background: var(--code-background);
-  border-radius: 0.375rem;
+  padding: 0.75rem 1rem;
+  font-family: var(--mono);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }

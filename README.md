@@ -75,9 +75,12 @@ The level authoring step runs PostgreSQL, so it runs only in GitHub Actions.
 
 ## Licence
 
-This repository has two licences:
+This repository has three licences:
 
-- **Code** (everything outside `levels/`) is under the [MIT licence](LICENSE).
+- **Code** (everything outside `levels/` and `public/fonts/`) is under the
+  [MIT licence](LICENSE).
+- **Fonts** in `public/fonts/` (Bricolage Grotesque and IBM Plex) are under
+  the SIL Open Font License 1.1. See [`public/fonts/OFL.txt`](public/fonts/OFL.txt).
 - **Level content** in `levels/` (level files, level specs, stories
   and explanations) is **all rights reserved**. See
   [`levels/LICENSE`](levels/LICENSE). The screenshots in `docs/images/` show
