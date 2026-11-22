@@ -21,7 +21,7 @@ test.describe('share card', () => {
     await page.clock.setFixedTime(LAUNCH_NOON);
     await page.goto('/');
     await expect(page.getByRole('region', { name: 'Share' })).toBeHidden();
-    await page.getByRole('radio', { name: 'Seq scan' }).click();
+    await page.getByRole('button', { name: /Seq scan/ }).click();
     await page.getByRole('button', { name: 'Run your plan' }).click();
     await page.getByRole('button', { name: 'Share your result' }).click();
     const shared = await page.evaluate(() => window.shared?.text);

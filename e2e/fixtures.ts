@@ -1,4 +1,4 @@
-import { test as base, expect } from '@playwright/test';
+import { test as base, expect, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { KEY } from '../src/progress.ts';
 
@@ -91,3 +91,12 @@ export const test = base.extend<{
 });
 
 export { expect };
+
+/** Answers every question with its first open answer, up to the review. */
+export async function playToReview(page: Page): Promise<void> {
+  const title = page.locator('#builder-title');
+  for (let i = 0; i < 12 && (await title.textContent()) !== 'Your plan'; i += 1) {
+    await page.locator('.answer:not([disabled])').first().click();
+  }
+  await expect(title).toHaveText('Your plan');
+}

@@ -4,8 +4,9 @@ test.describe('running a plan', () => {
   test('shows the cost building up, then the result and the explanation', async ({ page }) => {
     await page.goto('/?level=haystack');
     const run = page.getByRole('button', { name: 'Run your plan' });
-    await expect(run).toBeDisabled();
-    await page.getByRole('radio', { name: 'Index scan on orders_status_idx (status)' }).click();
+    // The run bar shows once the plan is complete.
+    await expect(run).toBeHidden();
+    await page.getByRole('button', { name: /Index scan on orders_status_idx/ }).click();
     await run.click();
     await expect(page.getByText('Your cost: 280,000')).toBeVisible();
     await expect(page.getByText("PostgreSQL's plan is cheaper.")).toBeVisible();
@@ -22,7 +23,7 @@ test.describe('running a plan', () => {
   test('shows the result at once with reduced motion', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/?level=last-nights-migration');
-    await page.getByRole('radio', { name: 'Seq scan' }).click();
+    await page.getByRole('button', { name: /Seq scan/ }).click();
     await page.getByRole('button', { name: 'Run your plan' }).click();
     // No animation: the result is there without waiting for timers.
     await expect(
@@ -35,7 +36,7 @@ test.describe('running a plan', () => {
   test('allows four runs', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/?level=needle');
-    await page.getByRole('radio', { name: 'Seq scan' }).click();
+    await page.getByRole('button', { name: /Seq scan/ }).click();
     const run = page.getByRole('button', { name: 'Run your plan' });
     for (let i = 0; i < 4; i += 1) await run.click();
     await expect(run).toBeDisabled();

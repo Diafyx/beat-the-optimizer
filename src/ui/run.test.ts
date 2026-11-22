@@ -35,18 +35,32 @@ describe('timesBest', () => {
 });
 
 describe('renderRun', () => {
-  it('cannot run until the plan is finished', () => {
+  it('is hidden and cannot run until the plan is finished', () => {
     const run = renderRun(read('needle'), instant);
     const button = run.element.querySelector('button');
+    const controls = run.element.querySelector<HTMLElement>('.run-controls');
     expect(button?.disabled).toBe(true);
-    expect(text(run.element.querySelector('.run-controls p'))).toBe(
-      '4 of 4 runs left. Finish your plan to run it.',
-    );
+    expect(run.element.hidden).toBe(true);
+    expect(controls?.hidden).toBe(true);
     run.setPlan(read('needle').costs.bestPlan);
     expect(button?.disabled).toBe(false);
+    expect(run.element.hidden).toBe(false);
+    expect(controls?.hidden).toBe(false);
     expect(text(run.element.querySelector('.run-controls p'))).toBe('4 of 4 runs left.');
     run.setPlan(null);
     expect(button?.disabled).toBe(true);
+    expect(run.element.hidden).toBe(true);
+  });
+
+  it('keeps the last result on show while the plan changes', () => {
+    const level = read('needle');
+    const run = renderRun(level, instant);
+    run.setPlan(level.costs.bestPlan);
+    run.element.querySelector('button')?.click();
+    run.setPlan(null);
+    expect(run.element.hidden).toBe(false);
+    expect(run.element.querySelector<HTMLElement>('.run-controls')?.hidden).toBe(true);
+    expect(run.element.querySelector('.verdict')).not.toBeNull();
   });
 
   // The acceptance test of #23: the result is the engine's, for every level.

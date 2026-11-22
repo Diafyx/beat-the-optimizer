@@ -31,6 +31,13 @@ indexes and physical order), the join predicates, the `ORDER BY` and the
 locks. It must not show `cardinalities`, `optimizer`, `costs` or
 `explanation` until the player has run a plan: they give away the answer.
 
+One exception: for each table with a filter, the plan builder shows
+PostgreSQL's row estimate for that filter (`estimatedRows` of the table's scan
+in `optimizer.explain`, unless the scan is on the inner side of a nested
+loop). It is what the Optimizer believes, not the true count, and it is the
+guess the player tries to beat. `src/ui/guesses.ts` is the only code that
+reads it.
+
 ## Fields
 
 | Field           | Type                       | Meaning                                                            |

@@ -14,11 +14,11 @@ test.describe('daily puzzle', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.clock.setFixedTime(LAUNCH_NOON);
     await page.goto('/');
-    await page.getByRole('radio', { name: 'Seq scan' }).click();
+    await page.getByRole('button', { name: /Seq scan/ }).click();
     await page.getByRole('button', { name: 'Run your plan' }).click();
     await expect(page.getByText('Streak: 1 day')).toBeVisible();
     await page.reload();
-    await page.getByRole('radio', { name: 'Seq scan' }).click();
+    await page.getByRole('button', { name: /Seq scan/ }).click();
     await expect(page.getByText('3 of 4 runs left.')).toBeVisible();
     await expect(page.getByText('Streak: 1 day')).toBeVisible();
   });
@@ -67,7 +67,7 @@ test.describe('first visit', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/?level=haystack');
     await page.getByRole('button', { name: 'Skip' }).click();
-    await page.getByRole('radio', { name: 'Seq scan' }).click();
+    await page.getByRole('button', { name: /Seq scan/ }).click();
     await page.getByRole('button', { name: 'Run your plan' }).click();
     await expect(page.getByText('You tied with PostgreSQL.')).toBeVisible();
   });

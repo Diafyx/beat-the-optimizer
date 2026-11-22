@@ -66,6 +66,13 @@ describe('renderLevel', () => {
   it('shows the joins and the order of the result', () => {
     const view = renderLevel(example);
     expect(headings(view, 'h3')).toEqual(['The query', 'The tables', 'Joins', 'Order']);
+    // Every part folds away until the player opens it.
+    expect([...view.querySelectorAll('details')].map(({ open }) => open)).toEqual([
+      false,
+      false,
+      false,
+      false,
+    ]);
     expect(text(view)).toContain('authors.author_id = books.author_id');
     expect(text(view)).toContain('The result is sorted by authors.author_id, ascending.');
   });
@@ -147,7 +154,7 @@ describe('renderLevel', () => {
         },
       });
       expect(renderLevel(guarded).querySelector('h2')?.textContent).toBe(level.title);
-      expect(renderPlanBuilder(guarded).querySelector('legend')).not.toBeNull();
+      expect(renderPlanBuilder(guarded).querySelector('h3')).not.toBeNull();
       // Until the player presses Run.
       renderRun(guarded).setPlan(level.costs.bestPlan);
     }

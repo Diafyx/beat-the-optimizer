@@ -15,6 +15,7 @@ import {
 } from '../progress.ts';
 import { el } from './dom.ts';
 import { renderLevel } from './level-view.ts';
+import { optimizerGuesses } from './guesses.ts';
 import { renderPlanBuilder } from './plan-builder.ts';
 import { shareText } from '../share.ts';
 import { renderRun } from './run.ts';
@@ -146,9 +147,13 @@ export async function start(
     );
     const view = renderLevel(level);
     view.append(
-      renderPlanBuilder(level, (plan) => {
-        run.setPlan(plan);
-      }),
+      renderPlanBuilder(
+        level,
+        (plan) => {
+          run.setPlan(plan);
+        },
+        optimizerGuesses(level),
+      ),
       run.element,
       share.element,
     );

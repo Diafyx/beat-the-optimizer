@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { readdirSync } from 'node:fs';
 import type { Page, TestInfo } from '@playwright/test';
-import { expect, test } from './fixtures.ts';
+import { expect, playToReview, test } from './fixtures.ts';
 
 // The accessibility gate: no serious or critical axe violations against
 // WCAG 2.2 A and AA. Minor and moderate ones are attached to the report.
@@ -31,7 +31,13 @@ test.describe('accessibility @a11y', () => {
         await page.emulateMedia({ colorScheme });
         await page.goto(`/?level=${id}`);
         await expect(page.getByRole('heading', { level: 2 })).toBeVisible();
+        // Open what folds away, so axe checks it too.
+        await page.locator('details').evaluateAll((all) => {
+          for (const details of all) (details as HTMLDetailsElement).open = true;
+        });
         expect(await blockingViolations(page, testInfo, `${id}-${colorScheme}`)).toEqual([]);
+        await playToReview(page);
+        expect(await blockingViolations(page, testInfo, `${id}-${colorScheme}-review`)).toEqual([]);
       });
     }
   }
