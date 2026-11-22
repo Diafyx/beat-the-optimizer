@@ -43,6 +43,13 @@ function chooseSeqScan(root: HTMLElement): void {
   seq.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
+/** Closes the How it works dialog with its Skip button. */
+function skipTutorial(root: HTMLElement): void {
+  const skip = [...root.querySelectorAll('dialog button')].find((b) => b.textContent === 'Skip');
+  if (!(skip instanceof HTMLButtonElement)) throw new Error('no Skip button');
+  skip.click();
+}
+
 describe('start', () => {
   let root: HTMLElement;
 
@@ -138,7 +145,7 @@ describe('start', () => {
     await start(root, '', { now: day(0), storage });
     const dialog = root.querySelector('dialog');
     expect(dialog?.open).toBe(true);
-    dialog?.querySelector('button')?.click();
+    skipTutorial(root);
     expect(dialog?.open).toBe(false);
     expect(JSON.parse(String(storage.getItem(KEY)))).toMatchObject({ tutorialSeen: true });
 
@@ -146,7 +153,7 @@ describe('start', () => {
     document.body.append(again);
     await start(again, '', { now: day(0), storage });
     expect(again.querySelector('dialog')?.open).toBe(false);
-    [...again.querySelectorAll('button')].find((b) => b.textContent === 'How to play')?.click();
+    [...again.querySelectorAll('button')].find((b) => b.textContent === 'How it works')?.click();
     expect(again.querySelector('dialog')?.open).toBe(true);
   });
 
@@ -165,7 +172,7 @@ describe('start', () => {
     await start(root, '', { now: day(0), storage: null });
     expect(root.querySelector('h2')?.textContent).toBe('Needle');
     expect(root.querySelector('dialog')?.open).toBe(true);
-    root.querySelector<HTMLButtonElement>('dialog button')?.click();
+    skipTutorial(root);
     chooseSeqScan(root);
     root.querySelector<HTMLButtonElement>('.run-button')?.click();
     expect(text(root.querySelector('.puzzle p'))).toContain('Streak: 1 day');
@@ -181,7 +188,7 @@ describe('start', () => {
       },
     } as unknown as Storage;
     await start(root, '', { now: day(0), storage: broken });
-    root.querySelector<HTMLButtonElement>('dialog button')?.click();
+    skipTutorial(root);
     chooseSeqScan(root);
     root.querySelector<HTMLButtonElement>('.run-button')?.click();
     expect(text(root.querySelector('.run-controls p'))).toContain('3 of 4 runs left.');

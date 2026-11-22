@@ -32,17 +32,26 @@ test.describe('daily puzzle', () => {
 test.describe('first visit', () => {
   test.use({ firstVisit: true });
 
-  test('shows the tutorial once', async ({ page }) => {
+  test('explains the game once, then from the How it works button', async ({ page }) => {
     await page.goto('/');
-    const dialog = page.getByRole('dialog', { name: 'How to play' });
+    const dialog = page.getByRole('dialog', { name: 'How it works' });
     await expect(dialog).toBeVisible();
-    await dialog.getByRole('button', { name: 'Start playing' }).click();
+    await expect(dialog.getByRole('heading', { name: 'Every query needs a plan' })).toBeVisible();
+    await dialog.getByRole('button', { name: 'Next' }).click();
+    await expect(dialog.getByRole('heading', { name: 'Meet the Optimizer' })).toBeVisible();
+    await dialog.getByRole('button', { name: 'Back' }).click();
+    await expect(dialog.getByRole('heading', { name: 'Every query needs a plan' })).toBeVisible();
+    await dialog.getByRole('button', { name: 'Next' }).click();
+    await dialog.getByRole('button', { name: 'Next' }).click();
+    await expect(dialog.getByRole('heading', { name: 'Your turn' })).toBeVisible();
+    await dialog.getByRole('button', { name: 'Let’s race' }).click();
     await expect(dialog).toBeHidden();
     await page.reload();
     await expect(page.getByRole('heading', { level: 2 })).toBeVisible();
     await expect(dialog).toBeHidden();
-    await page.getByRole('button', { name: 'How to play' }).click();
+    await page.getByRole('button', { name: 'How it works' }).click();
     await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('heading', { name: 'Every query needs a plan' })).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
   });
@@ -57,7 +66,7 @@ test.describe('first visit', () => {
     });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/?level=haystack');
-    await page.getByRole('button', { name: 'Start playing' }).click();
+    await page.getByRole('button', { name: 'Skip' }).click();
     await page.getByRole('radio', { name: 'Seq scan' }).click();
     await page.getByRole('button', { name: 'Run your plan' }).click();
     await expect(page.getByText('You tied with PostgreSQL.')).toBeVisible();
