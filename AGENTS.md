@@ -26,6 +26,7 @@ npm run pr-size     # CI only: size label for a pull request
 npm run pr-hygiene  # CI only: pull request rules
 npm run build       # production build into dist/; settings below
 npm run smoke       # CI only: the smoke test against the live site at SMOKE_URL
+npm run screenshots # the README screenshots and the link preview (e2e/*.shots.ts)
 ```
 
 ## Build settings

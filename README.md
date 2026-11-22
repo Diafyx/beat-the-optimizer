@@ -11,7 +11,7 @@ done. Then your plan runs against the plan PostgreSQL chose for the same query.
 > **Status:** early development. The first public version is `v0.1.0`, with 10
 > levels, a daily rotation and a share card.
 
-![A level: the story, the query, and the table with its row count, columns and indexes](docs/images/level.png)
+![A puzzle on a phone: the end of the story, the folded query, tables and joins, then the first question, which table to start with, with each table's rows and the Optimizer's guess for orders: 10 rows](docs/images/level.png)
 
 ## Play
 
@@ -30,7 +30,7 @@ done. Then your plan runs against the plan PostgreSQL chose for the same query.
   `/privacy` page says exactly what it stores and sends, and `/about` explains
   the scoring and its limits.
 
-![The result of a run: the cost of each operator, then your plan, PostgreSQL's plan and the best possible plan](docs/images/result.png)
+![The result of a race on a phone: your plan finished first with 100,000 points against the Optimizer's 241,332, a yellow flag saying the Optimizer expected 149 rows from orders and got 60,333, the verdict and the timing tower](docs/images/result.png)
 
 ## How it works
 

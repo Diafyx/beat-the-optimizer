@@ -24,6 +24,7 @@
     "e2e": "playwright test --grep-invert @a11y",
     "a11y": "playwright test --grep @a11y --project=chromium --project=mobile",
     "smoke": "playwright test --config playwright.smoke.config.ts",
+    "screenshots": "playwright test --config playwright.screenshots.config.ts",
     "lighthouse": "vite build && node scripts/lighthouse.ts",
     "bundle-size": "vite build && node scripts/bundle-size.ts",
     "docs": "markdownlint-cli2 && node scripts/check-links.ts",
