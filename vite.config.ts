@@ -1,7 +1,9 @@
 import { defineConfig } from 'vitest/config';
+import { analyticsConfig, headersFile } from './scripts/lib/analytics-config.ts';
 import { siteUrl, withSiteUrl } from './scripts/lib/site-url.ts';
 
 const full = { lines: 100, branches: 100, functions: 100, statements: 100 };
+const analytics = analyticsConfig(process.env);
 
 export default defineConfig({
   plugins: [
@@ -13,10 +15,21 @@ export default defineConfig({
         handler: (html) => withSiteUrl(html, siteUrl(process.env['SITE_URL'])),
       },
     },
+    {
+      // The Content-Security-Policy, allowing only the analytics hosts in use;
+      // see scripts/lib/analytics-config.ts.
+      name: 'headers',
+      apply: 'build',
+      generateBundle() {
+        this.emitFile({ type: 'asset', fileName: '_headers', source: headersFile(analytics) });
+      },
+    },
   ],
+  define: { __ANALYTICS__: JSON.stringify(analytics) },
   build: {
     outDir: 'dist',
     sourcemap: true,
+    rolldownOptions: { input: ['index.html', 'privacy.html'] },
   },
   test: {
     include: ['src/**/*.test.ts', 'tests/**/*.test.ts', 'authoring/**/*.test.ts'],

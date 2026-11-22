@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="description" content="What Beat the Optimizer stores and sends, exactly." />
+    <title>Privacy · Beat the Optimizer</title>
+    <link rel="canonical" href="%SITE_URL%/privacy" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <header class="site">
+      <p><a href="/">Beat the Optimizer</a></p>
+    </header>
+    <main>
+      <h1>Privacy</h1>
+      <p>
+        There are no accounts and no cookies. The game keeps your progress in your browser, and
+        sends a few anonymous counts so we can tell whether players come back the next day.
+      </p>
+
+      <h2>What stays in your browser</h2>
+      <p>
+        Your progress is kept in your browser's local storage, under
+        <code>beat-the-optimizer:v1</code>, and never leaves your device:
+      </p>
+      <ul>
+        <li>whether you have seen “How to play”;</li>
+        <li>for each daily puzzle you played, the cost of each of your runs;</li>
+        <li>your streak: the last puzzle you played and how many days in a row led up to it;</li>
+        <li>
+          the date you first finished a daily puzzle, and which of the events below have been sent,
+          so each is sent only once.
+        </li>
+      </ul>
+      <p>Clearing this site's data in your browser removes all of it.</p>
+
+      <h2>What is sent</h2>
+      <p>The game sends counts to <a href="https://www.goatcounter.com/">GoatCounter</a>:</p>
+      <ul>
+        <li>
+          on each visit, the page's path (<code>/</code>, without the level you practise) and the
+          address of the site that linked to it, without the page on that site;
+        </li>
+        <li><code>first_finish</code>, once, when you finish your first daily puzzle;</li>
+        <li><code>return_d1</code>, once, if you come back the day after that;</li>
+        <li><code>return_d2_7</code>, once, if you come back later in that first week.</li>
+      </ul>
+      <p>An event is only its name: it has no identifier, no date, no level and no score.</p>
+      <p>
+        The site also loads Cloudflare Web Analytics, which counts visits to the site. It reports
+        the page's address, the address that linked to it, your browser's user agent and how long
+        the page took to load.
+      </p>
+      <p>
+        Like any request on the web, these reach GoatCounter and Cloudflare with your IP address and
+        your browser's user agent. Their privacy policies say what they do with them:
+        <a href="https://www.goatcounter.com/help/privacy">GoatCounter</a> and
+        <a href="https://www.cloudflare.com/privacypolicy/">Cloudflare</a>.
+      </p>
+
+      <h2>Global Privacy Control</h2>
+      <p>
+        If your browser sends
+        <a href="https://globalprivacycontrol.org/">Global Privacy Control</a>, the game sends
+        nothing to GoatCounter or Cloudflare, and does not store the date or the events above.
+      </p>
+    </main>
+    <footer class="site">
+      <p><a href="/">Play today’s puzzle</a></p>
+    </footer>
+  </body>
+</html>

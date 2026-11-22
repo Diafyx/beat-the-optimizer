@@ -16,11 +16,21 @@ export interface Progress {
   readonly puzzles: Readonly<Record<string, PuzzleProgress>>;
   /** The last puzzle played and how many days in a row led up to it. */
   readonly streak: { readonly last: number; readonly days: number };
+  /** The local date (YYYY-MM-DD) the first daily puzzle was finished, for measuring returns. */
+  readonly firstFinish: string | null;
+  /** The measurement events already sent, each sent once (src/analytics.ts). */
+  readonly sent: readonly string[];
 }
 
 export const KEY = 'beat-the-optimizer:v1';
 
-export const EMPTY: Progress = { tutorialSeen: false, puzzles: {}, streak: { last: 0, days: 0 } };
+export const EMPTY: Progress = {
+  tutorialSeen: false,
+  puzzles: {},
+  streak: { last: 0, days: 0 },
+  firstFinish: null,
+  sent: [],
+};
 
 /** The storage to use, or null if the browser refuses access to it. */
 export function browserStorage(): Storage | null {
@@ -41,6 +51,7 @@ function parse(text: string): Progress {
   const data: unknown = JSON.parse(text);
   if (!isRecord(data) || !isRecord(data['puzzles']) || !isRecord(data['streak'])) return EMPTY;
   const { last, days } = data['streak'];
+  const { firstFinish, sent } = data;
   const puzzles = Object.entries(data['puzzles']).filter(
     (entry): entry is [string, PuzzleProgress] => {
       const costs = isRecord(entry[1]) ? entry[1]['costs'] : undefined;
@@ -51,6 +62,11 @@ function parse(text: string): Progress {
     tutorialSeen: data['tutorialSeen'] === true,
     puzzles: Object.fromEntries(puzzles.map(([n, { costs }]) => [n, { costs: [...costs] }])),
     streak: isCount(last) && isCount(days) ? { last, days } : EMPTY.streak,
+    firstFinish:
+      typeof firstFinish === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(firstFinish)
+        ? firstFinish
+        : null,
+    sent: Array.isArray(sent) ? sent.filter((event) => typeof event === 'string') : [],
   };
 }
 

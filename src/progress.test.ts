@@ -23,6 +23,8 @@ const saved: Progress = {
   tutorialSeen: true,
   puzzles: { '3': { costs: [9000, 6600] } },
   streak: { last: 3, days: 2 },
+  firstFinish: '2026-12-02',
+  sent: ['first_finish'],
 };
 
 afterEach(() => {
@@ -55,13 +57,17 @@ describe('loadProgress and saveProgress', () => {
       tutorialSeen: 'yes',
       puzzles: { '1': { costs: [5, 3] }, '2': { costs: [-1] }, '3': 7, '4': { runs: 1 } },
       streak: { last: 1.5, days: 1 },
+      firstFinish: 'yesterday',
+      sent: ['return_d1', 3],
       extra: true,
     });
     expect(loadProgress(storageWith(text))).toEqual({
-      tutorialSeen: false,
+      ...EMPTY,
       puzzles: { '1': { costs: [5, 3] } },
-      streak: EMPTY.streak,
+      sent: ['return_d1'],
     });
+    const other = JSON.stringify({ puzzles: {}, streak: {}, firstFinish: 20261201, sent: {} });
+    expect(loadProgress(storageWith(other))).toEqual(EMPTY);
   });
 
   it('carries on when storage is missing, blocked or full', () => {
