@@ -1,26 +1,30 @@
 /**
- * The plan builder: one group of radio buttons per question, so a plan is
- * built by taps, or by Tab and the arrow keys. Choices the level's locks rule
- * out are shown but disabled.
+ * The plan builder: one question per screen, answered with big buttons in
+ * plain words, the database term underneath. Tapping an answer moves to the
+ * next question; Back goes to the previous one. A question with a single
+ * answer and nothing locked is answered without asking. When the plan is
+ * complete, a review screen lists it.
  */
 import type { Level, Plan, Scan, Step } from '../engine/index.ts';
 import { el, type Child } from './dom.ts';
+import { formatCount } from './format.ts';
 import { candidates, choices, type Question } from './plan-choices.ts';
 
 const code = (text: string): HTMLElement => el('code', {}, text);
 
 type ScanJoin = 'hash' | 'nestedLoop' | 'merge';
 
-const METHODS: Readonly<Record<ScanJoin, string>> = {
-  hash: 'Hash join',
-  nestedLoop: 'Nested loop',
-  merge: 'Merge join',
+/** Each join method in plain words, then its database name. */
+const METHODS: Readonly<Record<ScanJoin, readonly [string, string]>> = {
+  hash: ['Match them in one pass', 'Hash join'],
+  merge: ['Sort both sides and zip them', 'Merge join'],
+  nestedLoop: ['Compare every pair', 'Nested loop'],
 };
 
-function legend({ kind, table, step }: Question): Child[] {
+function title({ kind, table, step }: Question): Child[] {
   switch (kind) {
     case 'start':
-      return ['Which table do you read first?'];
+      return ['Which table do you start with?'];
     case 'next':
       return [step === 1 ? 'Which table do you join to it?' : 'Which table do you join next?'];
     case 'access':
@@ -30,104 +34,185 @@ function legend({ kind, table, step }: Question): Child[] {
   }
 }
 
-function optionLabel(level: Level, { kind, table }: Question, value: string): Child[] {
-  const [prefix, index = ''] = value.split(':');
-  if (kind === 'start' || kind === 'next') return [code(value)];
-  if (prefix === 'seq') return ['Seq scan'];
-  if (prefix === 'index') {
-    const column = level.tables
-      .find(({ name }) => name === table)
-      ?.indexes.find(({ name }) => name === index)?.column;
-    return ['Index scan on ', code(index), ` (${String(column)})`];
-  }
-  if (prefix === 'indexNestedLoop') return ['Index nested loop through ', code(index)];
-  return [METHODS[value as ScanJoin]];
-}
+/** A line of an answer or of the plan: what it does, and what the database calls it. */
+const line = (what: readonly Child[], term: readonly Child[]): Child[] => [
+  el('span', { class: 'what' }, ...what),
+  ' ',
+  el('span', { class: 'term' }, ...term),
+];
 
-const reading = (scan: Scan): Child[] =>
-  scan.access === 'seq' ? [' with a seq scan'] : [' through ', code(scan.index)];
-
-const describeStep = (step: Step): Child[] =>
-  step.join === 'indexNestedLoop'
-    ? ['Join ', code(step.table), ' with an index nested loop through ', code(step.index), '.']
-    : [
-        ...[
-          'Join ',
-          code(step.scan.table),
-          ` with a ${METHODS[step.join].toLowerCase()}, reading it`,
-        ],
-        ...reading(step.scan),
-        '.',
-      ];
-
-function summary(plan: Plan | null): HTMLElement {
-  if (plan === null) return el('p', {}, 'Answer the questions above to finish your plan.');
-  return el(
-    'ol',
-    {},
-    el('li', {}, 'Read ', code(plan.first.table), ...reading(plan.first), '.'),
-    ...plan.steps.map((step) => el('li', {}, ...describeStep(step))),
+const indexColumn = (level: Level, table: string, index: string): string =>
+  String(
+    level.tables.find(({ name }) => name === table)?.indexes.find(({ name }) => name === index)
+      ?.column,
   );
-}
 
-function fieldset(level: Level, question: Question): HTMLElement {
-  return el(
-    'fieldset',
-    {},
-    el('legend', {}, ...legend(question)),
-    ...question.options.map(({ value, enabled }) => {
-      const input = el('input', { type: 'radio', name: question.key, value });
-      input.checked = value === question.answer;
-      input.disabled = !enabled;
-      return el(
-        'label',
-        { class: 'option' },
-        input,
-        el('span', {}, ...optionLabel(level, question, value)),
-        ...(enabled ? [] : [el('span', { class: 'locked' }, 'Locked by this level')]),
+/** How a table is read, as a line. */
+const reading = (level: Level, scan: Scan): Child[] =>
+  scan.access === 'seq'
+    ? line(['Read every row of ', code(scan.table)], ['Seq scan'])
+    : line(
+        ['Jump into ', code(scan.table), ' by ', code(indexColumn(level, scan.table, scan.index))],
+        ['Index scan on ', code(scan.index)],
       );
-    }),
-  );
+
+const rows = (n: number): string => `${formatCount(n)} ${n === 1 ? 'row' : 'rows'}`;
+
+function answer(
+  level: Level,
+  guesses: ReadonlyMap<string, number>,
+  { kind, table }: Question,
+  value: string,
+): Child[] {
+  if (kind === 'start' || kind === 'next') {
+    const guess = guesses.get(value);
+    return [
+      el('span', { class: 'what' }, code(value)),
+      ' ',
+      el(
+        'span',
+        { class: 'term' },
+        rows(level.tables.find(({ name }) => name === value)?.rows ?? 0),
+      ),
+      ...(guess === undefined
+        ? []
+        : [' ', el('span', { class: 'guess' }, `The Optimizer guesses ${rows(guess)} match`)]),
+    ];
+  }
+  const [prefix, index = ''] = value.split(':');
+  if (prefix === 'seq') return line(['Read every row'], ['Seq scan']);
+  if (prefix === 'index') {
+    return line(
+      ['Jump to rows by ', code(indexColumn(level, table, index))],
+      ['Index scan on ', code(index)],
+    );
+  }
+  if (prefix === 'indexNestedLoop') {
+    return line(['Look each one up'], ['Index nested loop through ', code(index)]);
+  }
+  const [what, term] = METHODS[value as ScanJoin];
+  return line([what], [term]);
 }
+
+/** A join step of the plan, as one or two lines. */
+const joining = (level: Level, step: Step): HTMLElement[] => {
+  if (step.join === 'indexNestedLoop') {
+    return [
+      el(
+        'li',
+        {},
+        ...line(
+          ['Join ', code(step.table), ': look each one up'],
+          ['Index nested loop through ', code(step.index)],
+        ),
+      ),
+    ];
+  }
+  const [what, term] = METHODS[step.join];
+  return [
+    el('li', {}, ...line(['Join ', code(step.scan.table), `: ${what.toLowerCase()}`], [term])),
+    el('li', {}, ...reading(level, step.scan)),
+  ];
+};
 
 /**
- * The builder for `level`. `onChange` gets the plan each time an answer
- * changes, or null while a question is open.
+ * The builder for `level`. `onChange` gets the plan when the review screen
+ * shows it, and null when the player leaves it. `guesses` are the
+ * Optimizer's row estimates, by table.
  */
 export function renderPlanBuilder(
   level: Level,
   onChange: (plan: Plan | null) => void = () => undefined,
+  guesses: ReadonlyMap<string, number> = new Map(),
 ): HTMLElement {
   const all = candidates(level);
   const chosen = new Map<string, string>();
-  const questions = el('div', { class: 'questions' });
-  const result = el('div', { class: 'summary', 'aria-live': 'polite' });
-  const render = (): Plan | null => {
+  // Which asked question is on the screen; past the last one, the review.
+  let position = 0;
+  const step = el('p', { class: 'step' });
+  const heading = el('h3', { id: 'builder-title', tabindex: '-1' });
+  const body = el('div');
+  const back = el('button', { type: 'button', class: 'back-button' }, 'Back');
+  const next = el('button', { type: 'button', class: 'run-button' }, 'Next');
+  const controls = el('div', { class: 'run-controls' }, back, next);
+
+  const render = (focus: boolean): void => {
     const state = choices(level, chosen, all);
-    questions.replaceChildren(...state.questions.map((question) => fieldset(level, question)));
-    result.replaceChildren(el('p', { class: 'label' }, 'Your plan so far'), summary(state.plan));
-    return state.plan;
+    const asked = state.questions.filter(({ options }) => options.length > 1);
+    const question = asked[position];
+    back.hidden = position === 0;
+    controls.hidden = question === undefined;
+    if (question !== undefined) {
+      step.textContent = `Question ${String(position + 1)}`;
+      heading.replaceChildren(...title(question));
+      body.replaceChildren(
+        el(
+          'div',
+          { class: 'answers', role: 'group', 'aria-labelledby': 'builder-title' },
+          ...question.options.map(({ value, enabled }) => {
+            const button = el(
+              'button',
+              {
+                type: 'button',
+                class: 'answer',
+                'aria-pressed': String(value === question.answer),
+              },
+              ...answer(level, guesses, question, value),
+              ...(enabled ? [] : [' ', el('span', { class: 'locked' }, 'Locked by this level')]),
+            );
+            button.disabled = !enabled;
+            button.addEventListener('click', () => {
+              chosen.set(question.key, value);
+              position += 1;
+              render(true);
+            });
+            return button;
+          }),
+        ),
+      );
+      next.disabled = question.answer === null;
+      onChange(null);
+    } else if (state.plan !== null) {
+      // Every question is answered, so the plan is complete.
+      const { plan } = state;
+      const change = el('button', { type: 'button', class: 'link-button' }, 'Change your plan');
+      change.hidden = asked.length === 0;
+      change.addEventListener('click', () => {
+        position -= 1;
+        render(true);
+      });
+      step.textContent = 'On the grid';
+      heading.replaceChildren('Your plan');
+      body.replaceChildren(
+        el(
+          'ol',
+          { class: 'summary' },
+          el('li', {}, ...reading(level, plan.first)),
+          ...plan.steps.flatMap((s) => joining(level, s)),
+        ),
+        change,
+      );
+      onChange(plan);
+    }
+    // A new screen: move the focus to its title, so it is read out first.
+    if (focus) heading.focus();
   };
-  questions.addEventListener('change', (event) => {
-    const input = event.target as HTMLInputElement;
-    chosen.set(input.name, input.value);
-    onChange(render());
-    // The groups are rebuilt, so put the focus back on the chosen option.
-    [...questions.querySelectorAll('input')]
-      .find(({ name, value }) => name === input.name && value === input.value)
-      ?.focus();
+
+  back.addEventListener('click', () => {
+    position -= 1;
+    render(true);
   });
-  render();
+  next.addEventListener('click', () => {
+    position += 1;
+    render(true);
+  });
+  render(false);
   return el(
     'section',
     { class: 'part builder', 'aria-labelledby': 'builder-title' },
-    el('h3', { id: 'builder-title' }, 'Your plan'),
-    el(
-      'p',
-      {},
-      'Answer each question to build a plan. Choices that this level fixes are shown but cannot be picked.',
-    ),
-    questions,
-    result,
+    step,
+    heading,
+    body,
+    controls,
   );
 }

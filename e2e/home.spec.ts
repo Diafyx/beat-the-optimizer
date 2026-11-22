@@ -21,6 +21,9 @@ test.describe('app shell', () => {
   test('shows the level named in the address', async ({ page }) => {
     await page.goto('/?level=signed-copies');
     await expect(page.getByRole('heading', { level: 2 })).toHaveText('Signed copies');
+    // The table details fold away until the player opens them.
+    await expect(page.getByRole('heading', { level: 4 })).toHaveCount(0);
+    await page.getByText('The tables').click();
     await expect(page.getByRole('heading', { level: 4 })).toHaveText([
       'customers',
       'orders',

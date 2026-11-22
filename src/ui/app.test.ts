@@ -36,11 +36,13 @@ const day = (days: number): (() => Date) => {
 const text = (node: Element | null | undefined): string =>
   (node?.textContent ?? '').replace(/\s+/g, ' ').trim();
 
+/** Answers the plan builder's one question in Needle: read every row. */
 function chooseSeqScan(root: HTMLElement): void {
-  const seq = [...root.querySelectorAll('input')].find(({ value }) => value === 'seq');
-  if (seq === undefined) throw new Error('no seq scan option');
-  seq.checked = true;
-  seq.dispatchEvent(new Event('change', { bubbles: true }));
+  const seq = [...root.querySelectorAll<HTMLButtonElement>('.answer')].find(
+    (button) => button.querySelector('.what')?.textContent === 'Read every row',
+  );
+  if (seq === undefined) throw new Error('no seq scan answer');
+  seq.click();
 }
 
 /** Closes the How it works dialog with its Skip button. */
@@ -66,7 +68,7 @@ describe('start', () => {
   it('shows today’s puzzle, its number, the date and the streak', async () => {
     await start(root, '', { now: day(0), storage: memoryStorage(seen) });
     expect(root.querySelector('h2')?.textContent).toBe('Needle');
-    expect(root.querySelector('#builder-title')?.textContent).toBe('Your plan');
+    expect(text(root.querySelector('#builder-title'))).toBe('How do you read orders?');
     expect(root.querySelector('#run-title')?.textContent).toBe('Run it');
     expect(text(root.querySelector('.puzzle p'))).toBe(
       'Puzzle #1 · Tuesday, December 1, 2026 · Streak: 0 days',
@@ -87,7 +89,7 @@ describe('start', () => {
     const storage = memoryStorage({ ...seen, streak: { last: 1, days: 1 } });
     await start(root, '', { now: day(1), storage });
     chooseSeqScan(root);
-    root.querySelector<HTMLButtonElement>('.run-button')?.click();
+    root.querySelector<HTMLButtonElement>('.run .run-button')?.click();
     expect(JSON.parse(String(storage.getItem(KEY)))).toEqual({
       ...seen,
       puzzles: { '2': { costs: [100_000] } },
@@ -104,7 +106,7 @@ describe('start', () => {
     const section = root.querySelector<HTMLElement>('.share');
     expect(section?.hidden).toBe(true);
     chooseSeqScan(root);
-    root.querySelector<HTMLButtonElement>('.run-button')?.click();
+    root.querySelector<HTMLButtonElement>('.run .run-button')?.click();
     expect(section?.hidden).toBe(true);
     await vi.runAllTimersAsync();
     expect(section?.hidden).toBe(false);
@@ -130,7 +132,7 @@ describe('start', () => {
     const storage = memoryStorage({ ...seen, puzzles: { '1': { costs: [1, 1, 1, 1] } } });
     await start(root, '', { now: day(0), storage });
     chooseSeqScan(root);
-    expect(root.querySelector<HTMLButtonElement>('.run-button')?.disabled).toBe(true);
+    expect(root.querySelector<HTMLButtonElement>('.run .run-button')?.disabled).toBe(true);
     expect(text(root.querySelector('.run-controls p'))).toBe('No runs left for this puzzle.');
   });
 
@@ -174,7 +176,7 @@ describe('start', () => {
     expect(root.querySelector('dialog')?.open).toBe(true);
     skipTutorial(root);
     chooseSeqScan(root);
-    root.querySelector<HTMLButtonElement>('.run-button')?.click();
+    root.querySelector<HTMLButtonElement>('.run .run-button')?.click();
     expect(text(root.querySelector('.puzzle p'))).toContain('Streak: 1 day');
   });
 
@@ -190,7 +192,7 @@ describe('start', () => {
     await start(root, '', { now: day(0), storage: broken });
     skipTutorial(root);
     chooseSeqScan(root);
-    root.querySelector<HTMLButtonElement>('.run-button')?.click();
+    root.querySelector<HTMLButtonElement>('.run .run-button')?.click();
     expect(text(root.querySelector('.run-controls p'))).toContain('3 of 4 runs left.');
   });
 
@@ -251,11 +253,11 @@ describe('measurement', () => {
     const storage = memoryStorage(seen);
     await start(root, '', { now: day(2), storage, analytics: counts });
     chooseSeqScan(root);
-    root.querySelector<HTMLButtonElement>('.run-button')?.click();
+    root.querySelector<HTMLButtonElement>('.run .run-button')?.click();
     expect(saved(storage)).toMatchObject({ firstFinish: '2026-12-03', sent: ['first_finish'] });
     await start(root, '', { now: day(2), storage, analytics: counts });
     chooseSeqScan(root);
-    root.querySelector<HTMLButtonElement>('.run-button')?.click();
+    root.querySelector<HTMLButtonElement>('.run .run-button')?.click();
     expect(counts.sent).toEqual(['visit', 'first_finish', 'visit']);
   });
 
@@ -264,7 +266,7 @@ describe('measurement', () => {
     const storage = memoryStorage(seen);
     await start(root, '?level=needle', { now: day(0), storage, analytics: counts });
     chooseSeqScan(root);
-    root.querySelector<HTMLButtonElement>('.run-button')?.click();
+    root.querySelector<HTMLButtonElement>('.run .run-button')?.click();
     expect(counts.sent).toEqual(['visit']);
   });
 
@@ -283,7 +285,7 @@ describe('measurement', () => {
     const storage = memoryStorage(seen);
     await start(root, '', { now: day(0), storage, analytics: counts });
     chooseSeqScan(root);
-    root.querySelector<HTMLButtonElement>('.run-button')?.click();
+    root.querySelector<HTMLButtonElement>('.run .run-button')?.click();
     expect(saved(storage)).toMatchObject({ firstFinish: null, sent: [] });
     expect(counts.sent).toEqual(['visit']);
   });

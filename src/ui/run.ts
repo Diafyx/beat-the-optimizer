@@ -140,13 +140,25 @@ export function renderRun(
   const bar = el('div', { class: 'bar', 'aria-hidden': 'true' }, fill);
   const meter = el('div', { class: 'meter', hidden: '' }, operators, bar, total);
   const outcome = el('div', { class: 'result', 'aria-live': 'polite' });
+  const controls = el('div', { class: 'run-controls' }, button, status);
+  const section = el(
+    'section',
+    { class: 'part run', 'aria-labelledby': 'run-title' },
+    el('h3', { id: 'run-title' }, 'Run it'),
+    controls,
+    meter,
+    outcome,
+  );
 
   const update = (): void => {
+    // Until the plan is ready, the bar is hidden; so is the section, before a run.
+    controls.hidden = plan === null;
+    section.hidden = plan === null && meter.hidden;
     button.disabled = plan === null || left === 0 || running;
     status.textContent =
       left === 0
         ? 'No runs left for this puzzle.'
-        : `${String(left)} of ${String(MAX_RUNS)} runs left.${plan === null ? ' Finish your plan to run it.' : ''}`;
+        : `${String(left)} of ${String(MAX_RUNS)} runs left.`;
   };
 
   button.addEventListener('click', () => {
@@ -191,14 +203,7 @@ export function renderRun(
 
   update();
   return {
-    element: el(
-      'section',
-      { class: 'part run', 'aria-labelledby': 'run-title' },
-      el('h3', { id: 'run-title' }, 'Run it'),
-      el('div', { class: 'run-controls' }, button, status),
-      meter,
-      outcome,
-    ),
+    element: section,
     setPlan(next) {
       plan = next;
       update();

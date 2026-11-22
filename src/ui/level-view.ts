@@ -20,6 +20,11 @@ function section(title: string, ...children: readonly Node[]): HTMLElement {
   return el('section', { class: 'part' }, el('h3', {}, title), ...children);
 }
 
+/** A section that folds away, so the question is on the first screen of a phone. */
+function fold(title: string, ...children: readonly Node[]): HTMLElement {
+  return el('details', { class: 'part' }, el('summary', {}, el('h3', {}, title)), ...children);
+}
+
 function list(items: readonly (readonly (Node | string)[])[]): HTMLElement {
   return el('ul', {}, ...items.map((item) => el('li', {}, ...item)));
 }
@@ -149,12 +154,12 @@ export function renderLevel(level: Level): HTMLElement {
     { class: 'level', 'aria-labelledby': 'level-title' },
     el('h2', { id: 'level-title' }, level.title),
     ...level.story.map((paragraph) => el('p', { class: 'story' }, paragraph)),
-    section('The query', el('pre', { class: 'sql' }, code(level.sql))),
-    section(level.tables.length === 1 ? 'The table' : 'The tables', ...level.tables.map(table)),
+    fold('The query', el('pre', { class: 'sql' }, code(level.sql))),
+    fold(level.tables.length === 1 ? 'The table' : 'The tables', ...level.tables.map(table)),
     ...(level.joins.length === 0
       ? []
       : [
-          section(
+          fold(
             'Joins',
             list(level.joins.map(({ left, right }) => [code(`${ref(left)} = ${ref(right)}`)])),
           ),
@@ -162,7 +167,7 @@ export function renderLevel(level: Level): HTMLElement {
     ...(level.orderBy === null
       ? []
       : [
-          section(
+          fold(
             'Order',
             el('p', {}, 'The result is sorted by ', code(ref(level.orderBy)), ', ascending.'),
           ),
