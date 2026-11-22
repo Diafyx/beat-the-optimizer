@@ -42,7 +42,7 @@ test.describe('share card', () => {
   test('has link preview tags and image', async ({ page, request }) => {
     await page.goto('/');
     const image = await page.locator('meta[property="og:image"]').getAttribute('content');
-    expect(image).toBe('https://beat-the-optimizer.pages.dev/og-image.png');
+    expect(image).toBe('https://beat-the-optimizer.invalid/og-image.png');
     const response = await request.get('/og-image.png');
     expect(response.ok()).toBe(true);
     expect(response.headers()['content-type']).toBe('image/png');

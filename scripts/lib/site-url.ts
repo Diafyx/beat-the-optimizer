@@ -1,8 +1,11 @@
 // The site's public address, for the absolute URLs that link previews need
 // (Open Graph and Twitter tags in index.html). The build reads SITE_URL; the
 // deploy sets it to the real address.
-
-export const DEFAULT_SITE_URL = 'https://beat-the-optimizer.pages.dev';
+//
+// The default is under .invalid, a top-level domain that never resolves, so a
+// build without SITE_URL never points link previews or the canonical URL at a
+// site someone else could own.
+export const DEFAULT_SITE_URL = 'https://beat-the-optimizer.invalid';
 
 /** `value` (SITE_URL) as an https URL without a trailing slash, or the default. */
 export function siteUrl(value: string | undefined): string {

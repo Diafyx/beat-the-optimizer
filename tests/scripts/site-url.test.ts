@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_SITE_URL, siteUrl, withSiteUrl } from '../../scripts/lib/site-url.ts';
 
 describe('siteUrl', () => {
-  it('defaults to the Cloudflare Pages address', () => {
+  it('defaults to an address that can never resolve', () => {
     expect(siteUrl(undefined)).toBe(DEFAULT_SITE_URL);
     expect(siteUrl('')).toBe(DEFAULT_SITE_URL);
   });
