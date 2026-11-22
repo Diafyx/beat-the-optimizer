@@ -51,7 +51,8 @@ only the analytics hosts in use ([ADR 0004](docs/adr/0004-measure-return-with-go
   rotation); `?level=<id>` opens a level for practice. Progress is in
   localStorage through `src/progress.ts`, which works without storage.
   `src/analytics.ts` sends the anonymous visit and return counts, and
-  `privacy.html` (`/privacy`) says what is stored and sent.
+  `privacy.html` (`/privacy`) says what is stored and sent. `about.html`
+  (`/about`) explains the scoring and its limits for players.
 - `tests/`: test setup and cross-cutting tests.
 - `e2e/`: Playwright browser and accessibility tests against `vite preview`.
 - `authoring/`: the level authoring pipeline (MIT), run by Node: specs in

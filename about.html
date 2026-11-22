@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta
+      name="description"
+      content="How Beat the Optimizer scores a plan, how PostgreSQL's plan was recorded, and where the game's cost model differs from PostgreSQL's."
+    />
+    <title>About · Beat the Optimizer</title>
+    <link rel="canonical" href="%SITE_URL%/about" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <header class="site">
+      <p><a href="/">Beat the Optimizer</a></p>
+    </header>
+    <main>
+      <h1>About</h1>
+      <p>
+        A daily puzzle for people who write SQL. Each level gives you a query, its tables and the
+        statistics PostgreSQL planned with. You choose the join order, how each table is read and
+        how each join is done. Your plan is then scored against the plan PostgreSQL&nbsp;18 chose
+        for the same query, under the same rules.
+      </p>
+
+      <h2>How a plan is scored</h2>
+      <p>
+        Every operator costs the rows it touches, counted on the real data, and a plan costs the
+        sum:
+      </p>
+      <ul>
+        <li>a sequential scan costs the table's rows;</li>
+        <li>
+          an index scan costs 4 per matched row, or 1 when the table is stored in the index's order;
+        </li>
+        <li>a hash join or a merge join costs the rows of both inputs;</li>
+        <li>a nested loop costs the rows of one input times the rows of the other;</li>
+        <li>an index nested loop costs 4 per outer row and 4 per row it fetches;</li>
+        <li>
+          a sort of <var>n</var> rows costs <var>n</var> × ⌈log<sub>2</sub>&nbsp;<var>n</var>⌉;
+        </li>
+        <li>every join also costs the rows it returns.</li>
+      </ul>
+      <p>
+        The best plan is found by trying every plan in the game's plan space, so “× best” on the
+        result is exact. The
+        <a href="https://github.com/Diafyx/beat-the-optimizer/blob/main/docs/cost-model.md"
+          >cost model</a
+        >
+        has the full rules and a worked example.
+      </p>
+
+      <h2>How PostgreSQL's plan was recorded</h2>
+      <ul>
+        <li>
+          Each level's data is synthetic, generated from a seed, so it is the same every time it is
+          built.
+        </li>
+        <li>
+          It is loaded into PostgreSQL 18 and analysed, with a statistics target large enough to
+          read every row. Some levels then change data after <code>ANALYZE</code>, as happens
+          between statistics runs on a real database.
+        </li>
+        <li>
+          Parallel workers and JIT are off, and every cost setting is PostgreSQL's default, so the
+          plan is the same on every run.
+        </li>
+        <li>
+          <code>EXPLAIN</code> records the plan PostgreSQL chose. A bitmap heap scan or an
+          index-only scan counts as an index scan on the same index, and a hash, materialize or
+          memoize step belongs to its join.
+        </li>
+        <li>
+          The game then scores that plan with its own rules, on the true row counts, like yours.
+        </li>
+      </ul>
+
+      <h2>Where the cost model differs from PostgreSQL's</h2>
+      <p>
+        PostgreSQL prices a plan in page reads and CPU work, from the row counts it estimates. The
+        game counts rows touched, from the row counts that are really there. So PostgreSQL's plan
+        can lose for two reasons: its estimates were wrong, which is what most levels are about, or
+        the two cost models weigh the same plan differently.
+      </p>
+      <p>The game's model is deliberately small. It leaves out:</p>
+      <ul>
+        <li>pages, row width, caching and memory: hash tables and sorts never spill to disk;</li>
+        <li>CPU costs for operators and expressions;</li>
+        <li>
+          partial order: an index scan costs 4 per row unless the table is stored exactly in the
+          index's order;
+        </li>
+        <li>
+          plans that are not left-deep, cross products, parallel workers, bitmap scans that combine
+          several indexes, and <code>LIMIT</code>;
+        </li>
+        <li>queries over more than three tables.</li>
+      </ul>
+      <p>
+        Beating PostgreSQL here means your plan touches fewer rows. It does not promise that the
+        plan would run faster on a real server.
+      </p>
+
+      <h2>The code</h2>
+      <p>
+        The game is open source, under the MIT licence; the levels are all rights reserved. The
+        code, the cost model and the level formats are on
+        <a href="https://github.com/Diafyx/beat-the-optimizer">GitHub</a>.
+      </p>
+    </main>
+    <footer class="site">
+      <p><a href="/">Play today’s puzzle</a> · <a href="/privacy">Privacy</a></p>
+    </footer>
+  </body>
+</html>

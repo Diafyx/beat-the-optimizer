@@ -29,7 +29,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
-    rolldownOptions: { input: ['index.html', 'privacy.html'] },
+    rolldownOptions: { input: ['index.html', 'about.html', 'privacy.html'] },
   },
   test: {
     include: ['src/**/*.test.ts', 'tests/**/*.test.ts', 'authoring/**/*.test.ts'],
