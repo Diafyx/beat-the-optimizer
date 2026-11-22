@@ -15,7 +15,7 @@ test.describe('daily puzzle', () => {
     await page.clock.setFixedTime(LAUNCH_NOON);
     await page.goto('/');
     await page.getByRole('button', { name: /Seq scan/ }).click();
-    await page.getByRole('button', { name: 'Run your plan' }).click();
+    await page.getByRole('button', { name: /^Race/ }).click();
     await expect(page.getByText('Streak: 1 day')).toBeVisible();
     await page.reload();
     await page.getByRole('button', { name: /Seq scan/ }).click();
@@ -68,7 +68,7 @@ test.describe('first visit', () => {
     await page.goto('/?level=haystack');
     await page.getByRole('button', { name: 'Skip' }).click();
     await page.getByRole('button', { name: /Seq scan/ }).click();
-    await page.getByRole('button', { name: 'Run your plan' }).click();
-    await expect(page.getByText('You tied with PostgreSQL.')).toBeVisible();
+    await page.getByRole('button', { name: /^Race/ }).click();
+    await expect(page.getByText('A tie.')).toBeVisible();
   });
 });

@@ -69,7 +69,7 @@ describe('start', () => {
     await start(root, '', { now: day(0), storage: memoryStorage(seen) });
     expect(root.querySelector('h2')?.textContent).toBe('Needle');
     expect(text(root.querySelector('#builder-title'))).toBe('How do you read orders?');
-    expect(root.querySelector('#run-title')?.textContent).toBe('Run it');
+    expect(root.querySelector('#run-title')?.textContent).toBe('The race');
     expect(text(root.querySelector('.puzzle p'))).toBe(
       'Puzzle #1 · Tuesday, December 1, 2026 · Streak: 0 days',
     );

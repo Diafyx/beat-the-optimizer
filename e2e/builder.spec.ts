@@ -27,11 +27,11 @@ test.describe('plan builder', () => {
       'Jump into customers by name Index scan on customers_name_idx',
       'Join orders: look each one up Index nested loop through orders_customer_id_idx',
     ]);
-    await expect(page.getByRole('button', { name: 'Run your plan' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Race/ })).toBeVisible();
 
     await page.getByRole('button', { name: 'Change your plan' }).click();
     await expect(title(page)).toHaveText('How do you join orders?');
-    await expect(page.getByRole('button', { name: 'Run your plan' })).toBeHidden();
+    await expect(page.getByRole('button', { name: /^Race/ })).toBeHidden();
     await page.getByRole('button', { name: 'Back', exact: true }).click();
     await expect(title(page)).toHaveText('How do you read customers?');
   });

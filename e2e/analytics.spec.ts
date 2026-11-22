@@ -17,7 +17,7 @@ const counted = (urls: readonly URL[]): string[] =>
 
 async function play(page: Page): Promise<void> {
   await page.getByRole('button', { name: /Seq scan/ }).click();
-  await page.getByRole('button', { name: 'Run your plan' }).click();
+  await page.getByRole('button', { name: /^Race/ }).click();
   await expect(page.getByRole('region', { name: 'Share' })).toBeVisible();
 }
 
