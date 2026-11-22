@@ -316,12 +316,21 @@ with a comment saying why.
 - When the maintainer merges the release pull request, the same workflow tags
   the release, runs the full test suite, and deploys the site to Cloudflare
   after the maintainer approves it.
-- Every pull request from this repository gets a preview deployment. Pull
-  requests from forks and from Dependabot do not, because they have no access
-  to secrets.
+- Every pull request from this repository gets a preview deployment
+  (`preview.yml`), and a comment with its address that each push updates.
+  Pull requests from forks and from Dependabot do not, because they have no
+  access to secrets. A failed preview does not block a merge.
+- The production deploy (`deploy.yml`) runs `wrangler deploy`, then a smoke
+  test (`e2e/smoke.live.ts`) against the live site. It can also be started by
+  hand from the Actions tab.
 - Deployments use two GitHub environments. `preview` has no protection.
   `production` needs the maintainer's approval and accepts deployments only
-  from `main` and from `v*` tags.
+  from `main` and from `v*` tags. Each environment has:
+  - the secrets `CLOUDFLARE_API_TOKEN` (a token with the "Edit Cloudflare
+    Workers" permission) and `CLOUDFLARE_ACCOUNT_ID`;
+  - the variables `SITE_URL`, `GOATCOUNTER_CODE` and `CF_BEACON_TOKEN`
+    (AGENTS.md, "Build settings"). Production needs `SITE_URL`; the deploy
+    fails without it.
 
 ## Code of Conduct
 

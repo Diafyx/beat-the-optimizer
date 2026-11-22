@@ -44,9 +44,16 @@ describe('contentSecurityPolicy', () => {
     );
   });
 
-  it('goes in a _headers file for every path', () => {
-    expect(headersFile({ goatcounter: '', cloudflare: '' })).toMatch(
-      /^\/\*\n {2}Content-Security-Policy: default-src 'none'; .+\n$/,
-    );
+  it('goes in a _headers file for every path, with the other security headers', () => {
+    expect(headersFile({ goatcounter: '', cloudflare: '' }).split('\n')).toEqual([
+      '/*',
+      expect.stringMatching(/^ {2}Content-Security-Policy: default-src 'none'; .+$/),
+      '  Strict-Transport-Security: max-age=31536000',
+      '  X-Content-Type-Options: nosniff',
+      '  Referrer-Policy: strict-origin-when-cross-origin',
+      '  Cross-Origin-Opener-Policy: same-origin',
+      '  Permissions-Policy: camera=(), geolocation=(), microphone=(), payment=(), usb=()',
+      '',
+    ]);
   });
 });

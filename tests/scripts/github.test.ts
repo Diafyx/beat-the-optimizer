@@ -4,6 +4,7 @@ import {
   type FetchLike,
   annotation,
   gitHub,
+  toComment,
   toIssue,
   toIssueSummary,
   toPullRequest,
@@ -81,6 +82,27 @@ describe('toIssueSummary', () => {
       'issue number is not a number',
     );
     expect(() => toIssueSummary({ number: 3, body: '' })).toThrow('issue URL is not a string');
+  });
+});
+
+describe('toComment', () => {
+  it('reads the id, body and whether a bot wrote it', () => {
+    expect(toComment({ id: 3, body: 'hi', user: { type: 'Bot' } })).toEqual({
+      id: 3,
+      body: 'hi',
+      isBot: true,
+    });
+    expect(toComment({ id: 4, body: 'hi', user: { type: 'User' } }).isBot).toBe(false);
+  });
+
+  it('rejects responses of the wrong shape', () => {
+    expect(() => toComment([])).toThrow('comment is not an object');
+    expect(() => toComment({ id: '3', body: 'hi', user: {} })).toThrow(
+      'comment id is not a number',
+    );
+    expect(() => toComment({ id: 3, body: null, user: {} })).toThrow(
+      'comment body is not a string',
+    );
   });
 });
 
@@ -189,9 +211,28 @@ describe('gitHub', () => {
     ]);
   });
 
+  it('lists the comments and edits one', async () => {
+    const { fetch, calls } = fakeFetch(
+      json([{ id: 3, body: 'hi', user: { type: 'User' } }]),
+      json({}),
+    );
+    const client = gitHub('o/r', 'tok', fetch);
+    expect(await client.comments(9)).toEqual([{ id: 3, body: 'hi', isBot: false }]);
+    await client.editComment(3, 'edited');
+    expect(calls.map(({ url, method, body }) => [method, url, body])).toEqual([
+      ['GET', 'https://api.github.com/repos/o/r/issues/9/comments?per_page=100', undefined],
+      ['PATCH', 'https://api.github.com/repos/o/r/issues/comments/3', { body: 'edited' }],
+    ]);
+  });
+
+  it('rejects a comment list of the wrong shape', async () => {
+    const { fetch } = fakeFetch(json({}));
+    await expect(gitHub('o/r', 'tok', fetch).comments(9)).rejects.toThrow('comments is not a list');
+  });
+
   it('fails with the status and message of an error response', async () => {
     const error = (): Response => new Response('Bad credentials', { status: 401 });
-    const { fetch } = fakeFetch(error(), error(), error(), error(), error(), error(), error());
+    const { fetch } = fakeFetch(...Array.from({ length: 9 }, error));
     const client = gitHub('o/r', 'tok', fetch);
     await expect(client.pull(7)).rejects.toThrow(
       'reading pull request #7 failed: 401 Bad credentials',
@@ -206,6 +247,8 @@ describe('gitHub', () => {
       'creating an issue failed',
     );
     await expect(client.comment(9, 'x')).rejects.toThrow('commenting on #9 failed');
+    await expect(client.comments(9)).rejects.toThrow('listing the comments on #9 failed');
+    await expect(client.editComment(3, 'x')).rejects.toThrow('editing comment 3 failed');
   });
 });
 

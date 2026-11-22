@@ -25,11 +25,13 @@ npm run check-lockfile # every lockfile URL is on registry.npmjs.org
 npm run pr-size     # CI only: size label for a pull request
 npm run pr-hygiene  # CI only: pull request rules
 npm run build       # production build into dist/; settings below
+npm run smoke       # CI only: the smoke test against the live site at SMOKE_URL
 ```
 
 ## Build settings
 
-`vite build` reads these environment variables; the deploy sets them.
+`vite build` reads these environment variables. The deploys set them from
+the variables of the GitHub environment (CONTRIBUTING.md, "Releases").
 
 - `SITE_URL`: the public address, for link previews and canonical URLs.
   Default `https://beat-the-optimizer.invalid`, which never resolves, so
@@ -39,7 +41,10 @@ npm run build       # production build into dist/; settings below
   beacon.
 
 The build writes `dist/_headers` with a Content-Security-Policy that allows
-only the analytics hosts in use ([ADR 0004](docs/adr/0004-measure-return-with-goatcounter.md)).
+only the analytics hosts in use ([ADR 0004](docs/adr/0004-measure-return-with-goatcounter.md)),
+and the other security headers. `wrangler.jsonc` serves `dist/` as the static
+assets of a Cloudflare Worker; `npx wrangler dev` serves it locally with those
+headers.
 
 ## Layout
 

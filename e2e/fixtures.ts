@@ -6,7 +6,8 @@ import { KEY } from '../src/progress.ts';
 export const LAUNCH_NOON = new Date('2026-12-01T12:00:00');
 
 /** The analytics hosts. Requests to them never leave the test. */
-const ANALYTICS = /^https:\/\/([a-z0-9-]+\.goatcounter\.com|(static\.)?cloudflareinsights\.com)\//;
+export const ANALYTICS =
+  /^https:\/\/([a-z0-9-]+\.goatcounter\.com|(static\.)?cloudflareinsights\.com)\//;
 
 // The Content-Security-Policy that the build writes for Cloudflare. `vite
 // preview` does not read _headers, so the tests add it to every page.
