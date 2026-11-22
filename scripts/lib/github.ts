@@ -1,6 +1,6 @@
-// A small GitHub REST client for the pr-hygiene workflow and the failure
-// reports of the scheduled workflows. It reads pull requests and issues, sets
-// labels, and opens and comments on issues. The fetch function is injectable so
+// A small GitHub REST client for the pr-hygiene workflow, the failure reports
+// of the scheduled workflows and the preview comment. It reads pull requests
+// and issues, sets labels, opens issues, and writes comments. The fetch function is injectable so
 // the tests never touch the network.
 
 export interface PullRequest {
@@ -32,6 +32,14 @@ export interface NewIssue {
   title: string;
   body: string;
   labels: readonly string[];
+}
+
+/** A comment on an issue or a pull request. */
+export interface Comment {
+  id: number;
+  body: string;
+  /** True for app and bot accounts, such as github-actions. */
+  isBot: boolean;
 }
 
 export type FetchLike = (url: string, init: RequestInit) => Promise<Response>;
@@ -89,6 +97,18 @@ export function toIssueSummary(json: unknown): IssueSummary {
     number,
     body: issue['body'] === null ? '' : string(issue['body'], 'issue body'),
     url: string(issue['html_url'], 'issue URL'),
+  };
+}
+
+/** Reads a comment from a list response. */
+export function toComment(json: unknown): Comment {
+  const comment = object(json, 'comment');
+  const id = comment['id'];
+  if (typeof id !== 'number') throw new Error('GitHub API: comment id is not a number');
+  return {
+    id,
+    body: string(comment['body'], 'comment body'),
+    isBot: object(comment['user'], 'user')['type'] === 'Bot',
   };
 }
 
@@ -163,6 +183,20 @@ export function gitHub(repository: string, token: string, fetchFn: FetchLike = f
     async comment(number: number, body: string): Promise<void> {
       const response = await call('POST', `/issues/${String(number)}/comments`, { body });
       if (!response.ok) await fail(`commenting on #${String(number)}`, response);
+    },
+
+    /** The comments on an issue or pull request; the first 100 only. */
+    async comments(number: number): Promise<Comment[]> {
+      const response = await call('GET', `/issues/${String(number)}/comments?per_page=100`);
+      if (!response.ok) return fail(`listing the comments on #${String(number)}`, response);
+      const list: unknown = await response.json();
+      if (!Array.isArray(list)) throw new Error('GitHub API: comments is not a list');
+      return list.map(toComment);
+    },
+
+    async editComment(id: number, body: string): Promise<void> {
+      const response = await call('PATCH', `/issues/comments/${String(id)}`, { body });
+      if (!response.ok) await fail(`editing comment ${String(id)}`, response);
     },
   };
 }

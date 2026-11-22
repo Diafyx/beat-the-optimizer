@@ -21,6 +21,8 @@ shared:
   - 'tsconfig*.json'
   - 'vite.config.ts'
   - 'playwright.config.ts'
+  - 'playwright.smoke.config.ts'
+  - 'wrangler.jsonc'
   - 'lighthouserc.json'
   - 'stryker.config.json'
 

@@ -164,3 +164,6 @@ playwright-report/
 test-results/
 .lighthouseci/
 .stryker-tmp/
+
+# Wrangler's local state (npx wrangler dev)
+.wrangler/

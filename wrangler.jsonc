@@ -1,0 +1,17 @@
+// The site on Cloudflare Workers: static assets only, no Worker code. CI
+// deploys it (ci.yml uploads a preview for each pull request; deploy.yml
+// deploys production). `vite build` writes dist/, including dist/_headers.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "beat-the-optimizer",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist",
+    // An address that is not a file serves the game.
+    "not_found_handling": "single-page-application",
+  },
+  // The site is at beat-the-optimizer.<account subdomain>.workers.dev, and
+  // each preview at <alias>-beat-the-optimizer.<account subdomain>.workers.dev.
+  "workers_dev": true,
+  "preview_urls": true,
+}

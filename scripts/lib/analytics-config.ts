@@ -3,7 +3,8 @@
 // https://<code>.goatcounter.com; CF_BEACON_TOKEN is the Cloudflare Web
 // Analytics token. Either can be left out, which turns that service off. The
 // same settings decide the Content-Security-Policy in the generated _headers
-// file, so the page can reach only the services it uses.
+// file, so the page can reach only the services it uses. The file also sets
+// the other security headers.
 
 import type { AnalyticsConfig } from '../../src/analytics.ts';
 
@@ -48,6 +49,17 @@ export function contentSecurityPolicy({ goatcounter, cloudflare }: AnalyticsConf
   ].join('; ');
 }
 
+/** The security headers on every response, after the Content-Security-Policy. */
+export const SECURITY_HEADERS: readonly (readonly [string, string])[] = [
+  ['Strict-Transport-Security', 'max-age=31536000'],
+  ['X-Content-Type-Options', 'nosniff'],
+  ['Referrer-Policy', 'strict-origin-when-cross-origin'],
+  ['Cross-Origin-Opener-Policy', 'same-origin'],
+  ['Permissions-Policy', 'camera=(), geolocation=(), microphone=(), payment=(), usb=()'],
+];
+
 /** The _headers file for Cloudflare's static assets. */
-export const headersFile = (config: AnalyticsConfig): string =>
-  `/*\n  Content-Security-Policy: ${contentSecurityPolicy(config)}\n`;
+export function headersFile(config: AnalyticsConfig): string {
+  const headers = [['Content-Security-Policy', contentSecurityPolicy(config)], ...SECURITY_HEADERS];
+  return `/*\n${headers.map(([name, value]) => `  ${name}: ${value}\n`).join('')}`;
+}
