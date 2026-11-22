@@ -111,7 +111,7 @@ describe('start', () => {
     await vi.runAllTimersAsync();
     expect(section?.hidden).toBe(false);
     expect(section?.querySelector('pre')?.textContent).toBe(
-      'Beat the Optimizer #3\n🟩\n🤝 I tied with PostgreSQL with the best plan\nMe: 1× best · PostgreSQL: 1× best\nhttps://x.org/',
+      'Beat the Optimizer #3\n🟩\n🤝 I tied with the Optimizer with the perfect plan\nMe: 1× best · Optimizer: 1× best\nhttps://x.org/',
     );
   });
 
@@ -119,7 +119,7 @@ describe('start', () => {
     const storage = memoryStorage({ ...seen, puzzles: { '3': { costs: [280_000] } } });
     await start(root, '', { now: day(2), storage, url: 'https://x.org/' });
     expect(root.querySelector<HTMLElement>('.share')?.hidden).toBe(false);
-    expect(root.querySelector('.share pre')?.textContent).toContain('🐘 PostgreSQL won');
+    expect(root.querySelector('.share pre')?.textContent).toContain('🏁 The Optimizer won');
   });
 
   it('offers no share card for practice', async () => {

@@ -18,9 +18,10 @@ done. Then your plan runs against the plan PostgreSQL chose for the same query.
 - **One puzzle a day**, the same for everyone. Read the query, the tables and
   the statistics PostgreSQL planned with, then build your plan by answering a
   few questions.
-- **Four runs** per puzzle. Each run shows what every operator costs, then how
-  your plan compares with PostgreSQL's and with the best plan there is, and
-  why PostgreSQL chose its plan.
+- **Four races** per puzzle. Your plan races the Optimizer's (PostgreSQL's):
+  each scores the rows it touches, and fewer wins. When the Optimizer's row
+  estimate was far off, a yellow flag says so. Then you see how both plans
+  compare with the perfect plan, and why the Optimizer chose its plan.
 - **A streak** for playing on consecutive days, and a **share card** that
   shows how you did without giving the plan away.
 - **Practice** any level with `?level=<id>`; it does not count towards your

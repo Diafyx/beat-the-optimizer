@@ -1,7 +1,8 @@
 /**
  * The share card: a spoiler-free result as text. It has the puzzle number,
- * one square per run and how the player's best run and PostgreSQL's plan
- * compare with the best plan. It never names a table, index or join method.
+ * one square per run and how the player's best run and the Optimizer's plan
+ * (PostgreSQL's) compare with the perfect plan. It never names a table, index
+ * or join method.
  */
 
 /** A run's square, by its cost as a multiple of the best cost. */
@@ -18,7 +19,7 @@ export interface ShareInput {
   readonly puzzle: number;
   /** The cost of each run, in order; at least one. */
   readonly costs: readonly number[];
-  /** PostgreSQL's cost and the best cost (`costs.optimizer` and `costs.best`). */
+  /** The Optimizer's cost and the best cost (`costs.optimizer` and `costs.best`). */
   readonly optimizer: number;
   readonly best: number;
   /** The link to the game. */
@@ -31,15 +32,15 @@ export function shareText({ puzzle, costs, optimizer, best, url }: ShareInput): 
   const mine = Math.min(...costs);
   const outcome =
     mine < optimizer
-      ? '🏆 I beat PostgreSQL'
+      ? '🏆 I beat the Optimizer'
       : mine === optimizer
-        ? '🤝 I tied with PostgreSQL'
-        : '🐘 PostgreSQL won';
+        ? '🤝 I tied with the Optimizer'
+        : '🏁 The Optimizer won';
   return [
     `Beat the Optimizer #${String(puzzle)}`,
     costs.map((cost) => square(cost / Math.max(best, 1))).join(''),
-    `${outcome}${mine === best ? ' with the best plan' : ''}`,
-    `Me: ${times(mine)} best · PostgreSQL: ${times(optimizer)} best`,
+    `${outcome}${mine === best ? ' with the perfect plan' : ''}`,
+    `Me: ${times(mine)} best · Optimizer: ${times(optimizer)} best`,
     url,
   ].join('\n');
 }
