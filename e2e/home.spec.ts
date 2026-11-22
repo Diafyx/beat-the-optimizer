@@ -35,6 +35,17 @@ test.describe('app shell', () => {
     await page.getByRole('link', { name: 'Play today’s puzzle' }).click();
     await expect(page.getByText(/^Puzzle #\d+ · /)).toBeVisible();
   });
+
+  test('links to the about page, which explains the scoring and links back', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('link', { name: 'About' }).click();
+    await expect(page).toHaveTitle('About · Beat the Optimizer');
+    await expect(
+      page.getByRole('heading', { name: "Where the cost model differs from PostgreSQL's" }),
+    ).toBeVisible();
+    await page.getByRole('link', { name: 'Play today’s puzzle' }).click();
+    await expect(page.getByText(/^Puzzle #\d+ · /)).toBeVisible();
+  });
 });
 
 test.describe('layout at 360 px', () => {

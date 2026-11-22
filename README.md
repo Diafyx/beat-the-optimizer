@@ -11,6 +11,26 @@ done. Then your plan runs against the plan PostgreSQL chose for the same query.
 > **Status:** early development. The first public version is `v0.1.0`, with 10
 > levels, a daily rotation and a share card.
 
+![A level: the story, the query, and the table with its row count, columns and indexes](docs/images/level.png)
+
+## Play
+
+- **One puzzle a day**, the same for everyone. Read the query, the tables and
+  the statistics PostgreSQL planned with, then build your plan by answering a
+  few questions.
+- **Four runs** per puzzle. Each run shows what every operator costs, then how
+  your plan compares with PostgreSQL's and with the best plan there is, and
+  why PostgreSQL chose its plan.
+- **A streak** for playing on consecutive days, and a **share card** that
+  shows how you did without giving the plan away.
+- **Practice** any level with `?level=<id>`; it does not count towards your
+  streak.
+- It works on phones, needs no account and sets no cookies. The game's
+  `/privacy` page says exactly what it stores and sends, and `/about` explains
+  the scoring and its limits.
+
+![The result of a run: the cost of each operator, then your plan, PostgreSQL's plan and the best possible plan](docs/images/result.png)
+
 ## How it works
 
 - **Your plan**: pick the join order, an access path for each table (sequential
@@ -23,8 +43,14 @@ done. Then your plan runs against the plan PostgreSQL chose for the same query.
 - **The opponent**: every level stores the plan PostgreSQL 18 actually chose,
   recorded against synthetic data. Your plan and Postgres's are scored with the
   same model.
-- **Each day** one level is the daily puzzle. You can share your result without
-  spoiling the answer.
+- **The limits**: the game counts rows on the real data, while PostgreSQL
+  prices pages and CPU work from its estimates. Beating it means your plan
+  touches fewer rows, not that it would run faster on a real server. The
+  in-game about page ([`about.html`](about.html)) lists what the model leaves
+  out.
+- **Measurement**: anonymous counts of visits and next-day returns, with no
+  cookies or identifiers, and nothing with Global Privacy Control on. See
+  [ADR 0004](docs/adr/0004-measure-return-with-goatcounter.md).
 
 ## Run it locally
 
@@ -54,7 +80,8 @@ This repository has two licences:
 - **Code** (everything outside `levels/`) is under the [MIT licence](LICENSE).
 - **Level content** in `levels/` (level files, level specs, stories
   and explanations) is **all rights reserved**. See
-  [`levels/LICENSE`](levels/LICENSE).
+  [`levels/LICENSE`](levels/LICENSE). The screenshots in `docs/images/` show
+  level content, so they are all rights reserved too.
 
 ## Contributing
 

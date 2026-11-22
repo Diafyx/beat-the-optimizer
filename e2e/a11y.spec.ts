@@ -54,14 +54,16 @@ test.describe('accessibility @a11y', () => {
     expect(await blockingViolations(page, testInfo, 'unknown')).toEqual([]);
   });
 
-  for (const colorScheme of ['light', 'dark'] as const) {
-    test(`the privacy page in the ${colorScheme} theme has no serious or critical violations`, async ({
-      page,
-    }, testInfo) => {
-      await page.emulateMedia({ colorScheme });
-      await page.goto('/privacy');
-      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-      expect(await blockingViolations(page, testInfo, `privacy-${colorScheme}`)).toEqual([]);
-    });
+  for (const name of ['about', 'privacy']) {
+    for (const colorScheme of ['light', 'dark'] as const) {
+      test(`the ${name} page in the ${colorScheme} theme has no serious or critical violations`, async ({
+        page,
+      }, testInfo) => {
+        await page.emulateMedia({ colorScheme });
+        await page.goto(`/${name}`);
+        await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+        expect(await blockingViolations(page, testInfo, `${name}-${colorScheme}`)).toEqual([]);
+      });
+    }
   }
 });
