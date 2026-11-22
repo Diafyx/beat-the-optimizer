@@ -1,35 +1,95 @@
-/* Mobile first: one column from 360 px, wider spacing from 40rem. Colours
-   follow the system's light or dark theme. */
-:root {
-  color-scheme: light dark;
-  --text: #1c1e21;
-  --muted: #4a4f57;
-  --background: #fbfbfa;
-  --surface: #ffffff;
-  --border: #d5d8dc;
-  --code-background: #f1f3f5;
-  --accent: #1d5fa8;
-  font-family:
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
-  line-height: 1.5;
-  color: var(--text);
-  background: var(--background);
+/* Race Night: the game is a race against the Optimizer, drawn like the
+   timing graphics of a night race. Dark only (docs/adr/0005). Orange is the
+   player, blue is the Optimizer, yellow is a flag, purple is the perfect plan.
+   Phones first: one column, with the main action in a bar fixed to the
+   bottom; wider screens get a wider stage and cards side by side. */
+
+/* Latin subsets, served with the site (public/fonts/OFL.txt). */
+@font-face {
+  font-family: Barlow;
+  src: url('/fonts/barlow-400.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #e6e8eb;
-    --muted: #b3b9c1;
-    --background: #15171a;
-    --surface: #1e2125;
-    --border: #3a3f46;
-    --code-background: #272b30;
-    --accent: #8ab8f0;
-  }
+@font-face {
+  font-family: Barlow;
+  src: url('/fonts/barlow-600.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Barlow Condensed';
+  src: url('/fonts/barlow-condensed-600.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Barlow Condensed';
+  src: url('/fonts/barlow-condensed-800-italic.woff2') format('woff2');
+  font-weight: 800;
+  font-style: italic;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  color-scheme: dark;
+
+  /* The track. */
+  --asphalt: #0e1012;
+  --tarmac: #171a1d;
+  --kerb: #22262b;
+  --line: #2f343a;
+  --white: #f3f1ea;
+  --dim: #9aa1a9;
+
+  /* Who is who. Every colour passes 4.5:1 on --asphalt and --tarmac. */
+  --you: #ff5a1f;
+  --you-soft: rgb(255 90 31 / 22%);
+  --on-you: #140700;
+  --optimizer: #3d8bff;
+  --flag: #ffd400;
+  --perfect: #b25cff;
+
+  /* Type. */
+  --cond: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', sans-serif;
+  --body: Barlow, 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Shape: tiles lose two opposite corners, like a livery cut. */
+  --cut: 1rem;
+  --tile: polygon(
+    0 0,
+    calc(100% - var(--cut)) 0,
+    100% var(--cut),
+    100% 100%,
+    var(--cut) 100%,
+    0 calc(100% - var(--cut))
+  );
+  --gutter: max(1rem, env(safe-area-inset-left));
+  --gutter-end: max(1rem, env(safe-area-inset-right));
+
+  font: 400 1rem/1.5 var(--body);
+  color: var(--white);
+  background:
+    radial-gradient(120% 40rem at 50% -10rem, rgb(255 90 31 / 16%), transparent 60%) no-repeat,
+    repeating-linear-gradient(115deg, rgb(255 255 255 / 1.8%) 0 2px, transparent 2px 9px),
+    var(--asphalt);
+  -webkit-font-smoothing: antialiased;
 }
 
 *,
@@ -40,84 +100,180 @@
 
 body {
   margin: 0 auto;
-  max-width: 48rem;
-  padding: 1rem;
+  max-width: 34.5rem;
+  min-height: 100dvh;
+  padding: 1rem var(--gutter-end) 1.5rem var(--gutter);
 }
 
+/* Room below the footer for the bar fixed at the bottom. */
+body:has(.run-controls) {
+  padding-bottom: calc(7rem + env(safe-area-inset-bottom));
+}
+
+:focus-visible {
+  outline: 3px solid var(--flag);
+  outline-offset: 3px;
+}
+
+/* Headings are timing-board type: condensed, heavy, italic, upper case. */
 h1,
 h2,
-h3,
-h4,
-h5 {
-  line-height: 1.25;
+h3 {
   margin: 1.5em 0 0.5em;
+  font: italic 800 1.75rem/0.95 var(--cond);
+  text-transform: uppercase;
+  letter-spacing: 0.005em;
+  text-wrap: balance;
 }
 
 h1 {
-  font-size: 1.5rem;
   margin-top: 0;
+  font-size: clamp(2.75rem, 12vw, 4.5rem);
+  line-height: 0.9;
 }
 
 h2 {
-  font-size: 1.375rem;
+  font-size: clamp(2rem, 9vw, 3rem);
 }
 
-h3 {
-  font-size: 1.125rem;
+/* The level's name is the headline of the screen. */
+.level > h2:first-child {
+  margin-top: 1rem;
+  font-size: clamp(2.75rem, 13vw, 4.5rem);
+  line-height: 0.9;
 }
 
 h4,
 h5 {
-  font-size: 1rem;
+  margin: 1.25em 0 0.25em;
+  font: 600 1rem/1.2 var(--cond);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--dim);
 }
 
 p,
 ul,
+ol,
 dl,
 table {
   margin: 0.5em 0;
 }
 
+strong,
+b {
+  font-weight: 600;
+}
+
 a {
-  color: var(--accent);
+  color: var(--white);
+  text-decoration-color: var(--you);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  color: var(--you);
 }
 
 /* Long identifiers wrap rather than widen the page. */
 code {
-  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  font-size: 0.9em;
+  font: 600 1.05em var(--cond);
+  letter-spacing: 0.02em;
   overflow-wrap: anywhere;
+}
+
+/* The site header: the name, with a chequered flag. */
+header.site h1,
+header.site > p:first-child {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font: italic 800 1.375rem/1 var(--cond);
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+
+header.site h1::before,
+header.site > p:first-child::before {
+  flex: none;
+  content: '';
+  width: 1.5rem;
+  height: 1rem;
+  background: conic-gradient(
+      var(--white) 0 25%,
+      var(--asphalt) 0 50%,
+      var(--white) 0 75%,
+      var(--asphalt) 0
+    )
+    0 0 / 0.5rem 0.5rem;
+  transform: skewX(-12deg);
+}
+
+header.site > p:first-child a {
+  color: inherit;
+  text-decoration: none;
 }
 
 .site p,
 .label {
-  color: var(--muted);
+  color: var(--dim);
+}
+
+footer.site {
+  margin-top: 2.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.875rem;
 }
 
 .label {
-  font-size: 0.875rem;
-  font-weight: 600;
   margin-bottom: 0;
+  font: 600 0.9375rem/1.3 var(--cond);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.story {
+  font-size: 1.125rem;
+}
+
+/* Cards: tarmac panels with a hairline edge. */
+.sql,
+.table,
+.message,
+.builder fieldset {
+  background: var(--tarmac);
+  border: 1px solid var(--line);
+  border-radius: 4px;
 }
 
 .sql {
   margin: 0;
-  padding: 0.75rem;
-  background: var(--code-background);
-  border-radius: 0.375rem;
+  padding: 0.875rem 1rem;
+  font: 600 1rem/1.55 var(--cond);
   white-space: pre-wrap;
 }
 
+.sql code {
+  font: inherit;
+}
+
 .table {
-  margin: 1rem 0;
-  padding: 0 0.75rem 0.75rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 0.375rem;
+  margin: 0.75rem 0;
+  padding: 0 1rem 1rem;
 }
 
 .table h4 {
-  margin-top: 0.75rem;
+  margin-top: 0.875rem;
+  color: var(--white);
+}
+
+.table h4 code {
+  font: italic 800 1.5rem/1 var(--cond);
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .table ul {
@@ -125,7 +281,7 @@ code {
 }
 
 .stats {
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--line);
   margin-top: 0.75rem;
 }
 
@@ -136,19 +292,27 @@ code {
   gap: 0 1rem;
 }
 
+.stats dt {
+  color: var(--dim);
+}
+
 .stats dd {
   margin: 0;
+  font: 600 1.0625rem/1.4 var(--cond);
+  font-variant-numeric: tabular-nums;
 }
 
 .stats table {
   border-collapse: collapse;
 }
 
-.stats caption {
+.stats caption,
+.costs caption {
   text-align: left;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--muted);
+  font: 600 0.9375rem/1.3 var(--cond);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--dim);
 }
 
 .stats th,
@@ -164,164 +328,257 @@ code {
 }
 
 .message {
-  padding: 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 0.375rem;
-  background: var(--surface);
+  padding: 0.75rem 1rem;
 }
 
-@media (min-width: 40rem) {
-  body {
-    padding: 2rem;
-  }
-
-  h1 {
-    font-size: 2rem;
-  }
-}
-
-/* The plan builder: every option is a tap target of at least 44 px. */
+/* The plan builder: every option is a cut-corner tile of at least 48 px,
+   with a stripe that turns orange when it is the player's pick. */
 .builder fieldset {
   margin: 1rem 0;
-  padding: 0.5rem 0.75rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 0.375rem;
-  background: var(--surface);
+  padding: 0.5rem 1rem 1rem;
 }
 
 .builder legend {
   padding: 0 0.25rem;
-  font-weight: 600;
+  font: 600 1.0625rem/1.3 var(--cond);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .option {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.25rem 0.5rem;
-  min-height: 2.75rem;
+  gap: 0.25rem 0.625rem;
+  min-height: 3rem;
   margin-top: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 0.375rem;
+  padding: 0.75rem 1.125rem 0.75rem 1.375rem;
+  background: var(--kerb);
+  clip-path: var(--tile);
+  box-shadow: inset 0 0 0 1px var(--line);
   cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    background-color 0.12s ease;
+}
+
+.option::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0.375rem;
+  content: '';
+  background: var(--line);
+  transition:
+    width 0.12s ease,
+    background-color 0.12s ease;
+}
+
+.option:hover::before {
+  background: var(--you);
+}
+
+.option:active {
+  transform: scale(0.985);
 }
 
 .option input {
+  flex: none;
   width: 1.125rem;
   height: 1.125rem;
   margin: 0;
-  accent-color: var(--accent);
+  accent-color: var(--you);
 }
 
 .option:has(input:checked) {
-  border-color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--accent);
+  background: linear-gradient(100deg, var(--you-soft), rgb(255 90 31 / 5%) 70%), var(--kerb);
 }
 
+.option:has(input:checked)::before {
+  width: 0.625rem;
+  background: var(--you);
+}
+
+/* The tile clips an outline, so focus is drawn inside it. */
 .option:has(input:focus-visible) {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  box-shadow: inset 0 0 0 3px var(--flag);
 }
 
 .option:has(input:disabled) {
   cursor: not-allowed;
-  color: var(--muted);
-  border-style: dashed;
+  color: var(--dim);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.option:has(input:disabled)::before {
+  background: transparent;
 }
 
 .locked {
   margin-left: auto;
-  font-size: 0.875rem;
+  font: 600 0.875rem/1.2 var(--cond);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
-.summary ol {
+.summary ol,
+.operators {
   padding-left: 1.5rem;
 }
 
-/* Running a plan. */
-.run-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 1rem;
+.summary li::marker,
+.operators li::marker {
+  font: italic 800 1.125rem var(--cond);
+  color: var(--you);
 }
 
+/* Running a plan: the main action, in a bar fixed to the bottom that fades
+   into the track. */
+.run-controls {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem 1rem;
+  padding: 1.5rem var(--gutter-end) calc(0.875rem + env(safe-area-inset-bottom)) var(--gutter);
+  background: linear-gradient(transparent, rgb(14 16 18 / 94%) 28%);
+}
+
+.run-controls p {
+  flex: 0 1 auto;
+  max-width: 14rem;
+  margin: 0;
+  font: 600 0.9375rem/1.25 var(--cond);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--dim);
+}
+
+/* The main button: orange, cut like the tiles. */
 .run-button {
-  min-height: 2.75rem;
-  padding: 0.5rem 1.25rem;
-  font: inherit;
-  font-weight: 600;
-  color: var(--background);
-  background: var(--accent);
+  flex: none;
+  min-height: 3.5rem;
+  padding: 0.5rem 1.75rem;
+  font: italic 800 1.5rem/1 var(--cond);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--on-you);
+  background: var(--you);
   border: 0;
-  border-radius: 0.375rem;
+  clip-path: var(--tile);
   cursor: pointer;
+  transition:
+    transform 0.1s ease,
+    filter 0.1s ease;
+}
+
+.run-button:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.run-button:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .run-button:disabled {
-  color: var(--muted);
-  background: var(--code-background);
+  color: var(--dim);
+  background: var(--kerb);
   cursor: not-allowed;
 }
 
+/* The clip-path hides an outline, so focus shows as a flag-yellow fill edge. */
 .run-button:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.operators {
-  padding-left: 1.5rem;
+  outline: none;
+  box-shadow: inset 0 0 0 3px var(--flag);
+  filter: brightness(1.1);
 }
 
 .operators li span:last-child {
   float: right;
   margin-left: 1rem;
+  font: 600 1.0625rem/1.5 var(--cond);
+  font-variant-numeric: tabular-nums;
 }
 
+/* The cost strip: a skewed lane that fills in the player's orange. */
 .bar {
-  height: 0.75rem;
-  margin-top: 0.5rem;
-  background: var(--code-background);
-  border-radius: 0.375rem;
+  height: 0.875rem;
+  margin-top: 0.75rem;
+  background: #0a0b0d;
+  box-shadow: inset 0 0 0 1px var(--line);
   overflow: hidden;
+  transform: skewX(-18deg);
 }
 
 .bar div {
   height: 100%;
   width: 0;
-  background: var(--accent);
+  background: repeating-linear-gradient(90deg, var(--you) 0 0.875rem, #b33a0e 0.875rem 1.125rem);
   transition: width 0.3s ease-out;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .bar div {
-    transition: none;
-  }
+.total {
+  font: italic 800 1.75rem/1.1 var(--cond);
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
 }
 
-.total,
 .verdict {
-  font-weight: 600;
+  font: italic 800 clamp(2rem, 9vw, 3rem) / 0.95 var(--cond);
+  text-transform: uppercase;
+  text-wrap: balance;
+  color: var(--you);
 }
 
+/* The result as a timing tower: you, the Optimizer, the perfect plan. */
 .costs {
-  border-collapse: collapse;
-}
-
-.costs caption {
-  text-align: left;
-  color: var(--muted);
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 0.375rem;
 }
 
 .costs th,
 .costs td {
-  padding: 0.25rem 1rem 0.25rem 0;
+  padding: 0.75rem 1rem;
   text-align: left;
+  background: var(--tarmac);
+  border-block: 1px solid var(--line);
+}
+
+.costs th {
+  font: italic 800 1.25rem/1.05 var(--cond);
+  text-transform: uppercase;
+  border-left: 0.5rem solid var(--colour, var(--line));
 }
 
 .costs td {
   text-align: right;
+  font: italic 800 1.25rem/1.05 var(--cond);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.costs td:last-child {
+  border-right: 1px solid var(--line);
+  color: var(--dim);
+  font-style: normal;
+  font-weight: 600;
+}
+
+.costs tr:nth-child(1) {
+  --colour: var(--you);
+}
+
+.costs tr:nth-child(2) {
+  --colour: var(--optimizer);
+}
+
+.costs tr:nth-child(3) {
+  --colour: var(--perfect);
 }
 
 /* Today's puzzle, the streak and the tutorial. */
@@ -331,43 +588,107 @@ code {
   align-items: center;
   justify-content: space-between;
   gap: 0 1rem;
-  color: var(--muted);
+  /* The same margin as the loading message it replaces, so nothing moves. */
+  margin: 0.5rem 0;
+  font: 600 1.0625rem/1.3 var(--cond);
+  letter-spacing: 0.02em;
+  color: var(--dim);
 }
 
 .link-button {
   min-height: 2.75rem;
   padding: 0 0.25rem;
   font: inherit;
-  color: var(--accent);
+  color: var(--white);
   background: none;
   border: 0;
   text-decoration: underline;
+  text-decoration-color: var(--you);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
   cursor: pointer;
 }
 
 .tutorial {
   max-width: min(32rem, calc(100vw - 2rem));
-  padding: 1rem 1.25rem 1.25rem;
-  color: var(--text);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
+  padding: 1.25rem 1.5rem 1.5rem;
+  color: var(--white);
+  background: var(--tarmac);
+  border: 0;
+  border-left: 0.5rem solid var(--you);
+  clip-path: var(--tile);
 }
 
 .tutorial h2 {
   margin-top: 0;
 }
 
-.tutorial::backdrop {
-  background: rgb(0 0 0 / 50%);
+.tutorial li::marker {
+  font: italic 800 1.125rem var(--cond);
+  color: var(--you);
 }
 
-/* The share card. */
+.tutorial::backdrop {
+  background: rgb(5 6 7 / 80%);
+}
+
+/* The share card, like a printout from the timing screen. */
 .card {
   margin: 0.5rem 0 0.75rem;
-  padding: 0.75rem;
-  background: var(--code-background);
-  border-radius: 0.375rem;
+  padding: 0.875rem 1rem;
+  font-family: var(--mono);
+  background: #08090a;
+  border: 1px dashed var(--line);
+  border-radius: 4px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+/* Wider screens: a wider stage, and cards side by side. */
+@media (min-width: 40rem) {
+  body {
+    padding-block: 2rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  body {
+    max-width: 64rem;
+    padding-inline: 2rem;
+  }
+
+  .story,
+  main > p,
+  main > ul {
+    max-width: 40rem;
+  }
+
+  .level .part:has(> .table + .table) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 1rem;
+    align-items: start;
+  }
+
+  .level .part:has(> .table + .table) > h3 {
+    grid-column: 1 / -1;
+  }
+
+  .builder fieldset {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 0.75rem;
+  }
+
+  .run-controls {
+    gap: 1.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+  }
 }

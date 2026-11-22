@@ -32,7 +32,7 @@ describe('analyticsConfig', () => {
 describe('contentSecurityPolicy', () => {
   it('allows only the site itself without analytics', () => {
     expect(contentSecurityPolicy({ goatcounter: '', cloudflare: '' })).toBe(
-      "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+      "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
     );
   });
 

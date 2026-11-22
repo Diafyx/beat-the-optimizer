@@ -41,6 +41,7 @@ export function contentSecurityPolicy({ goatcounter, cloudflare }: AnalyticsConf
     "default-src 'none'",
     `script-src ${scripts.join(' ')}`,
     "style-src 'self'",
+    "font-src 'self'",
     "img-src 'self'",
     `connect-src ${connect.join(' ')}`,
     "base-uri 'none'",
