@@ -13,56 +13,56 @@ describe('square', () => {
 });
 
 describe('shareText', () => {
-  // One snapshot per outcome. PostgreSQL's plan costs 241,332 here, and the best 100,000.
+  // One snapshot per outcome. The Optimizer's plan costs 241,332 here, and the best 100,000.
   const card = (costs: number[], optimizer = 241_332): string =>
     shareText({ puzzle: 10, costs, optimizer, best: 100_000, url });
 
-  it('beating PostgreSQL with the best plan', () => {
+  it('beating the Optimizer with the perfect plan', () => {
     expect(card([241_332, 100_000])).toMatchInlineSnapshot(`
       "Beat the Optimizer #10
       🟧🟩
-      🏆 I beat PostgreSQL with the best plan
-      Me: 1× best · PostgreSQL: 2.41× best
+      🏆 I beat the Optimizer with the perfect plan
+      Me: 1× best · Optimizer: 2.41× best
       https://beat-the-optimizer.invalid/"
     `);
   });
 
-  it('beating PostgreSQL without the best plan', () => {
+  it('beating the Optimizer without the perfect plan', () => {
     expect(card([400_000, 120_000, 130_000])).toMatchInlineSnapshot(`
       "Beat the Optimizer #10
       🟥🟨🟨
-      🏆 I beat PostgreSQL
-      Me: 1.2× best · PostgreSQL: 2.41× best
+      🏆 I beat the Optimizer
+      Me: 1.2× best · Optimizer: 2.41× best
       https://beat-the-optimizer.invalid/"
     `);
   });
 
-  it('tying with PostgreSQL', () => {
+  it('tying with the Optimizer', () => {
     expect(card([241_332])).toMatchInlineSnapshot(`
       "Beat the Optimizer #10
       🟧
-      🤝 I tied with PostgreSQL
-      Me: 2.41× best · PostgreSQL: 2.41× best
+      🤝 I tied with the Optimizer
+      Me: 2.41× best · Optimizer: 2.41× best
       https://beat-the-optimizer.invalid/"
     `);
   });
 
-  it('tying with PostgreSQL when its plan is the best', () => {
+  it('tying with the Optimizer when its plan is the perfect one', () => {
     expect(card([100_000], 100_000)).toMatchInlineSnapshot(`
       "Beat the Optimizer #10
       🟩
-      🤝 I tied with PostgreSQL with the best plan
-      Me: 1× best · PostgreSQL: 1× best
+      🤝 I tied with the Optimizer with the perfect plan
+      Me: 1× best · Optimizer: 1× best
       https://beat-the-optimizer.invalid/"
     `);
   });
 
-  it('losing to PostgreSQL in four runs', () => {
+  it('losing to the Optimizer in four runs', () => {
     expect(card([520_000, 400_000, 300_000, 280_000], 260_000)).toMatchInlineSnapshot(`
       "Beat the Optimizer #10
       🟥🟥🟧🟧
-      🐘 PostgreSQL won
-      Me: 2.8× best · PostgreSQL: 2.6× best
+      🏁 The Optimizer won
+      Me: 2.8× best · Optimizer: 2.6× best
       https://beat-the-optimizer.invalid/"
     `);
   });

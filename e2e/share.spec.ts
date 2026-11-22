@@ -29,8 +29,8 @@ test.describe('share card', () => {
       [
         'Beat the Optimizer #1',
         '🟥',
-        '🐘 PostgreSQL won',
-        'Me: 100,000× best · PostgreSQL: 1× best',
+        '🏁 The Optimizer won',
+        'Me: 100,000× best · Optimizer: 1× best',
         new URL('/', page.url()).href,
       ].join('\n'),
     );
