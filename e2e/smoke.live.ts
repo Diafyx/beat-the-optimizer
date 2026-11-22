@@ -45,7 +45,7 @@ test('serves the game with its security headers and plays a puzzle', async ({ pa
   expect(new URL(String(canonical)).host).toBe(new URL(String(baseURL)).host);
 
   await page.getByRole('button', { name: /Seq scan/ }).click();
-  await page.getByRole('button', { name: 'Run your plan' }).click();
+  await page.getByRole('button', { name: /^Race/ }).click();
   await expect(page.getByRole('region', { name: 'Share' })).toBeVisible();
   expect(errors).toEqual([]);
 });

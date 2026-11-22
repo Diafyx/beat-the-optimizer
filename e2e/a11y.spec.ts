@@ -38,6 +38,12 @@ test.describe('accessibility @a11y', () => {
         expect(await blockingViolations(page, testInfo, `${id}-${colorScheme}`)).toEqual([]);
         await playToReview(page);
         expect(await blockingViolations(page, testInfo, `${id}-${colorScheme}-review`)).toEqual([]);
+        // The result, with Why? open.
+        await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+        await page.getByRole('button', { name: /^Race/ }).click();
+        await page.getByText('Why?').click();
+        await expect(page.getByRole('heading', { name: 'What the Optimizer did' })).toBeVisible();
+        expect(await blockingViolations(page, testInfo, `${id}-${colorScheme}-result`)).toEqual([]);
       });
     }
   }

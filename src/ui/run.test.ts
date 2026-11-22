@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { planCost, type Level, type Plan } from '../engine/index.ts';
 import { LEVEL_IDS } from '../levels.ts';
+import { describeMiss, worstMiss } from './reveal.ts';
 import { MAX_RUNS, renderRun, timesBest } from './run.ts';
 
 const read = (id: string): Level => JSON.parse(readFileSync(`levels/${id}.json`, 'utf8')) as Level;
@@ -72,25 +73,28 @@ describe('renderRun', () => {
       expect(planCost(level, level.optimizer.plan).total).toBe(optimizer);
       expect(planCost(level, bestPlan).total).toBe(best);
       const rows = (yours: number): string[][] => [
-        ['Your plan', yours.toLocaleString('en-US'), timesBest(yours, best)],
-        ["PostgreSQL's plan", optimizer.toLocaleString('en-US'), timesBest(optimizer, best)],
-        ['Best possible', best.toLocaleString('en-US'), '1× best'],
+        ['You', yours.toLocaleString('en-US'), timesBest(yours, best)],
+        ['The Optimizer', optimizer.toLocaleString('en-US'), timesBest(optimizer, best)],
+        ['Perfect plan', best.toLocaleString('en-US'), '1× best'],
       ];
+      const miss = worstMiss(level);
 
-      const asPostgres = runPlan(level, level.optimizer.plan);
-      expect(costs(asPostgres)).toEqual(rows(optimizer));
-      expect(text(asPostgres.querySelector('.verdict'))).toBe(
-        optimizer === best
-          ? 'You tied with PostgreSQL. Yours is the best possible plan.'
-          : 'You tied with PostgreSQL.',
+      const asOptimizer = runPlan(level, level.optimizer.plan);
+      expect(costs(asOptimizer)).toEqual(rows(optimizer));
+      expect(text(asOptimizer.querySelector('.verdict'))).toBe(
+        optimizer === best ? 'A tie. Yours is the perfect plan.' : 'A tie.',
+      );
+      // The yellow flag, only where the Optimizer's estimate was off by 3× or more.
+      expect(text(asOptimizer.querySelector('.flag'))).toBe(
+        miss === null ? '' : `Yellow flag. ${describeMiss(miss)}`,
       );
 
       const asBest = runPlan(level, bestPlan);
       expect(costs(asBest)).toEqual(rows(best));
       expect(text(asBest.querySelector('.verdict'))).toBe(
         best < optimizer
-          ? 'You beat PostgreSQL! Yours is the best possible plan.'
-          : 'You tied with PostgreSQL. Yours is the best possible plan.',
+          ? 'You beat the Optimizer! Yours is the perfect plan.'
+          : 'A tie. Yours is the perfect plan.',
       );
       expect([...asBest.querySelectorAll('.explanation p')].map(text)).toEqual(level.explanation);
     },
@@ -114,10 +118,10 @@ describe('renderRun', () => {
       'Join output, 150,000 rows',
     ]);
     expect(cell(2)).toEqual(operators.map(({ cost }) => cost.toLocaleString('en-US')));
-    expect(text(element.querySelector('.total'))).toBe(
-      `Your cost: ${total.toLocaleString('en-US')}`,
-    );
-    expect(text(element.querySelector('.verdict'))).toBe("PostgreSQL's plan is cheaper.");
+    expect(text(element.querySelector('.lane.you .count'))).toBe(total.toLocaleString('en-US'));
+    expect(text(element.querySelector('.verdict'))).toBe('The Optimizer wins.');
+    expect(element.querySelector('.verdict')?.classList.contains('lose')).toBe(true);
+    expect(text(element.querySelector('.why summary'))).toBe('Why?');
   });
 
   it('names seq scans, hash joins, nested loops and sorts for the ORDER BY', () => {
@@ -149,7 +153,9 @@ describe('renderRun', () => {
     const run = renderRun(level, instant);
     run.setPlan(level.costs.bestPlan);
     const button = run.element.querySelector('button');
+    expect(text(button)).toBe('Race the Optimizer');
     for (let i = 0; i < MAX_RUNS; i += 1) button?.click();
+    expect(text(button)).toBe('Race again');
     expect(button?.disabled).toBe(true);
     expect(text(run.element.querySelector('.run-controls p'))).toBe(
       'No runs left for this puzzle.',
@@ -158,8 +164,8 @@ describe('renderRun', () => {
     expect(button?.disabled).toBe(true);
   });
 
-  it('builds the cost up one operator at a time, then shows the result', async () => {
-    const level = read('every-shipped-order');
+  it('races: the start lights, then both lanes fill, the cheaper first', async () => {
+    const level = read('last-nights-migration');
     const waits: number[] = [];
     let resume = (): void => undefined;
     const wait = (ms: number): Promise<void> => {
@@ -168,26 +174,59 @@ describe('renderRun', () => {
         resume = resolve;
       });
     };
-    const run = renderRun(level, { reducedMotion: () => false, wait });
-    run.setPlan(level.optimizer.plan);
-    const button = run.element.querySelector('button');
-    button?.click();
-    expect(button?.disabled).toBe(true);
-    expect(run.element.querySelectorAll('.operators li')).toHaveLength(1);
-    expect(text(run.element.querySelector('.total'))).toBe('Cost so far: 100,000');
-    expect(run.element.querySelector<HTMLElement>('.bar div')?.style.width).toBe(
-      `${String(100_000 / 2600)}%`,
-    );
-    expect(run.element.querySelector('.result')?.children).toHaveLength(0);
-    for (let i = 0; i < 4; i += 1) {
+    const step = async (): Promise<void> => {
       resume();
       await Promise.resolve();
       await Promise.resolve();
-    }
-    expect(waits).toEqual([400, 400, 400, 400]);
-    expect(text(run.element.querySelector('.total'))).toBe('Your cost: 260,000');
-    expect(run.element.querySelector('.result h4')?.textContent).toBe('Result');
+    };
+    const run = renderRun(level, { reducedMotion: () => false, wait });
+    run.setPlan(level.costs.bestPlan);
+    const button = run.element.querySelector('button');
+    button?.click();
+    const race = run.element.querySelector<HTMLElement>('.race');
+    const lane = (kind: string, part: string): string =>
+      text(run.element.querySelector(`.lane.${kind} ${part}`));
+    expect(button?.disabled).toBe(true);
+    expect(race?.hidden).toBe(false);
+    expect(race?.getAttribute('aria-hidden')).toBe('true');
+    expect(run.element.querySelectorAll('.lights .on')).toHaveLength(1);
+    for (let i = 0; i < 5; i += 1) await step();
+    expect(run.element.querySelectorAll('.lights .on')).toHaveLength(0);
+    // Frame 10 of 24: the best plan (100,000) has finished, the Optimizer's (241,332) has not.
+    for (let i = 0; i < 9; i += 1) await step();
+    expect([lane('you', '.count'), lane('you', '.place')]).toEqual(['100,000', 'P1']);
+    expect([lane('optimizer', '.count'), lane('optimizer', '.place')]).toEqual(['100,555', '']);
+    expect(run.element.querySelector<HTMLElement>('.lane.optimizer .strip span')?.style.width).toBe(
+      `${String((100 * (241_332 * 10)) / 24 / 241_332)}%`,
+    );
+    expect(run.element.querySelector('.result')?.children).toHaveLength(0);
+    for (let i = 0; i < 15; i += 1) await step();
+    expect(waits).toEqual([...Array<number>(5).fill(300), ...Array<number>(24).fill(100)]);
+    expect([lane('optimizer', '.count'), lane('optimizer', '.place')]).toEqual(['241,332', 'P2']);
+    expect(text(run.element.querySelector('.verdict'))).toBe(
+      'You beat the Optimizer! Yours is the perfect plan.',
+    );
     expect(button?.disabled).toBe(false);
+    // A win waves the chequered flag once.
+    const sweep = run.element.querySelector('.sweep');
+    expect(sweep?.classList.contains('go')).toBe(true);
+    sweep?.dispatchEvent(new Event('animationend'));
+    expect(sweep?.classList.contains('go')).toBe(false);
+  });
+
+  it('skips the lights and the race with reduced motion, and only waves the flag for a win', async () => {
+    const level = read('last-nights-migration');
+    const element = runPlan(level, level.costs.bestPlan);
+    expect(text(element.querySelector('.lane.you .place'))).toBe('P1');
+    expect(element.querySelector('.sweep')?.classList.contains('go')).toBe(false);
+
+    const tie = renderRun(level, { reducedMotion: () => false, wait: () => Promise.resolve() });
+    tie.setPlan(level.optimizer.plan);
+    tie.element.querySelector('button')?.click();
+    await vi.waitFor(() => {
+      expect(text(tie.element.querySelector('.verdict'))).toBe('A tie.');
+    });
+    expect(tie.element.querySelector('.sweep')?.classList.contains('go')).toBe(false);
   });
 
   it('animates with timers unless the player prefers reduced motion', async () => {
@@ -198,6 +237,6 @@ describe('renderRun', () => {
     run.element.querySelector('button')?.click();
     expect(run.element.querySelector('.result')?.children).toHaveLength(0);
     await vi.runAllTimersAsync();
-    expect(run.element.querySelector('.result h4')?.textContent).toBe('Result');
+    expect(run.element.querySelector('.result .verdict')).not.toBeNull();
   });
 });
