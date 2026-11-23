@@ -1,3 +1,4 @@
+import { KEY } from '../src/progress.ts';
 import { LAUNCH_NOON, expect, test } from './fixtures.ts';
 
 const dayAfter = (days: number): Date => new Date(LAUNCH_NOON.getTime() + days * 86_400_000);
@@ -46,6 +47,13 @@ test.describe('first visit', () => {
     await expect(dialog.getByRole('heading', { name: 'Your turn' })).toBeVisible();
     await dialog.getByRole('button', { name: 'Let’s race' }).click();
     await expect(dialog).toBeHidden();
+    // The dialog hides at once, but the close event that saves the progress
+    // comes in a later task: reloading before it would lose the save.
+    await expect
+      .poll(() =>
+        page.evaluate((key) => localStorage.getItem(key)?.includes('"tutorialSeen":true'), KEY),
+      )
+      .toBe(true);
     await page.reload();
     await expect(page.getByRole('heading', { level: 2 })).toBeVisible();
     await expect(dialog).toBeHidden();
