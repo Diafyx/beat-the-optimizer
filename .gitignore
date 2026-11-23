@@ -167,3 +167,7 @@ test-results/
 
 # Wrangler's local state (npx wrangler dev)
 .wrangler/
+
+# Android signing keys (docs/android-app.md): never committed
+*.keystore
+*.jks
