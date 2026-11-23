@@ -330,6 +330,9 @@ with a comment saying why.
 - The production deploy (`deploy.yml`) runs `wrangler deploy`, then a smoke
   test (`e2e/smoke.live.ts`) against the live site. It can also be started by
   hand from the Actions tab.
+- The Google Play app opens the live site, so each deploy reaches it too. How
+  to build it and release a new version is in
+  [docs/android-app.md](docs/android-app.md).
 - Deployments use two GitHub environments. `preview` has no protection.
   `production` needs the maintainer's approval and accepts deployments only
   from `main` and from `v*` tags. Each environment has:

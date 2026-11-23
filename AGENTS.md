@@ -82,6 +82,8 @@ headers.
 - `levels/`: level content, **all rights reserved**. Do not create or edit level
   content unless the maintainer asks.
 - `docs/adr/`: architecture decision records.
+- `docs/android-app.md`: building the Google Play app from the site, and
+  keeping its signing key out of this repository.
 
 ## Rules
 
