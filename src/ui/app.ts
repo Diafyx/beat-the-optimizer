@@ -24,6 +24,17 @@ import { renderTutorial } from './tutorial.ts';
 
 export const SITE_TITLE = 'Beat the Optimizer';
 
+/** The site's public address in the Android app's build, or '' on the web (vite.config.ts). */
+declare const __APP_SITE_URL__: string;
+
+/**
+ * The link in the share card: in the app, whose pages are served from
+ * https://localhost, the site's public address `appSite`; on the web, this
+ * page without its query.
+ */
+export const shareUrl = (appSite: string, page: Pick<Location, 'origin' | 'pathname'>): string =>
+  appSite === '' ? `${page.origin}${page.pathname}` : `${appSite}/`;
+
 const dates = new Intl.DateTimeFormat('en-US', {
   weekday: 'long',
   year: 'numeric',
@@ -47,7 +58,7 @@ export interface AppOptions {
   readonly storage?: Storage | null;
   /** Where sharing goes; by default, `navigator`. */
   readonly shareTarget?: ShareTarget;
-  /** The link in the share card; by default, this page without its query. */
+  /** The link in the share card; by default, from `shareUrl`. */
   readonly url?: string;
   /** Where visits and return events go; by default, the analytics in this build. */
   readonly analytics?: Analytics;
@@ -62,7 +73,7 @@ export async function start(
     now = () => new Date(),
     storage = browserStorage(),
     shareTarget = navigator,
-    url = `${location.origin}${location.pathname}`,
+    url = shareUrl(__APP_SITE_URL__, location),
     analytics = createAnalytics(),
   }: AppOptions = {},
 ): Promise<void> {
