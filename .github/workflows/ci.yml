@@ -36,6 +36,7 @@ jobs:
       code: ${{ steps.select.outputs.code }}
       authoring: ${{ steps.select.outputs.authoring }}
       docs: ${{ steps.select.outputs.docs }}
+      android: ${{ steps.select.outputs.android }}
       skippable: ${{ steps.select.outputs.skippable }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -59,6 +60,7 @@ jobs:
           AUTHORING: ${{ steps.filter.outputs.authoring }}
           LEVELS: ${{ steps.filter.outputs.levels }}
           DOCS: ${{ steps.filter.outputs.docs }}
+          ANDROID: ${{ steps.filter.outputs.android }}
         run: |
           # Full run: anything but a pull request, `full: true`, the ci:full
           # label, or a change to a shared input.
@@ -78,23 +80,29 @@ jobs:
           if [[ $full == true || $DOCS == true ]]; then
             docs=true
           fi
+          android=false
+          if [[ $full == true || $ANDROID == true ]]; then
+            android=true
+          fi
           # Jobs ci-gate may accept as skipped: only the ones not selected here.
           skippable=()
           [[ $code == true ]] || skippable+=(typecheck unit coverage levels e2e a11y lighthouse bundle-size)
           [[ $authoring == true ]] || skippable+=(authoring-check)
           [[ $docs == true ]] || skippable+=(docs)
+          [[ $android == true ]] || skippable+=(android)
           skippable_csv=$(IFS=,; echo "${skippable[*]}")
           {
             echo "code=$code"
             echo "authoring=$authoring"
             echo "docs=$docs"
+            echo "android=$android"
             echo "skippable=$skippable_csv"
           } >> "$GITHUB_OUTPUT"
           {
             echo "### Selected jobs"
-            echo "| full | code | authoring | docs | allowed skips |"
-            echo "|---|---|---|---|---|"
-            echo "| $full | $code | $authoring | $docs | ${skippable_csv:-none} |"
+            echo "| full | code | authoring | docs | android | allowed skips |"
+            echo "|---|---|---|---|---|---|"
+            echo "| $full | $code | $authoring | $docs | $android | ${skippable_csv:-none} |"
           } >> "$GITHUB_STEP_SUMMARY"
 
   lint:
@@ -367,6 +375,31 @@ jobs:
       # Writes the per-file table to the job summary.
       - run: npm run bundle-size
 
+  # The Google Play app (docs/android-app.md) builds, unsigned, in debug.
+  android:
+    name: android
+    needs: changes
+    if: needs.changes.outputs.android == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # The app build needs SITE_URL; the address does not matter here.
+      - run: npm run build-app
+        env:
+          SITE_URL: https://beat-the-optimizer.invalid
+      - run: npx cap sync android
+      # The runner's Android SDK (ANDROID_HOME) and JDK 21, which Capacitor needs.
+      - run: JAVA_HOME="$JAVA_HOME_21_X64" ./gradlew assembleDebug --no-daemon
+        working-directory: android
+
   ci-gate:
     name: ci-gate
     # Not always(): in a cancelled run every job reads as cancelled, and a gate
@@ -386,6 +419,7 @@ jobs:
         a11y,
         lighthouse,
         bundle-size,
+        android,
       ]
     runs-on: ubuntu-24.04
     timeout-minutes: 5

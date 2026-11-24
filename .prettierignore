@@ -4,6 +4,8 @@
 _output/
 dist/
 dist-app/
+# Java, Gradle and XML, which Prettier does not format, and build output.
+android/
 coverage/
 reports/
 package-lock.json

@@ -85,6 +85,12 @@ headers.
   `docs/cost-model.md`.
 - `levels/`: level content, **all rights reserved**. Do not create or edit level
   content unless the maintainer asks.
+- `android/`: the Google Play app, a Capacitor project (`capacitor.config.ts`)
+  that packages the app build (`npm run build-app`) after `npx cap sync android`.
+  Its launcher icons are rendered from `public/icons/` by
+  `node scripts/android-icons.ts`. Release signing reads the upload key's path
+  and password from the environment (`android/app/build.gradle`); the key is
+  never in this repository. CI builds a debug app when it changes.
 - `docs/adr/`: architecture decision records.
 - `docs/android-app.md`: building the Google Play app from the site, and
   keeping its signing key out of this repository.
