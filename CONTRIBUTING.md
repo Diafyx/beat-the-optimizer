@@ -137,7 +137,8 @@ checks pass and all conversations are resolved. Auto-merge is disabled.
 ### Size
 
 Size counts lines added plus lines deleted. Files marked `linguist-generated`
-in `.gitattributes` (the lockfile and generated level files) do not count.
+in `.gitattributes` (the lockfile, generated level files, the Gradle wrapper
+and the files Capacitor writes in `android/`) do not count.
 
 | Label      | Lines changed | Rule                                                                              |
 | ---------- | ------------- | --------------------------------------------------------------------------------- |
@@ -196,6 +197,9 @@ because the path filters said it was not needed:
   push or reopens, so the labels set when it opens do not cancel its run.
   `ci-gate` does not run in a cancelled run, so a push that cancels an older
   run leaves no failed gate behind.
+- **The Google Play app**: the `android` job builds a debug app from
+  `android/` when it, `capacitor.config.ts` or `scripts/android-icons.ts`
+  change, and on full runs.
 - **Docs-only** pull requests still run `lint`, `docs`, `pr-hygiene` and the
   gate.
 
@@ -330,8 +334,9 @@ with a comment saying why.
 - The production deploy (`deploy.yml`) runs `wrangler deploy`, then a smoke
   test (`e2e/smoke.live.ts`) against the live site. It can also be started by
   hand from the Actions tab.
-- The Google Play app opens the live site, so each deploy reaches it too. How
-  to build it and release a new version is in
+- The Google Play app carries its own copy of the game (`npm run build-app`),
+  so a deploy does not reach it: a change reaches app players with the next
+  upload to Google Play. How to build it and release a new version is in
   [docs/android-app.md](docs/android-app.md).
 - Deployments use two GitHub environments. `preview` has no protection.
   `production` needs the maintainer's approval and accepts deployments only

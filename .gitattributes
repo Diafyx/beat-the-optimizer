@@ -1,6 +1,14 @@
 * text=auto eol=lf
+# Windows scripts keep Windows line endings (android/gradlew.bat).
+*.bat text eol=crlf
 
 # Generated files. They are excluded from the PR size count (A6) and collapsed
 # in diffs. This is the single list of exclusions.
 package-lock.json linguist-generated=true
 levels/*.json linguist-generated=true
+# The Gradle wrapper, and the files `npx cap sync` writes ("DO NOT EDIT").
+android/gradlew linguist-generated=true
+android/gradlew.bat linguist-generated=true
+android/gradle/wrapper/gradle-wrapper.jar linguist-generated=true
+android/capacitor.settings.gradle linguist-generated=true
+android/app/capacitor.build.gradle linguist-generated=true

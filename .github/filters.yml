@@ -56,6 +56,13 @@ levels:
   - 'levels/**'
   - 'schema/**'
 
+# The Google Play app (docs/android-app.md): the Android project, its
+# Capacitor settings and the script that renders its launcher icons.
+android:
+  - 'android/**'
+  - 'capacitor.config.ts'
+  - 'scripts/android-icons.ts'
+
 docs:
   - '**/*.md'
   - 'docs/**'

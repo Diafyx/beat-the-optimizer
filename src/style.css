@@ -106,7 +106,8 @@ body {
   margin: 0 auto;
   max-width: 34.5rem;
   min-height: 100dvh;
-  padding: 1rem var(--gutter-end) 1.5rem var(--gutter);
+  /* The top inset is the status bar in the Android app, and 0 in a browser. */
+  padding: calc(1rem + env(safe-area-inset-top)) var(--gutter-end) 1.5rem var(--gutter);
 }
 
 /* Room below the footer for the bar fixed at the bottom. */
@@ -838,7 +839,7 @@ details.part > summary h3 {
    Back, Skip and Next at the bottom. */
 .tutorial {
   width: min(32rem, calc(100vw - 2rem));
-  max-height: calc(100dvh - 2rem);
+  max-height: calc(100dvh - 2rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   /* On phones it sits at the bottom, so the buttons stay under the thumb. */
   margin: auto auto calc(1rem + env(safe-area-inset-bottom));
   padding: 1.25rem 1.5rem 1.5rem;
