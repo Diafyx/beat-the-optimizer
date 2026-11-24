@@ -37,6 +37,15 @@ describe('index.html', () => {
     }
   });
 
+  // The opponent is "the Optimizer" wherever players see it (#114). The guide
+  // and the About page say whose Optimizer it is.
+  it('calls the opponent the Optimizer under the title and in the link preview', () => {
+    expect(html).toContain('<p>Pick a plan for the query. Beat the one the Optimizer chose.</p>');
+    expect(html).not.toContain('PostgreSQL');
+    expect(readFileSync('e2e/og-image.html', 'utf8')).not.toContain('PostgreSQL');
+    expect(readFileSync('about.html', 'utf8')).toContain('PostgreSQL');
+  });
+
   it('points at a 1200 × 630 PNG preview image', () => {
     const png = readFileSync('public/og-image.png');
     expect(png.subarray(1, 4).toString()).toBe('PNG');

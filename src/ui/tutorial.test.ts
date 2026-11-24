@@ -48,6 +48,13 @@ describe('renderTutorial', () => {
     );
   });
 
+  it('says once, on the Optimizer’s screen, that it is PostgreSQL’s', () => {
+    const named = [...dialog.querySelectorAll('.screen')].map(
+      (screen) => text(screen).split('PostgreSQL').length - 1,
+    );
+    expect(named).toEqual([0, 1, 0]);
+  });
+
   it('goes forward and back through the screens', () => {
     button(dialog, 'Next').click();
     expect(text(dialog.querySelector('.step'))).toBe('2 of 3');
