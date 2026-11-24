@@ -22,6 +22,9 @@ package name, same upload key.
 - Share link: the app's pages are served from `https://localhost`, so its share
   card links to `SITE_URL`, which the app build needs. Use the production
   address, `https://beat-the-optimizer.saik20533.workers.dev`.
+- Sharing: the app's WebView has no `navigator.share`, so **Share your
+  result** opens Android's share sheet through Capacitor's Share plugin
+  (`src/ui/native-share.ts`). Only the app build loads it.
 - Launcher icons: rendered from `public/icons/icon.svg` and `maskable.svg` by
   `node scripts/android-icons.ts`. Run it again when either SVG changes.
 - Colours: the game's `#0E1012` behind the launcher icon, the splash screen and
@@ -161,4 +164,6 @@ no key:
 The `android` job in CI builds a debug app whenever `android/`,
 `capacitor.config.ts` or `scripts/android-icons.ts` change. A Capacitor
 upgrade is an update to the `@capacitor/*` packages, then `npx cap sync
-android`; a new major version also needs `npx cap migrate`.
+android`; a new major version also needs `npx cap migrate`. The Share plugin,
+`@capacitor/share`, has its own version numbers, with the same major version
+as Capacitor.

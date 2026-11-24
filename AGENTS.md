@@ -39,8 +39,9 @@ the variables of the GitHub environment (CONTRIBUTING.md, "Releases").
   Default `https://beat-the-optimizer.invalid`, which never resolves, so
   production must set it. The app build (`--mode app`) has no default: its
   pages are served from `https://localhost`, so its share card links here,
-  and its links to the other pages end in `.html`
-  (`scripts/lib/app-build.ts`).
+  its links to the other pages end in `.html`
+  (`scripts/lib/app-build.ts`), and Share opens Android's share sheet through
+  Capacitor's Share plugin (`src/ui/native-share.ts`).
 - `GOATCOUNTER_CODE`: the GoatCounter site code. Unset, nothing is counted.
 - `CF_BEACON_TOKEN`: the Cloudflare Web Analytics token. Unset, there is no
   beacon.
