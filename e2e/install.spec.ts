@@ -14,10 +14,10 @@ test('serves the manifest and its icons', async ({ page }) => {
   }
 });
 
-// Chromium's own check, the one behind its install prompt (Android installs a
-// Trusted Web Activity from the same manifest). Only full Chromium runs it, not
-// the headless shell Playwright uses by default, and only in a profile that is
-// not private, so this test starts its own Chromium, whatever the project.
+// Chromium's own check, the one behind its install prompt. Only full Chromium
+// runs it, not the headless shell Playwright uses by default, and only in a
+// profile that is not private, so this test starts its own Chromium, whatever
+// the project.
 test('passes Chromium’s installability check', async ({ baseURL }, testInfo) => {
   const context = await chromium.launchPersistentContext(testInfo.outputPath('profile'), {
     channel: 'chromium',

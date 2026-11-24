@@ -1,6 +1,5 @@
 // The web app manifest (public/manifest.webmanifest) and its icons: what
-// Chrome needs to offer to install the site, and what a Trusted Web Activity
-// is built from (#96).
+// Chrome needs to offer to install the site (#96).
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
