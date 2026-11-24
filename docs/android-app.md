@@ -1,110 +1,164 @@
 # The Android app
 
-The Google Play app is a Trusted Web Activity: a small Android app that opens
-the live site full screen in Chrome. It is built with
-[Bubblewrap](https://github.com/GoogleChromeLabs/bubblewrap/tree/main/packages/cli)
-from the web app manifest (`public/manifest.webmanifest`).
+The Google Play app is a [Capacitor](https://capacitorjs.com/) app that carries
+its own copy of the game. `npm run build-app` builds the site for the app into
+`dist-app/` (`scripts/lib/app-build.ts`), `npx cap sync android` copies it into
+the Android project in `android/`, and Gradle builds the app from there.
 
-The game itself is the site, so every deploy reaches the app too. A new app
-release is needed only when the app's own settings change: its name, icon,
-colours or address.
+So a deploy of the site does not reach the app. A change to the game, a new
+level included, reaches app players only with the next upload to Google Play.
+
+Version 1 of the app, in the first closed test, was a Trusted Web Activity
+built with Bubblewrap. Version 2 is the first built with Capacitor: same
+package name, same upload key.
 
 ## Settings
 
-- Package name: `org.diafyx.beattheoptimizer`. It can never change once the
-  app is on Google Play.
-- Address: `beat-the-optimizer.saik20533.workers.dev`, the `SITE_URL` of the
-  production environment.
-- Manifest:
-  `https://beat-the-optimizer.saik20533.workers.dev/manifest.webmanifest`.
-
-A new address means a new app release and a new link file
-(`/.well-known/assetlinks.json`), so a custom domain is best set up before the
-app is published.
+- Package name: `org.diafyx.beattheoptimizer`, in `capacitor.config.ts` and
+  `android/app/build.gradle`. It can never change once the app is on Google
+  Play.
+- Version: `versionCode` and `versionName` in `android/app/build.gradle`.
+  Google Play needs a higher `versionCode` for every upload.
+- Share link: the app's pages are served from `https://localhost`, so its share
+  card links to `SITE_URL`, which the app build needs. Use the production
+  address, `https://beat-the-optimizer.saik20533.workers.dev`.
+- Launcher icons: rendered from `public/icons/icon.svg` and `maskable.svg` by
+  `node scripts/android-icons.ts`. Run it again when either SVG changes.
+- Colours: the game's `#0E1012` behind the launcher icon, the splash screen and
+  the page (`android/app/src/main/res/values/`).
 
 ## Keep the signing key out of this repository
 
-Bubblewrap creates a signing key, `android.keystore`, protected by two
-passwords. Google Play accepts updates only when they are signed with it.
+Google Play accepts an upload only when it is signed with the upload key. The
+key is a keystore file with a password. Play App Signing is on, so Google holds
+the key that signs the app on players' phones, and Play support can reset a
+lost upload key, which takes days.
 
-- Make the Android project in its own folder, outside this repository, for
-  example `~/beat-the-optimizer-android`. `.gitignore` ignores keystores in
-  case one is copied in.
-- Keep a backup of `android.keystore`, `twa-manifest.json` and both passwords
-  (in a password manager, for example). If the key is lost, Play support can
-  reset the upload key, because Google holds the key that signs the app on
-  Play (Play App Signing).
+- Keep the keystore outside this repository, for example in
+  `~/beat-the-optimizer-android/android.keystore`. `.gitignore` ignores
+  `*.keystore` and `*.jks` in case one is copied in.
+- Keep its password in a password manager, and a copy of the keystore off this
+  machine.
+- The build reads the key from the environment, never from a file in the
+  repository:
+  - `BTO_KEYSTORE`: the keystore's path. Without it, the release build is
+    unsigned.
+  - `BTO_KEYSTORE_PASSWORD`: its password.
+  - `BTO_KEY_ALIAS`: the key's name, `android` if unset.
+  - `BTO_KEY_PASSWORD`: the key's own password, the keystore's if unset.
 
-## Build the app
+## Install the tools (once)
 
-1. Install Bubblewrap (Node.js 18 or later). Do not use `sudo`:
+- Node.js, a version from `engines` in `package.json`, and `npm ci` in this
+  repository.
+- JDK 21, which Capacitor 8 needs. On Ubuntu:
+
+  ```bash
+  sudo apt install openjdk-21-jdk
+  ```
+
+- The Android SDK with Android 16 (API 36), from Android Studio or the
+  [command-line tools](https://developer.android.com/tools). With the
+  command-line tools:
+
+  ```bash
+  sdkmanager "platforms;android-36" "build-tools;35.0.0" "platform-tools"
+  ```
+
+Gradle downloads itself and the Android libraries on the first build, about
+1.3 GB in `~/.gradle`.
+
+## Build the release bundle
+
+Run these from the repository's root folder, one at a time.
+
+1. Build the site for the app and copy it into the Android project:
 
    ```bash
-   npm i -g @bubblewrap/cli
+   SITE_URL=https://beat-the-optimizer.saik20533.workers.dev npm run build-app
    ```
-
-2. In the Android project's folder, start the project from the live manifest:
 
    ```bash
-   bubblewrap init --manifest=https://beat-the-optimizer.saik20533.workers.dev/manifest.webmanifest
+   npx cap sync android
    ```
 
-   On the first run, Bubblewrap offers to download JDK 17 and the Android
-   command-line tools. Say yes. Then it asks for the app's details, with
-   answers suggested from the manifest:
-
-   - Application ID: `org.diafyx.beattheoptimizer`.
-   - Display mode: `standalone`. Status bar and splash screen colour:
-     `#0e1012`.
-   - Play Billing and geolocation: no.
-   - Key store location and key name: keep the suggested `./android.keystore`
-     and `android`. The name and organisation details go into the key's
-     certificate; the passwords are the two to keep safe.
-   - Anything else: keep the suggested answer.
-
-   The answers are saved in `twa-manifest.json`.
-
-3. Build the app. Bubblewrap asks for both passwords and installs the Android
-   build tools on the first build, after you accept their licence:
+2. Tell Gradle where Java and the Android SDK are. The paths here are
+   examples; use your own:
 
    ```bash
-   bubblewrap build
+   export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ANDROID_HOME=$HOME/Android/Sdk
    ```
 
-   It writes `app-release-bundle.aab`, for Google Play, and
-   `app-release-signed.apk`, to try on a phone.
+3. Point the build at the keystore, then type its password. `read -rs` shows
+   nothing while you type and keeps the password out of the shell's history:
 
-4. To try it, connect an Android phone with USB debugging on, then run
-   `bubblewrap install`. Until the site has the link file, the app shows a
-   browser bar at the top; that is expected.
+   ```bash
+   export BTO_KEYSTORE=$HOME/beat-the-optimizer-android/android.keystore
+   ```
+
+   ```bash
+   read -rs BTO_KEYSTORE_PASSWORD && export BTO_KEYSTORE_PASSWORD
+   ```
+
+4. Build the bundle:
+
+   ```bash
+   (cd android && ./gradlew bundleRelease)
+   ```
+
+   It writes `android/app/build/outputs/bundle/release/app-release.aab`.
+
+5. Forget the password:
+
+   ```bash
+   unset BTO_KEYSTORE_PASSWORD
+   ```
+
+6. Check that the bundle is signed with the upload key. The SHA-256 line must
+   match the **Upload key certificate** in the Play Console, under **Test and
+   release**, **App integrity**, **App signing**:
+
+   ```bash
+   keytool -printcert -jarfile android/app/build/outputs/bundle/release/app-release.aab
+   ```
+
+If Gradle stops with `Connect timed out` while it downloads, the network may
+not route IPv6. Make Java use IPv4, then build again:
+
+```bash
+export GRADLE_OPTS=-Djava.net.preferIPv4Stack=true
+```
+
+## Try it on a phone
+
+Turn on USB debugging on an Android phone (Settings, About phone, tap **Build
+number** seven times, then Developer options, **USB debugging**), and connect
+it. After step 2 above, this builds and installs a debug version, which needs
+no key:
+
+```bash
+(cd android && ./gradlew installDebug)
+```
 
 ## Upload it to Google Play
 
-1. In the [Play Console](https://play.google.com/console), choose
-   **Create app**: name "Beat the Optimizer", a game, free.
-2. Go to **Test and release**, **Testing**, **Internal testing**, and create a
-   release. Play App Signing is on for new apps: keep it. Upload
-   `app-release-bundle.aab` and roll the release out to internal testers.
-3. Go to **Test and release**, **App integrity**, **App signing**. Copy the
-   SHA-256 fingerprints of the **app signing key certificate** and the
-   **upload key certificate**. Both go into `/.well-known/assetlinks.json`
-   (issue #99). Once that file is live, the app opens full screen.
-
-The Play Console dashboard lists what else it needs before a production
-release, such as the store listing, the content rating and, for some personal
-accounts, a closed test.
+1. In the [Play Console](https://play.google.com/console), open the app, then
+   **Test and release**, **Testing**, and the track, for example **Closed
+   testing**, **Alpha**.
+2. Choose **Create new release**, then **Upload**, and pick
+   `app-release.aab`.
+3. Keep the suggested release name, write what changed in the release notes,
+   then choose **Next** and **Save**.
+4. Go to **Publishing overview** and send the changes for review.
 
 ## Release a new version
 
-1. Change the settings in `twa-manifest.json`, then regenerate the project.
-   This raises the version code, which Google Play requires for every upload:
+1. In a pull request, raise `versionCode` by one and set `versionName` in
+   `android/app/build.gradle`.
+2. Once it is merged, build the release bundle from `main` and upload it as
+   above.
 
-   ```bash
-   bubblewrap update
-   ```
-
-2. Run `bubblewrap build` and upload the new `app-release-bundle.aab` to a
-   release in the Play Console.
-
-`bubblewrap update` overwrites files changed by hand in the Android project;
-change only `twa-manifest.json`.
+The `android` job in CI builds a debug app whenever `android/`,
+`capacitor.config.ts` or `scripts/android-icons.ts` change. A Capacitor
+upgrade is an update to the `@capacitor/*` packages, then `npx cap sync
+android`; a new major version also needs `npx cap migrate`.

@@ -92,8 +92,8 @@ headers.
   and password from the environment (`android/app/build.gradle`); the key is
   never in this repository. CI builds a debug app when it changes.
 - `docs/adr/`: architecture decision records.
-- `docs/android-app.md`: building the Google Play app from the site, and
-  keeping its signing key out of this repository.
+- `docs/android-app.md`: building, signing and uploading the Google Play app,
+  and keeping its signing key out of this repository.
 
 ## Rules
 
