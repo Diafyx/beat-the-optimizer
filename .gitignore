@@ -165,6 +165,9 @@ test-results/
 .lighthouseci/
 .stryker-tmp/
 
+# The Android app's copy of the site (npm run build-app)
+dist-app/
+
 # Wrangler's local state (npx wrangler dev)
 .wrangler/
 

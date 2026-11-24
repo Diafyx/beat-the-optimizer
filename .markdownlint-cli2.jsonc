@@ -12,6 +12,7 @@
     ".claude/**",
     "_output/**",
     "dist/**",
+    "dist-app/**",
     "coverage/**",
     "reports/**",
     "playwright-report/**",

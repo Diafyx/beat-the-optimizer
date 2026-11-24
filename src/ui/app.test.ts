@@ -5,7 +5,7 @@ import { LAUNCH_DATE } from '../daily.ts';
 import type { Analytics } from '../analytics.ts';
 import type { Level } from '../engine/index.ts';
 import { KEY, type Progress } from '../progress.ts';
-import { SITE_TITLE, formatDate, start } from './app.ts';
+import { SITE_TITLE, formatDate, shareUrl, start } from './app.ts';
 
 const needle = JSON.parse(readFileSync('levels/needle.json', 'utf8')) as Level;
 
@@ -288,6 +288,17 @@ describe('measurement', () => {
     root.querySelector<HTMLButtonElement>('.run .run-button')?.click();
     expect(saved(storage)).toMatchObject({ firstFinish: null, sent: [] });
     expect(counts.sent).toEqual(['visit']);
+  });
+});
+
+describe('shareUrl', () => {
+  it('is this page without its query on the web', () => {
+    expect(shareUrl('', { origin: 'https://x.org', pathname: '/' })).toBe('https://x.org/');
+  });
+
+  it('is the site, never https://localhost, in the app', () => {
+    const page = { origin: 'https://localhost', pathname: '/' };
+    expect(shareUrl('https://x.org', page)).toBe('https://x.org/');
   });
 });
 

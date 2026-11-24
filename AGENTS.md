@@ -25,6 +25,7 @@ npm run check-lockfile # every lockfile URL is on registry.npmjs.org
 npm run pr-size     # CI only: size label for a pull request
 npm run pr-hygiene  # CI only: pull request rules
 npm run build       # production build into dist/; settings below
+npm run build-app   # the Android app's copy of the site into dist-app/; needs SITE_URL
 npm run smoke       # CI only: the smoke test against the live site at SMOKE_URL
 npm run screenshots # the README screenshots and the link preview (e2e/*.shots.ts)
 ```
@@ -36,7 +37,10 @@ the variables of the GitHub environment (CONTRIBUTING.md, "Releases").
 
 - `SITE_URL`: the public address, for link previews and canonical URLs.
   Default `https://beat-the-optimizer.invalid`, which never resolves, so
-  production must set it.
+  production must set it. The app build (`--mode app`) has no default: its
+  pages are served from `https://localhost`, so its share card links here,
+  and its links to the other pages end in `.html`
+  (`scripts/lib/app-build.ts`).
 - `GOATCOUNTER_CODE`: the GoatCounter site code. Unset, nothing is counted.
 - `CF_BEACON_TOKEN`: the Cloudflare Web Analytics token. Unset, there is no
   beacon.

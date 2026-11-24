@@ -3,6 +3,7 @@
 .claude/
 _output/
 dist/
+dist-app/
 coverage/
 reports/
 package-lock.json
