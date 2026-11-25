@@ -20,9 +20,14 @@ on:
 
 permissions: {}
 
+# One run at a time per pull request, never cancelled (#120). Adding labels and
+# a milestone together starts several runs in the same second; cancelling them
+# could cancel every one, leaving a cancelled check that blocks the pull
+# request. Instead a started run finishes, GitHub keeps only the newest waiting
+# run, and that run goes last and reads the pull request as it is then.
 concurrency:
   group: pr-hygiene-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   pr-size:
