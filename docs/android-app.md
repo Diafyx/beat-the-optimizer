@@ -10,7 +10,8 @@ level included, reaches app players only with the next upload to Google Play.
 
 Version 1 of the app, in the first closed test, was a Trusted Web Activity
 built with Bubblewrap. Version 2 is the first built with Capacitor: same
-package name, same upload key.
+package name, same upload key. Version 3 adds Android's share sheet, the
+Optimizer wording and levels 11 to 15.
 
 ## Settings
 
