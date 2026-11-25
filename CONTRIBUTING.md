@@ -170,7 +170,8 @@ open issue), the `type/*` and `area/*` labels, the `breaking-change` label
 against the `!` in the title, the milestone of the linked issue, the template
 headings and the result of `pr-size`. It runs again when you edit the title or
 description, push, or change labels or the milestone, and its job summary says
-what to fix. Bot PRs skip the issue-link, milestone, branch-name and template
+what to fix. Its runs on one pull request wait for each other instead of
+cancelling, and the last one checks the pull request as it is then. Bot PRs skip the issue-link, milestone, branch-name and template
 checks.
 
 The `pr-size` job, in the same workflow, counts the changed lines and keeps
