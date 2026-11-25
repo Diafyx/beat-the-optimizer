@@ -49,10 +49,34 @@ describe('dailyPuzzle', () => {
   });
 
   it('goes through the levels in order, then starts again', () => {
-    const days = Array.from({ length: 21 }, (_, i) => dailyPuzzle(at(2026, 11, 23 + i)));
+    const days = Array.from({ length: 2 * LEVEL_IDS.length + 1 }, (_, i) =>
+      dailyPuzzle(at(2026, 11, 23 + i)),
+    );
     expect(days.map(({ number }) => number)).toEqual(days.map((_, i) => i + 1));
     expect(days.map(({ level }) => level)).toEqual([...LEVEL_IDS, ...LEVEL_IDS, LEVEL_IDS[0]]);
     expect(ROTATION).toEqual(LEVEL_IDS);
+  });
+
+  it('keeps the levels of puzzles already played when levels are added (#122)', () => {
+    const levels = Array.from({ length: 15 }, (_, i) => dailyPuzzle(at(2026, 11, 23 + i)).level);
+    expect(levels).toEqual([
+      'needle',
+      'read-the-stats',
+      'haystack',
+      'pick-your-index',
+      'one-customer',
+      'every-shipped-order',
+      'in-order',
+      'signed-copies',
+      'belt-and-braces',
+      'last-nights-migration',
+      'a-short-list',
+      'filed-by-date',
+      'sorting-is-cheap',
+      'read-it-whole',
+      'start-in-the-middle',
+    ]);
+    expect(dailyPuzzle(at(2026, 12, 3)).number).toBe(11);
   });
 
   it('changes puzzle at local midnight across a month and a year', () => {

@@ -1,0 +1,103 @@
+{
+  "format": 1,
+  "id": "sorting-is-cheap",
+  "title": "Sorting is cheap",
+  "story": [
+    "The fraud team wants every order of 491 or more, oldest first.",
+    "One index gives the orders by date, already sorted. Another finds the large amounts."
+  ],
+  "sql": "SELECT orders.order_id, orders.created_at, orders.amount\nFROM orders\nWHERE orders.amount >= 491\nORDER BY orders.created_at",
+  "tables": [
+    {
+      "name": "orders",
+      "rows": 100000,
+      "filter": "amount >= 491",
+      "storedOrder": "order_id",
+      "columns": [
+        { "name": "order_id", "type": "integer", "stats": null },
+        { "name": "created_at", "type": "date", "stats": null },
+        { "name": "amount", "type": "integer", "stats": null }
+      ],
+      "indexes": [
+        { "name": "orders_pkey", "column": "order_id" },
+        { "name": "orders_created_at_idx", "column": "created_at" },
+        { "name": "orders_amount_idx", "column": "amount" }
+      ]
+    }
+  ],
+  "joins": [],
+  "orderBy": { "table": "orders", "column": "created_at" },
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "orders",
+        "filtered": 2005,
+        "indexes": [
+          { "index": "orders_pkey", "matched": 100000 },
+          { "index": "orders_created_at_idx", "matched": 100000 },
+          { "index": "orders_amount_idx", "matched": 2005 }
+        ]
+      }
+    ],
+    "joins": [],
+    "lookups": []
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": {
+      "first": { "table": "orders", "access": "index", "index": "orders_amount_idx" },
+      "steps": []
+    },
+    "explain": {
+      "nodeType": "Sort",
+      "relation": null,
+      "index": null,
+      "estimatedRows": 2005,
+      "estimatedCost": 707.87,
+      "children": [
+        {
+          "nodeType": "Bitmap Heap Scan",
+          "relation": "orders",
+          "index": null,
+          "estimatedRows": 2005,
+          "estimatedCost": 592.89,
+          "children": [
+            {
+              "nodeType": "Bitmap Index Scan",
+              "relation": null,
+              "index": "orders_amount_idx",
+              "estimatedRows": 2005,
+              "estimatedCost": 23.33,
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "costs": {
+    "best": 30075,
+    "optimizer": 30075,
+    "bestPlan": {
+      "first": { "table": "orders", "access": "index", "index": "orders_amount_idx" },
+      "steps": []
+    }
+  },
+  "explanation": [
+    "PostgreSQL found the 2,005 orders of 491 or more through orders_amount_idx (it expected exactly 2,005), 4 × 2,005 = 8,020, then sorted them by date, 2,005 × 11 = 22,055: 30,075 in all. Walking orders_created_at_idx gives the dates in order with no sort, but jumps to all 100,000 orders to check their amounts, 400,000. Reading every order and sorting the large ones costs 122,055. Sorting a few rows is cheaper than reading many in order."
+  ]
+}

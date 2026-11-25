@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1012
+tables:
+  # The shop writes its orders as they come in, so the table is stored in date
+  # order.
+  - name: orders
+    rows: 100000
+    order: created_at
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      - name: created_at
+        type: date
+        values: { kind: dateRange, from: '2023-11-01', to: '2026-10-31' }
+      - name: amount
+        type: integer
+        values: { kind: uniform, min: 1, max: 500 }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+      - { name: orders_created_at_idx, column: created_at }
+afterAnalyze: []
+level:
+  id: filed-by-date
+  title: Filed by date
+  story:
+    - Finance wants every order since 1 January 2026, over a quarter of three years of orders.
+    - Too many for an index? The orders are stored in the order they came in.
+  select:
+    - { table: orders, column: order_id }
+    - { table: orders, column: amount }
+  filters:
+    - { table: orders, column: created_at, op: '>=', value: '2026-01-01' }
+  joins: []
+  orderBy: null
+  locks: []
+  stats: []
+  explanation:
+    - 'The orders since 1 January 2026 are 27,464 of 100,000, over a quarter. PostgreSQL expected exactly that many and still read them through orders_created_at_idx. The table is stored in created_at order, so the matches sit next to each other and the index reads them in order, at 1 a row instead of 4: 27,464, against 100,000 for reading every order. On a table stored in another order, the same index scan would cost 4 × 27,464 = 109,856. How many rows is too many for an index depends on how the table is stored.'

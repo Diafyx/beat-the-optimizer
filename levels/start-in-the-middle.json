@@ -1,0 +1,207 @@
+{
+  "format": 1,
+  "id": "start-in-the-middle",
+  "title": "Start in the middle",
+  "story": [
+    "The payments team needs every line of every disputed order, with the customer's name.",
+    "The query reads customers, then orders, then order lines. The filter is on the table in the middle."
+  ],
+  "sql": "SELECT customers.name, orders.order_id, order_lines.line_id, order_lines.price\nFROM customers\nJOIN orders ON orders.customer_id = customers.customer_id\nJOIN order_lines ON order_lines.order_id = orders.order_id\nWHERE orders.status = 'disputed'",
+  "tables": [
+    {
+      "name": "customers",
+      "rows": 10000,
+      "filter": null,
+      "storedOrder": "customer_id",
+      "columns": [
+        { "name": "customer_id", "type": "integer", "stats": null },
+        { "name": "name", "type": "text", "stats": null }
+      ],
+      "indexes": [{ "name": "customers_pkey", "column": "customer_id" }]
+    },
+    {
+      "name": "orders",
+      "rows": 100000,
+      "filter": "status = 'disputed'",
+      "storedOrder": "order_id",
+      "columns": [
+        { "name": "order_id", "type": "integer", "stats": null },
+        { "name": "customer_id", "type": "integer", "stats": null },
+        {
+          "name": "status",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 3,
+            "mostCommon": [
+              { "value": "delivered", "frequency": 0.95 },
+              { "value": "returned", "frequency": 0.049 },
+              { "value": "disputed", "frequency": 0.001 }
+            ],
+            "histogram": [],
+            "correlation": 0.9030589
+          }
+        }
+      ],
+      "indexes": [
+        { "name": "orders_pkey", "column": "order_id" },
+        { "name": "orders_customer_id_idx", "column": "customer_id" },
+        { "name": "orders_status_idx", "column": "status" }
+      ]
+    },
+    {
+      "name": "order_lines",
+      "rows": 300000,
+      "filter": null,
+      "storedOrder": "line_id",
+      "columns": [
+        { "name": "line_id", "type": "integer", "stats": null },
+        { "name": "order_id", "type": "integer", "stats": null },
+        { "name": "price", "type": "integer", "stats": null }
+      ],
+      "indexes": [
+        { "name": "order_lines_pkey", "column": "line_id" },
+        { "name": "order_lines_order_id_idx", "column": "order_id" }
+      ]
+    }
+  ],
+  "joins": [
+    {
+      "left": { "table": "customers", "column": "customer_id" },
+      "right": { "table": "orders", "column": "customer_id" }
+    },
+    {
+      "left": { "table": "orders", "column": "order_id" },
+      "right": { "table": "order_lines", "column": "order_id" }
+    }
+  ],
+  "orderBy": null,
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "customers",
+        "filtered": 10000,
+        "indexes": [{ "index": "customers_pkey", "matched": 10000 }]
+      },
+      {
+        "table": "orders",
+        "filtered": 100,
+        "indexes": [
+          { "index": "orders_pkey", "matched": 100000 },
+          { "index": "orders_customer_id_idx", "matched": 100000 },
+          { "index": "orders_status_idx", "matched": 100 }
+        ]
+      },
+      {
+        "table": "order_lines",
+        "filtered": 300000,
+        "indexes": [
+          { "index": "order_lines_pkey", "matched": 300000 },
+          { "index": "order_lines_order_id_idx", "matched": 300000 }
+        ]
+      }
+    ],
+    "joins": [
+      { "tables": ["customers", "orders"], "rows": 100 },
+      { "tables": ["orders", "order_lines"], "rows": 306 },
+      { "tables": ["customers", "orders", "order_lines"], "rows": 306 }
+    ],
+    "lookups": [
+      { "outer": ["customers"], "index": "orders_customer_id_idx", "fetched": 100000 },
+      { "outer": ["orders"], "index": "customers_pkey", "fetched": 100 },
+      { "outer": ["orders"], "index": "order_lines_order_id_idx", "fetched": 306 },
+      { "outer": ["customers", "orders"], "index": "order_lines_order_id_idx", "fetched": 306 },
+      { "outer": ["order_lines"], "index": "orders_pkey", "fetched": 300000 },
+      { "outer": ["orders", "order_lines"], "index": "customers_pkey", "fetched": 306 }
+    ]
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": {
+      "first": { "table": "orders", "access": "index", "index": "orders_status_idx" },
+      "steps": [
+        { "join": "hash", "scan": { "table": "customers", "access": "seq" } },
+        { "join": "indexNestedLoop", "table": "order_lines", "index": "order_lines_order_id_idx" }
+      ]
+    },
+    "explain": {
+      "nodeType": "Nested Loop",
+      "relation": null,
+      "index": null,
+      "estimatedRows": 300,
+      "estimatedCost": 1934.43,
+      "children": [
+        {
+          "nodeType": "Hash Join",
+          "relation": null,
+          "index": null,
+          "estimatedRows": 100,
+          "estimatedCost": 415.93,
+          "children": [
+            {
+              "nodeType": "Index Scan",
+              "relation": "orders",
+              "index": "orders_status_idx",
+              "estimatedRows": 100,
+              "estimatedCost": 78.67,
+              "children": []
+            },
+            {
+              "nodeType": "Hash",
+              "relation": null,
+              "index": null,
+              "estimatedRows": 10000,
+              "estimatedCost": 212,
+              "children": [
+                {
+                  "nodeType": "Seq Scan",
+                  "relation": "customers",
+                  "index": null,
+                  "estimatedRows": 10000,
+                  "estimatedCost": 212,
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "nodeType": "Index Scan",
+          "relation": "order_lines",
+          "index": "order_lines_order_id_idx",
+          "estimatedRows": 3,
+          "estimatedCost": 15.15,
+          "children": []
+        }
+      ]
+    }
+  },
+  "costs": {
+    "best": 3230,
+    "optimizer": 22530,
+    "bestPlan": {
+      "first": { "table": "orders", "access": "index", "index": "orders_status_idx" },
+      "steps": [
+        { "join": "indexNestedLoop", "table": "customers", "index": "customers_pkey" },
+        { "join": "indexNestedLoop", "table": "order_lines", "index": "order_lines_order_id_idx" }
+      ]
+    }
+  },
+  "explanation": [
+    "PostgreSQL started in the middle too: orders_status_idx finds the 100 disputed orders (it expected exactly 100), 4 × 100 = 400, and order_lines_order_id_idx their 306 lines, 4 × (100 + 306) = 1,624. For the customers it read all 10,000 into a hash join, 10,000 + 10,100, and the plan costs 22,530. PostgreSQL prices whole pages, and 10,000 customers fit on a few dozen of them, so it reckoned that cheaper than 100 jumps into the table. This game counts rows: looking up the 100 customers through customers_pkey costs 4 × (100 + 100) = 800, and that plan costs 3,230. Starting from customers costs at least 22,530, and from order_lines 603,560. Start where the filter is, even in the middle of the query."
+  ]
+}

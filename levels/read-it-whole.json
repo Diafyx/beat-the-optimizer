@@ -1,0 +1,163 @@
+{
+  "format": 1,
+  "id": "read-it-whole",
+  "title": "Read it whole",
+  "story": [
+    "Customer service is calling every customer with a returned order.",
+    "There are 5,000 returned orders and only 10,000 customers. Look each customer up, or read them all?"
+  ],
+  "sql": "SELECT customers.name, orders.order_id\nFROM customers\nJOIN orders ON orders.customer_id = customers.customer_id\nWHERE orders.status = 'returned'",
+  "tables": [
+    {
+      "name": "customers",
+      "rows": 10000,
+      "filter": null,
+      "storedOrder": "customer_id",
+      "columns": [
+        { "name": "customer_id", "type": "integer", "stats": null },
+        { "name": "name", "type": "text", "stats": null }
+      ],
+      "indexes": [{ "name": "customers_pkey", "column": "customer_id" }]
+    },
+    {
+      "name": "orders",
+      "rows": 100000,
+      "filter": "status = 'returned'",
+      "storedOrder": "order_id",
+      "columns": [
+        { "name": "order_id", "type": "integer", "stats": null },
+        { "name": "customer_id", "type": "integer", "stats": null },
+        {
+          "name": "status",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 3,
+            "mostCommon": [
+              { "value": "delivered", "frequency": 0.8 },
+              { "value": "shipped", "frequency": 0.15 },
+              { "value": "returned", "frequency": 0.05 }
+            ],
+            "histogram": [],
+            "correlation": 0.6689816
+          }
+        }
+      ],
+      "indexes": [
+        { "name": "orders_pkey", "column": "order_id" },
+        { "name": "orders_customer_id_idx", "column": "customer_id" },
+        { "name": "orders_status_idx", "column": "status" }
+      ]
+    }
+  ],
+  "joins": [
+    {
+      "left": { "table": "customers", "column": "customer_id" },
+      "right": { "table": "orders", "column": "customer_id" }
+    }
+  ],
+  "orderBy": null,
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "customers",
+        "filtered": 10000,
+        "indexes": [{ "index": "customers_pkey", "matched": 10000 }]
+      },
+      {
+        "table": "orders",
+        "filtered": 5000,
+        "indexes": [
+          { "index": "orders_pkey", "matched": 100000 },
+          { "index": "orders_customer_id_idx", "matched": 100000 },
+          { "index": "orders_status_idx", "matched": 5000 }
+        ]
+      }
+    ],
+    "joins": [{ "tables": ["customers", "orders"], "rows": 5000 }],
+    "lookups": [
+      { "outer": ["customers"], "index": "orders_customer_id_idx", "fetched": 100000 },
+      { "outer": ["orders"], "index": "customers_pkey", "fetched": 5000 }
+    ]
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": {
+      "first": { "table": "orders", "access": "index", "index": "orders_status_idx" },
+      "steps": [{ "join": "hash", "scan": { "table": "customers", "access": "seq" } }]
+    },
+    "explain": {
+      "nodeType": "Hash Join",
+      "relation": null,
+      "index": null,
+      "estimatedRows": 5000,
+      "estimatedCost": 1095.67,
+      "children": [
+        {
+          "nodeType": "Bitmap Heap Scan",
+          "relation": "orders",
+          "index": null,
+          "estimatedRows": 5000,
+          "estimatedCost": 745.54,
+          "children": [
+            {
+              "nodeType": "Bitmap Index Scan",
+              "relation": null,
+              "index": "orders_status_idx",
+              "estimatedRows": 5000,
+              "estimatedCost": 57.79,
+              "children": []
+            }
+          ]
+        },
+        {
+          "nodeType": "Hash",
+          "relation": null,
+          "index": null,
+          "estimatedRows": 10000,
+          "estimatedCost": 212,
+          "children": [
+            {
+              "nodeType": "Seq Scan",
+              "relation": "customers",
+              "index": null,
+              "estimatedRows": 10000,
+              "estimatedCost": 212,
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "costs": {
+    "best": 50000,
+    "optimizer": 50000,
+    "bestPlan": {
+      "first": { "table": "customers", "access": "seq" },
+      "steps": [
+        {
+          "join": "hash",
+          "scan": { "table": "orders", "access": "index", "index": "orders_status_idx" }
+        }
+      ]
+    }
+  },
+  "explanation": [
+    "PostgreSQL found the 5,000 returned orders through orders_status_idx (it expected exactly 5,000), 4 × 5,000 = 20,000, read all 10,000 customers, 10,000, and joined them in a hash join, 5,000 + 10,000 = 15,000 plus 5,000 for the result: 50,000 in all. Looking up each order's customer through customers_pkey instead costs 4 × (5,000 + 5,000) = 40,000, and 65,000 in all. When the lookups outnumber the rows of the table, read the table whole."
+  ]
+}

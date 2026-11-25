@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1013
+tables:
+  - name: orders
+    rows: 100000
+    order: order_id
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      - name: created_at
+        type: date
+        values: { kind: dateRange, from: '2024-01-01', to: '2026-10-31' }
+      - name: amount
+        type: integer
+        values: { kind: uniform, min: 1, max: 500 }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+      - { name: orders_created_at_idx, column: created_at }
+      - { name: orders_amount_idx, column: amount }
+afterAnalyze: []
+level:
+  id: sorting-is-cheap
+  title: Sorting is cheap
+  story:
+    - The fraud team wants every order of 491 or more, oldest first.
+    - One index gives the orders by date, already sorted. Another finds the large amounts.
+  select:
+    - { table: orders, column: order_id }
+    - { table: orders, column: created_at }
+    - { table: orders, column: amount }
+  filters:
+    - { table: orders, column: amount, op: '>=', value: 491 }
+  joins: []
+  orderBy: { table: orders, column: created_at }
+  locks: []
+  stats: []
+  explanation:
+    - 'PostgreSQL found the 2,005 orders of 491 or more through orders_amount_idx (it expected exactly 2,005), 4 × 2,005 = 8,020, then sorted them by date, 2,005 × 11 = 22,055: 30,075 in all. Walking orders_created_at_idx gives the dates in order with no sort, but jumps to all 100,000 orders to check their amounts, 400,000. Reading every order and sorting the large ones costs 122,055. Sorting a few rows is cheaper than reading many in order.'

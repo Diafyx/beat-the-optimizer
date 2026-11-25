@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1011
+tables:
+  - name: orders
+    rows: 100000
+    order: order_id
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      # Germany is almost a third of the orders; Iceland and Luxembourg are one
+      # in a thousand each.
+      - name: country
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: DE, weight: 30 }
+            - { value: FR, weight: 20 }
+            - { value: ES, weight: 15 }
+            - { value: IT, weight: 15 }
+            - { value: NL, weight: 10 }
+            - { value: PL, weight: 9.8 }
+            - { value: IS, weight: 0.1 }
+            - { value: LU, weight: 0.1 }
+      - name: amount
+        type: integer
+        values: { kind: uniform, min: 1, max: 500 }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+      - { name: orders_country_idx, column: country }
+afterAnalyze: []
+level:
+  id: a-short-list
+  title: A short list
+  story:
+    - Marketing wants every order from Iceland, Luxembourg and Germany.
+    - Only three countries, and there is an index on country. The statistics show how the orders are spread.
+  select:
+    - { table: orders, column: order_id }
+    - { table: orders, column: amount }
+  filters:
+    - { table: orders, column: country, op: in, values: [IS, LU, DE] }
+  joins: []
+  orderBy: null
+  locks: []
+  stats:
+    - { table: orders, column: country }
+  explanation:
+    - 'Iceland and Luxembourg are 100 orders each, but Germany is 30,000, so the list matches 30,200 of 100,000. PostgreSQL added the three frequencies from the statistics, expected exactly 30,200 rows, and read them through orders_country_idx in a bitmap scan: 4 × 30,200 = 120,800 here, more than the 100,000 of reading every order. A bitmap scan sorts its matches by where they are stored and reads the table in that order, which PostgreSQL prices close to a sequential read. This game charges every index match as a jump, so here the two cost models disagree. One common value makes the whole list common.'
