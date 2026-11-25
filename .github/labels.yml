@@ -3,7 +3,7 @@
 # The sync deletes every label not listed here, so release-please's own labels
 # are listed at the end.
 
-# Size (set on PRs by the pr-size job; estimated on issues)
+# Size (set on PRs by the pr-size job; issues have no size)
 - name: size/S
   color: 'c2e0c6'
   description: Up to 100 changed lines

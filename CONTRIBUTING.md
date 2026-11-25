@@ -300,7 +300,7 @@ create labels by hand.
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Type     | `type/feature`, `type/bug`, `type/perf`, `type/refactor`, `type/test`, `type/docs`, `type/ci`, `type/build`, `type/chore`, `type/security`       |
 | Area     | `area/engine`, `area/levels`, `area/authoring`, `area/ui`, `area/share`, `area/analytics`, `area/deploy`, `area/ci`, `area/docs`, `area/release` |
-| Size     | `size/S`, `size/M`, `size/L`, `size/XL`, `size/XXL`                                                                                              |
+| Size     | `size/S`, `size/M`, `size/L`, `size/XL`, `size/XXL` (pull requests only, set by CI)                                                              |
 | Priority | `priority/P0` (drop everything), `priority/P1` (this milestone), `priority/P2` (nice to have)                                                    |
 | Status   | `status/triage`, `status/blocked`, `status/needs-decision`                                                                                       |
 | Other    | `breaking-change`, `good first issue`, `help wanted`, `dependencies`, `flaky`, `ci:full`, `emergency-bypass`                                     |
@@ -309,11 +309,12 @@ Title type to label: `feat` → `type/feature`, `fix` → `type/bug` (or
 `type/security`), and the other types map by name. A `revert` takes the label
 of what it reverts.
 
-Every issue has one `type/*`, at least one `area/*`, a `size/*` estimate, a
-`priority/*` label and a milestone. New issues start with `status/triage`
-until the maintainer triages them. Issues estimated `size/XL` or larger are
-split into sub-issues. Deferring an issue means moving it to a later milestone
-with a comment saying why.
+Every issue has one `type/*`, at least one `area/*`, a `priority/*` label and
+a milestone. Issues have no `size/*` label: only pull requests are sized, by
+CI. New issues start with `status/triage` until the maintainer triages them.
+An issue likely to need a pull request of size XL or larger is split into
+sub-issues. Deferring an issue means moving it to a later milestone with a
+comment saying why.
 
 ## Releases
 
