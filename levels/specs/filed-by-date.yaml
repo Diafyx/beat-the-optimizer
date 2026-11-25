@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1012
+tables:
+  # The shop writes its orders as they come in, so the table is stored in date
+  # order.
+  - name: orders
+    rows: 100000
+    order: created_at
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      - name: created_at
+        type: date
+        values: { kind: dateRange, from: '2023-11-01', to: '2026-10-31' }
+      - name: amount
+        type: integer
+        values: { kind: uniform, min: 1, max: 500 }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+      - { name: orders_created_at_idx, column: created_at }
+afterAnalyze: []
+level:
+  id: filed-by-date
+  title: Filed by date
+  story:
+    - Finance wants every order since 1 January 2026, over a quarter of three years of orders.
+    - Too many for an index? The orders are stored in the order they came in.
+  select:
+    - { table: orders, column: order_id }
+    - { table: orders, column: amount }
+  filters:
+    - { table: orders, column: created_at, op: '>=', value: '2026-01-01' }
+  joins: []
+  orderBy: null
+  locks: []
+  stats:
+    - { table: orders, column: created_at }
+  explanation:
+    - 'Draft, written after the first authoring run: the table is stored in created_at order, so orders_created_at_idx reads its matches next to each other, at 1 a row instead of 4. About 27,700 orders cost about 27,700, against 100,000 for reading every order. How many rows is too many for an index depends on how the table is stored.'

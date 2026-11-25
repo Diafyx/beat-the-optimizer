@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1015
+tables:
+  - name: customers
+    rows: 10000
+    order: customer_id
+    columns:
+      - name: customer_id
+        type: integer
+        values: { kind: sequence }
+      - name: name
+        type: text
+        values: { kind: label, prefix: 'customer ' }
+    indexes:
+      - { name: customers_pkey, column: customer_id, unique: true }
+  - name: orders
+    rows: 100000
+    order: order_id
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      - name: customer_id
+        type: integer
+        values: { kind: reference, table: customers, column: customer_id }
+      # One order in a thousand is disputed.
+      - name: status
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: delivered, weight: 95 }
+            - { value: returned, weight: 4.9 }
+            - { value: disputed, weight: 0.1 }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+      - { name: orders_customer_id_idx, column: customer_id }
+      - { name: orders_status_idx, column: status }
+  # Three lines for each order.
+  - name: order_lines
+    rows: 300000
+    order: line_id
+    columns:
+      - name: line_id
+        type: integer
+        values: { kind: sequence }
+      - name: order_id
+        type: integer
+        values: { kind: reference, table: orders, column: order_id }
+      - name: price
+        type: integer
+        values: { kind: uniform, min: 1, max: 200 }
+    indexes:
+      - { name: order_lines_pkey, column: line_id, unique: true }
+      - { name: order_lines_order_id_idx, column: order_id }
+afterAnalyze: []
+level:
+  id: start-in-the-middle
+  title: Start in the middle
+  story:
+    - The payments team needs every line of every disputed order, with the customer's name.
+    - The query reads customers, then orders, then order lines. The filter is on the table in the middle.
+  select:
+    - { table: customers, column: name }
+    - { table: orders, column: order_id }
+    - { table: order_lines, column: line_id }
+    - { table: order_lines, column: price }
+  filters:
+    - { table: orders, column: status, op: '=', value: disputed }
+  joins:
+    - left: { table: customers, column: customer_id }
+      right: { table: orders, column: customer_id }
+    - left: { table: orders, column: order_id }
+      right: { table: order_lines, column: order_id }
+  orderBy: null
+  locks: []
+  stats:
+    - { table: orders, column: status }
+  explanation:
+    - 'Draft, written after the first authoring run: orders_status_idx finds the 100 disputed orders, 4 × 100 = 400. From there, look up their customers through customers_pkey and their lines through order_lines_order_id_idx, a few thousand in all. Starting from either end reads a whole table first. Start where the filter is, even in the middle.'

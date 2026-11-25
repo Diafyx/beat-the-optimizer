@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1014
+tables:
+  - name: customers
+    rows: 10000
+    order: customer_id
+    columns:
+      - name: customer_id
+        type: integer
+        values: { kind: sequence }
+      - name: name
+        type: text
+        values: { kind: label, prefix: 'customer ' }
+    indexes:
+      - { name: customers_pkey, column: customer_id, unique: true }
+  - name: orders
+    rows: 100000
+    order: order_id
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      - name: customer_id
+        type: integer
+        values: { kind: reference, table: customers, column: customer_id }
+      # One order in twenty comes back.
+      - name: status
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: delivered, weight: 80 }
+            - { value: shipped, weight: 15 }
+            - { value: returned, weight: 5 }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+      - { name: orders_customer_id_idx, column: customer_id }
+      - { name: orders_status_idx, column: status }
+afterAnalyze: []
+level:
+  id: read-it-whole
+  title: Read it whole
+  story:
+    - Customer service is calling every customer with a returned order.
+    - There are 5,000 returned orders and only 10,000 customers. Look each customer up, or read them all?
+  select:
+    - { table: customers, column: name }
+    - { table: orders, column: order_id }
+  filters:
+    - { table: orders, column: status, op: '=', value: returned }
+  joins:
+    - left: { table: customers, column: customer_id }
+      right: { table: orders, column: customer_id }
+  orderBy: null
+  locks: []
+  stats:
+    - { table: orders, column: status }
+  explanation:
+    - 'Draft, written after the first authoring run: orders_status_idx finds the 5,000 returned orders, 4 × 5,000 = 20,000. Looking up their customers through customers_pkey costs 4 × (5,000 + 5,000) = 40,000. Reading all 10,000 customers and hashing them costs 10,000 + 15,000. Reading a small table whole is cheaper than looking it up more times than it has rows.'
