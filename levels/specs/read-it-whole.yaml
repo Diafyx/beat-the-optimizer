@@ -56,4 +56,4 @@ level:
   stats:
     - { table: orders, column: status }
   explanation:
-    - 'Draft, written after the first authoring run: orders_status_idx finds the 5,000 returned orders, 4 × 5,000 = 20,000. Looking up their customers through customers_pkey costs 4 × (5,000 + 5,000) = 40,000. Reading all 10,000 customers and hashing them costs 10,000 + 15,000. Reading a small table whole is cheaper than looking it up more times than it has rows.'
+    - "PostgreSQL found the 5,000 returned orders through orders_status_idx (it expected exactly 5,000), 4 × 5,000 = 20,000, read all 10,000 customers, 10,000, and joined them in a hash join, 5,000 + 10,000 = 15,000 plus 5,000 for the result: 50,000 in all. Looking up each order's customer through customers_pkey instead costs 4 × (5,000 + 5,000) = 40,000, and 65,000 in all. When the lookups outnumber the rows of the table, read the table whole."

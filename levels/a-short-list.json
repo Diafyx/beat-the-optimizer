@@ -1,0 +1,108 @@
+{
+  "format": 1,
+  "id": "a-short-list",
+  "title": "A short list",
+  "story": [
+    "Marketing wants every order from Iceland, Luxembourg and Germany.",
+    "Only three countries, and there is an index on country. The statistics show how the orders are spread."
+  ],
+  "sql": "SELECT orders.order_id, orders.amount\nFROM orders\nWHERE orders.country IN ('IS', 'LU', 'DE')",
+  "tables": [
+    {
+      "name": "orders",
+      "rows": 100000,
+      "filter": "country IN ('IS', 'LU', 'DE')",
+      "storedOrder": "order_id",
+      "columns": [
+        { "name": "order_id", "type": "integer", "stats": null },
+        {
+          "name": "country",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 8,
+            "mostCommon": [
+              { "value": "DE", "frequency": 0.3 },
+              { "value": "FR", "frequency": 0.2 },
+              { "value": "ES", "frequency": 0.15 },
+              { "value": "IT", "frequency": 0.15 },
+              { "value": "NL", "frequency": 0.1 },
+              { "value": "PL", "frequency": 0.098 },
+              { "value": "IS", "frequency": 0.001 },
+              { "value": "LU", "frequency": 0.001 }
+            ],
+            "histogram": [],
+            "correlation": 0.18650135
+          }
+        },
+        { "name": "amount", "type": "integer", "stats": null }
+      ],
+      "indexes": [
+        { "name": "orders_pkey", "column": "order_id" },
+        { "name": "orders_country_idx", "column": "country" }
+      ]
+    }
+  ],
+  "joins": [],
+  "orderBy": null,
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "orders",
+        "filtered": 30200,
+        "indexes": [
+          { "index": "orders_pkey", "matched": 100000 },
+          { "index": "orders_country_idx", "matched": 30200 }
+        ]
+      }
+    ],
+    "joins": [],
+    "lookups": []
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": {
+      "first": { "table": "orders", "access": "index", "index": "orders_country_idx" },
+      "steps": []
+    },
+    "explain": {
+      "nodeType": "Bitmap Heap Scan",
+      "relation": "orders",
+      "index": null,
+      "estimatedRows": 30200,
+      "estimatedCost": 1290.18,
+      "children": [
+        {
+          "nodeType": "Bitmap Index Scan",
+          "relation": null,
+          "index": "orders_country_idx",
+          "estimatedRows": 30200,
+          "estimatedCost": 323.38,
+          "children": []
+        }
+      ]
+    }
+  },
+  "costs": {
+    "best": 100000,
+    "optimizer": 120800,
+    "bestPlan": { "first": { "table": "orders", "access": "seq" }, "steps": [] }
+  },
+  "explanation": [
+    "Iceland and Luxembourg are 100 orders each, but Germany is 30,000, so the list matches 30,200 of 100,000. PostgreSQL added the three frequencies from the statistics, expected exactly 30,200 rows, and read them through orders_country_idx in a bitmap scan: 4 × 30,200 = 120,800 here, more than the 100,000 of reading every order. A bitmap scan sorts its matches by where they are stored and reads the table in that order, which PostgreSQL prices close to a sequential read. This game charges every index match as a jump, so here the two cost models disagree. One common value makes the whole list common."
+  ]
+}

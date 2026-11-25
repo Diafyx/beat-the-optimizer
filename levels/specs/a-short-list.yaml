@@ -47,4 +47,4 @@ level:
   stats:
     - { table: orders, column: country }
   explanation:
-    - 'Draft, written after the first authoring run: Iceland and Luxembourg are 200 orders, but Germany is 30,000. Through orders_country_idx that is 4 × 30,200 = 120,800, more than reading all 100,000 orders. One common value makes the whole list common.'
+    - 'Iceland and Luxembourg are 100 orders each, but Germany is 30,000, so the list matches 30,200 of 100,000. PostgreSQL added the three frequencies from the statistics, expected exactly 30,200 rows, and read them through orders_country_idx in a bitmap scan: 4 × 30,200 = 120,800 here, more than the 100,000 of reading every order. A bitmap scan sorts its matches by where they are stored and reads the table in that order, which PostgreSQL prices close to a sequential read. This game charges every index match as a jump, so here the two cost models disagree. One common value makes the whole list common.'

@@ -77,4 +77,4 @@ level:
   stats:
     - { table: orders, column: status }
   explanation:
-    - 'Draft, written after the first authoring run: orders_status_idx finds the 100 disputed orders, 4 × 100 = 400. From there, look up their customers through customers_pkey and their lines through order_lines_order_id_idx, a few thousand in all. Starting from either end reads a whole table first. Start where the filter is, even in the middle.'
+    - 'PostgreSQL started in the middle too: orders_status_idx finds the 100 disputed orders (it expected exactly 100), 4 × 100 = 400, and order_lines_order_id_idx their 306 lines, 4 × (100 + 306) = 1,624. For the customers it read all 10,000 into a hash join, 10,000 + 10,100, and the plan costs 22,530. PostgreSQL prices whole pages, and 10,000 customers fit on a few dozen of them, so it reckoned that cheaper than 100 jumps into the table. This game counts rows: looking up the 100 customers through customers_pkey costs 4 × (100 + 100) = 800, and that plan costs 3,230. Starting from customers costs at least 22,530, and from order_lines 603,560. Start where the filter is, even in the middle of the query.'

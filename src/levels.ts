@@ -17,6 +17,13 @@ export const LEVEL_IDS = [
   'signed-copies',
   'belt-and-braces',
   'last-nights-migration',
+  // Added for puzzles #11 to #15 (#122). New levels go at the end, so the
+  // earlier puzzles keep their levels.
+  'a-short-list',
+  'filed-by-date',
+  'sorting-is-cheap',
+  'read-it-whole',
+  'start-in-the-middle',
 ] as const;
 
 export type LevelLoader = () => Promise<Level>;

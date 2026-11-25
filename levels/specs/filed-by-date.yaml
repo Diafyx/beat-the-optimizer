@@ -34,7 +34,6 @@ level:
   joins: []
   orderBy: null
   locks: []
-  stats:
-    - { table: orders, column: created_at }
+  stats: []
   explanation:
-    - 'Draft, written after the first authoring run: the table is stored in created_at order, so orders_created_at_idx reads its matches next to each other, at 1 a row instead of 4. About 27,700 orders cost about 27,700, against 100,000 for reading every order. How many rows is too many for an index depends on how the table is stored.'
+    - 'The orders since 1 January 2026 are 27,464 of 100,000, over a quarter. PostgreSQL expected exactly that many and still read them through orders_created_at_idx. The table is stored in created_at order, so the matches sit next to each other and the index reads them in order, at 1 a row instead of 4: 27,464, against 100,000 for reading every order. On a table stored in another order, the same index scan would cost 4 × 27,464 = 109,856. How many rows is too many for an index depends on how the table is stored.'

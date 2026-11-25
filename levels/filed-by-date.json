@@ -1,0 +1,83 @@
+{
+  "format": 1,
+  "id": "filed-by-date",
+  "title": "Filed by date",
+  "story": [
+    "Finance wants every order since 1 January 2026, over a quarter of three years of orders.",
+    "Too many for an index? The orders are stored in the order they came in."
+  ],
+  "sql": "SELECT orders.order_id, orders.amount\nFROM orders\nWHERE orders.created_at >= '2026-01-01'",
+  "tables": [
+    {
+      "name": "orders",
+      "rows": 100000,
+      "filter": "created_at >= '2026-01-01'",
+      "storedOrder": "created_at",
+      "columns": [
+        { "name": "order_id", "type": "integer", "stats": null },
+        { "name": "created_at", "type": "date", "stats": null },
+        { "name": "amount", "type": "integer", "stats": null }
+      ],
+      "indexes": [
+        { "name": "orders_pkey", "column": "order_id" },
+        { "name": "orders_created_at_idx", "column": "created_at" }
+      ]
+    }
+  ],
+  "joins": [],
+  "orderBy": null,
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "orders",
+        "filtered": 27464,
+        "indexes": [
+          { "index": "orders_pkey", "matched": 100000 },
+          { "index": "orders_created_at_idx", "matched": 27464 }
+        ]
+      }
+    ],
+    "joins": [],
+    "lookups": []
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": {
+      "first": { "table": "orders", "access": "index", "index": "orders_created_at_idx" },
+      "steps": []
+    },
+    "explain": {
+      "nodeType": "Index Scan",
+      "relation": "orders",
+      "index": "orders_created_at_idx",
+      "estimatedRows": 27464,
+      "estimatedCost": 733.91,
+      "children": []
+    }
+  },
+  "costs": {
+    "best": 27464,
+    "optimizer": 27464,
+    "bestPlan": {
+      "first": { "table": "orders", "access": "index", "index": "orders_created_at_idx" },
+      "steps": []
+    }
+  },
+  "explanation": [
+    "The orders since 1 January 2026 are 27,464 of 100,000, over a quarter. PostgreSQL expected exactly that many and still read them through orders_created_at_idx. The table is stored in created_at order, so the matches sit next to each other and the index reads them in order, at 1 a row instead of 4: 27,464, against 100,000 for reading every order. On a table stored in another order, the same index scan would cost 4 × 27,464 = 109,856. How many rows is too many for an index depends on how the table is stored."
+  ]
+}

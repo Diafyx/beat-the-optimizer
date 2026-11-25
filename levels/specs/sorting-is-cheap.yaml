@@ -34,7 +34,6 @@ level:
   joins: []
   orderBy: { table: orders, column: created_at }
   locks: []
-  stats:
-    - { table: orders, column: amount }
+  stats: []
   explanation:
-    - 'Draft, written after the first authoring run: orders_amount_idx finds the 2,000 or so large orders, 4 × 2,000 = 8,000, and sorting them costs 2,000 × 11 = 22,000. Walking orders_created_at_idx gives the order for free, but jumps to all 100,000 orders, 400,000. Sorting a few rows is cheaper than reading many in order.'
+    - 'PostgreSQL found the 2,005 orders of 491 or more through orders_amount_idx (it expected exactly 2,005), 4 × 2,005 = 8,020, then sorted them by date, 2,005 × 11 = 22,055: 30,075 in all. Walking orders_created_at_idx gives the dates in order with no sort, but jumps to all 100,000 orders to check their amounts, 400,000. Reading every order and sorting the large ones costs 122,055. Sorting a few rows is cheaper than reading many in order.'
