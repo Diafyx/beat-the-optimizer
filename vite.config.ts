@@ -37,6 +37,8 @@ export default defineConfig(({ mode }) => {
     ],
     define: {
       __ANALYTICS__: JSON.stringify(analytics),
+      // The Android app's build, which shares through Capacitor (src/ui/native-share.ts).
+      __APP__: JSON.stringify(app),
       // The share card's link in the app; on the web, '' (the page's own address).
       __APP_SITE_URL__: JSON.stringify(app ? appSiteUrl(process.env['SITE_URL']) : ''),
     },
