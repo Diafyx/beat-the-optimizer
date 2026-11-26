@@ -68,4 +68,5 @@ level:
     - { table: customers, column: country }
     - { table: orders, column: status }
   explanation:
-    - 'Draft, written again from the first authoring run.'
+    - 'PostgreSQL started from the big table too: orders_status_idx finds the 100 lost orders (it expected exactly 100), 4 × 100 = 400. It read the 500 Icelandic customers with a bitmap scan of customers_country_idx, 4 × 500 = 2,000 here, and joined the two in a hash join, 100 + 500 = 600 plus 4 for the result: 3,004 in all. A bitmap scan reads the table in stored order, which PostgreSQL prices close to a sequential read, so here the two cost models disagree.'
+    - "Looking up the 100 orders' customers through customers_pkey costs 4 × (100 + 100) = 800, and 1,204 in all. Starting from the 500 Icelanders and looking up their 4,990 orders costs 23,964. Start from the filter that keeps the fewest rows, even when it is on the big table."

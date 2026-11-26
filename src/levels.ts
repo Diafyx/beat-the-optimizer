@@ -24,6 +24,12 @@ export const LEVEL_IDS = [
   'sorting-is-cheap',
   'read-it-whole',
   'start-in-the-middle',
+  // Added for puzzles #16 to #20 (#124).
+  'big-table-first',
+  'sort-the-few',
+  'oldest-first',
+  'flagged-overnight',
+  'keep-the-order',
 ] as const;
 
 export type LevelLoader = () => Promise<Level>;

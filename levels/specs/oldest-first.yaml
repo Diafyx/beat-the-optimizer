@@ -35,4 +35,4 @@ level:
   locks: []
   stats: []
   explanation:
-    - 'Draft, written again from the first authoring run.'
+    - 'PostgreSQL walked orders_created_at_idx from the oldest date to the newest. The orders are stored in no particular order, so each of the 100,000 is a jump to a random place in the table: 4 × 100,000 = 400,000, already sorted. Reading the table in storage order costs only 100,000, but sorting all of it costs 100,000 × 17 = 1,700,000 more. A big sort can cost more than an index read of the whole table.'

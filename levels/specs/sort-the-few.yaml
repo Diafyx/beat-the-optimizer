@@ -58,4 +58,5 @@ level:
   locks: []
   stats: []
   explanation:
-    - 'Draft, written again from the first authoring run.'
+    - 'PostgreSQL read both tables, 100,000 + 2,000, joined the 200 wholesalers (it expected exactly 200) to their orders in a hash join, 100,000 + 200 = 100,200 plus 9,915 for the result, then sorted the 9,915 rows by customer number, 9,915 × 14 = 138,810: 350,925 in all. It prices a comparison far below reading a page, so to it the sort was cheap, and here the two cost models disagree.'
+    - 'The orders are already stored by customer number. Sorting the 200 wholesalers instead, 200 × 8 = 1,600, lets a merge join walk both tables side by side and return the rows already sorted: 213,715 in all. Sort the few rows before the join, not the many after it.'

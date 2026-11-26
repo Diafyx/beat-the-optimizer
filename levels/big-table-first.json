@@ -1,0 +1,184 @@
+{
+  "format": 1,
+  "id": "big-table-first",
+  "title": "Big table first",
+  "story": [
+    "The courier lost some parcels to Iceland. Support wants each lost order with the customer's name.",
+    "Iceland has few customers, and customers is the small table. Is that where to start?"
+  ],
+  "sql": "SELECT customers.name, orders.order_id\nFROM customers\nJOIN orders ON orders.customer_id = customers.customer_id\nWHERE customers.country = 'IS'\n  AND orders.status = 'lost'",
+  "tables": [
+    {
+      "name": "customers",
+      "rows": 10000,
+      "filter": "country = 'IS'",
+      "storedOrder": "customer_id",
+      "columns": [
+        { "name": "customer_id", "type": "integer", "stats": null },
+        { "name": "name", "type": "text", "stats": null },
+        {
+          "name": "country",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 3,
+            "mostCommon": [
+              { "value": "DE", "frequency": 0.6 },
+              { "value": "FR", "frequency": 0.35 },
+              { "value": "IS", "frequency": 0.05 }
+            ],
+            "histogram": [],
+            "correlation": 0.4907103
+          }
+        }
+      ],
+      "indexes": [
+        { "name": "customers_pkey", "column": "customer_id" },
+        { "name": "customers_country_idx", "column": "country" }
+      ]
+    },
+    {
+      "name": "orders",
+      "rows": 100000,
+      "filter": "status = 'lost'",
+      "storedOrder": "order_id",
+      "columns": [
+        { "name": "order_id", "type": "integer", "stats": null },
+        { "name": "customer_id", "type": "integer", "stats": null },
+        {
+          "name": "status",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 2,
+            "mostCommon": [
+              { "value": "delivered", "frequency": 0.999 },
+              { "value": "lost", "frequency": 0.001 }
+            ],
+            "histogram": [],
+            "correlation": 0.9981308
+          }
+        }
+      ],
+      "indexes": [
+        { "name": "orders_pkey", "column": "order_id" },
+        { "name": "orders_customer_id_idx", "column": "customer_id" },
+        { "name": "orders_status_idx", "column": "status" }
+      ]
+    }
+  ],
+  "joins": [
+    {
+      "left": { "table": "customers", "column": "customer_id" },
+      "right": { "table": "orders", "column": "customer_id" }
+    }
+  ],
+  "orderBy": null,
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "customers",
+        "filtered": 500,
+        "indexes": [
+          { "index": "customers_pkey", "matched": 10000 },
+          { "index": "customers_country_idx", "matched": 500 }
+        ]
+      },
+      {
+        "table": "orders",
+        "filtered": 100,
+        "indexes": [
+          { "index": "orders_pkey", "matched": 100000 },
+          { "index": "orders_customer_id_idx", "matched": 100000 },
+          { "index": "orders_status_idx", "matched": 100 }
+        ]
+      }
+    ],
+    "joins": [{ "tables": ["customers", "orders"], "rows": 4 }],
+    "lookups": [
+      { "outer": ["customers"], "index": "orders_customer_id_idx", "fetched": 4990 },
+      { "outer": ["orders"], "index": "customers_pkey", "fetched": 100 }
+    ]
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": {
+      "first": { "table": "orders", "access": "index", "index": "orders_status_idx" },
+      "steps": [
+        {
+          "join": "hash",
+          "scan": { "table": "customers", "access": "index", "index": "customers_country_idx" }
+        }
+      ]
+    },
+    "explain": {
+      "nodeType": "Hash Join",
+      "relation": null,
+      "index": null,
+      "estimatedRows": 5,
+      "estimatedCost": 144.35,
+      "children": [
+        {
+          "nodeType": "Index Scan",
+          "relation": "orders",
+          "index": "orders_status_idx",
+          "estimatedRows": 100,
+          "estimatedCost": 11.43,
+          "children": []
+        },
+        {
+          "nodeType": "Hash",
+          "relation": null,
+          "index": null,
+          "estimatedRows": 500,
+          "estimatedCost": 126.41,
+          "children": [
+            {
+              "nodeType": "Bitmap Heap Scan",
+              "relation": "customers",
+              "index": null,
+              "estimatedRows": 500,
+              "estimatedCost": 126.41,
+              "children": [
+                {
+                  "nodeType": "Bitmap Index Scan",
+                  "relation": null,
+                  "index": "customers_country_idx",
+                  "estimatedRows": 500,
+                  "estimatedCost": 8.04,
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "costs": {
+    "best": 1204,
+    "optimizer": 3004,
+    "bestPlan": {
+      "first": { "table": "orders", "access": "index", "index": "orders_status_idx" },
+      "steps": [{ "join": "indexNestedLoop", "table": "customers", "index": "customers_pkey" }]
+    }
+  },
+  "explanation": [
+    "PostgreSQL started from the big table too: orders_status_idx finds the 100 lost orders (it expected exactly 100), 4 × 100 = 400. It read the 500 Icelandic customers with a bitmap scan of customers_country_idx, 4 × 500 = 2,000 here, and joined the two in a hash join, 100 + 500 = 600 plus 4 for the result: 3,004 in all. A bitmap scan reads the table in stored order, which PostgreSQL prices close to a sequential read, so here the two cost models disagree.",
+    "Looking up the 100 orders' customers through customers_pkey costs 4 × (100 + 100) = 800, and 1,204 in all. Starting from the 500 Icelanders and looking up their 4,990 orders costs 23,964. Start from the filter that keeps the fewest rows, even when it is on the big table."
+  ]
+}

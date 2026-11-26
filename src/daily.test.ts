@@ -57,8 +57,8 @@ describe('dailyPuzzle', () => {
     expect(ROTATION).toEqual(LEVEL_IDS);
   });
 
-  it('keeps the levels of puzzles already played when levels are added (#122)', () => {
-    const levels = Array.from({ length: 15 }, (_, i) => dailyPuzzle(at(2026, 11, 23 + i)).level);
+  it('keeps the levels of puzzles already played when levels are added (#122, #124)', () => {
+    const levels = Array.from({ length: 20 }, (_, i) => dailyPuzzle(at(2026, 11, 23 + i)).level);
     expect(levels).toEqual([
       'needle',
       'read-the-stats',
@@ -75,8 +75,14 @@ describe('dailyPuzzle', () => {
       'sorting-is-cheap',
       'read-it-whole',
       'start-in-the-middle',
+      'big-table-first',
+      'sort-the-few',
+      'oldest-first',
+      'flagged-overnight',
+      'keep-the-order',
     ]);
     expect(dailyPuzzle(at(2026, 12, 3)).number).toBe(11);
+    expect(dailyPuzzle(at(2026, 12, 8))).toMatchObject({ number: 16, level: 'big-table-first' });
   });
 
   it('changes puzzle at local midnight across a month and a year', () => {

@@ -61,4 +61,5 @@ level:
   stats:
     - { table: orders, column: status }
   explanation:
-    - 'Draft, written again from the first authoring run.'
+    - "PostgreSQL's most common values for status still said what they said when ANALYZE ran: one order in a thousand is held for review. So it expected 167 of them (the update spread the table over more pages, and PostgreSQL scales its row count by them), found them through orders_status_idx and looked up each one's customer through customers_pkey in a nested loop. After the new rule 80,110 orders are held: 4 × 80,110 = 320,440 for the index, 4 × (80,110 + 80,110) = 640,880 for the lookups and 80,110 for the result, 1,041,430 in all."
+    - 'Reading both tables and joining them in a hash join costs 100,000 + 100,000, then 80,110 + 100,000 for the join and 80,110 for the result: 460,220. One stale estimate picked both the index and the join method. After a batch that changes this many rows, run ANALYZE orders yourself.'
