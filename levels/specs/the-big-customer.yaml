@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1021
+tables:
+  - name: customers
+    rows: 1000
+    order: customer_id
+    columns:
+      - name: customer_id
+        type: integer
+        values: { kind: sequence }
+      - name: name
+        type: text
+        values: { kind: label, prefix: 'customer ' }
+    indexes:
+      - { name: customers_pkey, column: customer_id, unique: true }
+  # Only five customers have ever ordered, and customer 1 places four orders
+  # in five.
+  - name: orders
+    rows: 100000
+    order: shuffled
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      - name: customer_id
+        type: integer
+        values:
+          kind: weighted
+          weights:
+            - { value: 1, weight: 80 }
+            - { value: 2, weight: 5 }
+            - { value: 3, weight: 5 }
+            - { value: 4, weight: 5 }
+            - { value: 5, weight: 5 }
+      - name: amount
+        type: integer
+        values: { kind: uniform, min: 1, max: 500 }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+      - { name: orders_customer_id_idx, column: customer_id }
+afterAnalyze: []
+level:
+  id: the-big-customer
+  title: The big customer
+  story:
+    - The account team wants every order of customer 1, the wholesaler, found by name.
+    - The shop has 1,000 customers. Most of them signed up and never ordered.
+  select:
+    - { table: orders, column: order_id }
+    - { table: orders, column: amount }
+  filters:
+    - { table: customers, column: name, op: '=', value: 'customer 1' }
+  joins:
+    - left: { table: customers, column: customer_id }
+      right: { table: orders, column: customer_id }
+  orderBy: null
+  locks: []
+  stats:
+    - { table: orders, column: customer_id }
+  explanation:
+    - 'PostgreSQL found the one customer named customer 1 and looked up their orders through orders_customer_id_idx in a nested loop. Its statistics for orders.customer_id show that customer 1 places four orders in five, but the query names the customer, not the number, so it could not use them. It expected the lookup to find 20,000 orders, as if the five customers who order shared them evenly, and the join to return 100, as if the orders were spread over all 1,000 customers. Customer 1 has 80,000: 1,000 to read the customers, 4 × (1 + 80,000) = 320,004 for the lookups and 80,000 for the result, 401,004 in all.'
+    - 'Reading every order once and joining it to the one customer costs 1,000 + 100,000, then 1 × 100,000 = 100,000 for a nested loop and 80,000 for the result: 281,000. A hash join costs 1 more. When a filter picks a row that most of the other table points to, the join estimate is an average, and the lookups pay for every row the average missed.'

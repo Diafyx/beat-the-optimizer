@@ -1,0 +1,200 @@
+{
+  "format": 1,
+  "id": "refunds-first",
+  "title": "Refunds first",
+  "story": [
+    "Finance wants every refund with the name of the customer who got it.",
+    "The query reads customers, then orders, then refunds. Customers is the smallest table."
+  ],
+  "sql": "SELECT customers.name, refunds.refund_id, refunds.amount\nFROM customers\nJOIN orders ON orders.customer_id = customers.customer_id\nJOIN refunds ON refunds.order_id = orders.order_id",
+  "tables": [
+    {
+      "name": "customers",
+      "rows": 2000,
+      "filter": null,
+      "storedOrder": "customer_id",
+      "columns": [
+        { "name": "customer_id", "type": "integer", "stats": null },
+        { "name": "name", "type": "text", "stats": null }
+      ],
+      "indexes": [{ "name": "customers_pkey", "column": "customer_id" }]
+    },
+    {
+      "name": "orders",
+      "rows": 100000,
+      "filter": null,
+      "storedOrder": "order_id",
+      "columns": [
+        { "name": "order_id", "type": "integer", "stats": null },
+        { "name": "customer_id", "type": "integer", "stats": null }
+      ],
+      "indexes": [
+        { "name": "orders_pkey", "column": "order_id" },
+        { "name": "orders_customer_id_idx", "column": "customer_id" }
+      ]
+    },
+    {
+      "name": "refunds",
+      "rows": 10000,
+      "filter": null,
+      "storedOrder": null,
+      "columns": [
+        { "name": "refund_id", "type": "integer", "stats": null },
+        { "name": "order_id", "type": "integer", "stats": null },
+        { "name": "amount", "type": "integer", "stats": null }
+      ],
+      "indexes": [
+        { "name": "refunds_pkey", "column": "refund_id" },
+        { "name": "refunds_order_id_idx", "column": "order_id" }
+      ]
+    }
+  ],
+  "joins": [
+    {
+      "left": { "table": "customers", "column": "customer_id" },
+      "right": { "table": "orders", "column": "customer_id" }
+    },
+    {
+      "left": { "table": "orders", "column": "order_id" },
+      "right": { "table": "refunds", "column": "order_id" }
+    }
+  ],
+  "orderBy": null,
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "customers",
+        "filtered": 2000,
+        "indexes": [{ "index": "customers_pkey", "matched": 2000 }]
+      },
+      {
+        "table": "orders",
+        "filtered": 100000,
+        "indexes": [
+          { "index": "orders_pkey", "matched": 100000 },
+          { "index": "orders_customer_id_idx", "matched": 100000 }
+        ]
+      },
+      {
+        "table": "refunds",
+        "filtered": 10000,
+        "indexes": [
+          { "index": "refunds_pkey", "matched": 10000 },
+          { "index": "refunds_order_id_idx", "matched": 10000 }
+        ]
+      }
+    ],
+    "joins": [
+      { "tables": ["customers", "orders"], "rows": 100000 },
+      { "tables": ["orders", "refunds"], "rows": 10000 },
+      { "tables": ["customers", "orders", "refunds"], "rows": 10000 }
+    ],
+    "lookups": [
+      { "outer": ["customers"], "index": "orders_customer_id_idx", "fetched": 100000 },
+      { "outer": ["orders"], "index": "customers_pkey", "fetched": 100000 },
+      { "outer": ["orders"], "index": "refunds_order_id_idx", "fetched": 10000 },
+      { "outer": ["customers", "orders"], "index": "refunds_order_id_idx", "fetched": 10000 },
+      { "outer": ["refunds"], "index": "orders_pkey", "fetched": 10000 },
+      { "outer": ["orders", "refunds"], "index": "customers_pkey", "fetched": 10000 }
+    ]
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": {
+      "first": { "table": "orders", "access": "seq" },
+      "steps": [
+        { "join": "hash", "scan": { "table": "refunds", "access": "seq" } },
+        { "join": "hash", "scan": { "table": "customers", "access": "seq" } }
+      ]
+    },
+    "explain": {
+      "nodeType": "Hash Join",
+      "relation": null,
+      "index": null,
+      "estimatedRows": 10000,
+      "estimatedCost": 2595.31,
+      "children": [
+        {
+          "nodeType": "Hash Join",
+          "relation": null,
+          "index": null,
+          "estimatedRows": 10000,
+          "estimatedCost": 2510,
+          "children": [
+            {
+              "nodeType": "Seq Scan",
+              "relation": "orders",
+              "index": null,
+              "estimatedRows": 100000,
+              "estimatedCost": 1464,
+              "children": []
+            },
+            {
+              "nodeType": "Hash",
+              "relation": null,
+              "index": null,
+              "estimatedRows": 10000,
+              "estimatedCost": 196,
+              "children": [
+                {
+                  "nodeType": "Seq Scan",
+                  "relation": "refunds",
+                  "index": null,
+                  "estimatedRows": 10000,
+                  "estimatedCost": 196,
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "nodeType": "Hash",
+          "relation": null,
+          "index": null,
+          "estimatedRows": 2000,
+          "estimatedCost": 34,
+          "children": [
+            {
+              "nodeType": "Seq Scan",
+              "relation": "customers",
+              "index": null,
+              "estimatedRows": 2000,
+              "estimatedCost": 34,
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "costs": {
+    "best": 124000,
+    "optimizer": 254000,
+    "bestPlan": {
+      "first": { "table": "refunds", "access": "seq" },
+      "steps": [
+        { "join": "indexNestedLoop", "table": "orders", "index": "orders_pkey" },
+        { "join": "hash", "scan": { "table": "customers", "access": "seq" } }
+      ]
+    }
+  },
+  "explanation": [
+    "PostgreSQL chose the right order, and its estimates were exact: it joined orders to refunds first, which keeps 10,000 rows, and added the 2,000 customers last. Starting from customers, the smallest table, the first join keeps all 100,000 orders, and that plan costs 434,000. But PostgreSQL read all 100,000 orders to find the ones with a refund: 100,000 + 10,000, a hash join of 110,000 and 10,000 for its result, then 2,000 + 12,000 + 10,000 for the customers, 254,000 in all. It prices reading a whole table by its pages, cheap next to 10,000 jumps, and here the two cost models disagree.",
+    "Reading the refunds and looking up each one's order through orders_pkey costs 10,000 + 4 × (10,000 + 10,000) = 90,000 and skips the orders without a refund. With the customers in a hash join, the plan costs 124,000. Start from the join that keeps the fewest rows, not from the smallest table."
+  ]
+}

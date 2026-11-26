@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1023
+tables:
+  - name: customers
+    rows: 10000
+    order: customer_id
+    columns:
+      - name: customer_id
+        type: integer
+        values: { kind: sequence }
+      - name: name
+        type: text
+        values: { kind: label, prefix: 'customer ' }
+    indexes:
+      - { name: customers_pkey, column: customer_id, unique: true }
+  - name: products
+    rows: 2000
+    order: product_id
+    columns:
+      - name: product_id
+        type: integer
+        values: { kind: sequence }
+      - name: title
+        type: text
+        values: { kind: label, prefix: 'product ' }
+    indexes:
+      - { name: products_pkey, column: product_id, unique: true }
+  # About ten orders for each customer.
+  - name: orders
+    rows: 100000
+    order: shuffled
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      - name: customer_id
+        type: integer
+        values: { kind: reference, table: customers, column: customer_id }
+      - name: product_id
+        type: integer
+        values: { kind: reference, table: products, column: product_id }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+      - { name: orders_customer_id_idx, column: customer_id }
+afterAnalyze: []
+level:
+  id: said-twice
+  title: Said twice
+  story:
+    - Marketing wants every product the first hundred customers ordered, with the customer's name.
+    - Someone wrote the filter on both tables, customers and orders, to help the database.
+  select:
+    - { table: customers, column: name }
+    - { table: products, column: title }
+  filters:
+    - { table: customers, column: customer_id, op: '<=', value: 100 }
+    - { table: orders, column: customer_id, op: '<=', value: 100 }
+  joins:
+    - left: { table: customers, column: customer_id }
+      right: { table: orders, column: customer_id }
+    - left: { table: products, column: product_id }
+      right: { table: orders, column: product_id }
+  orderBy: null
+  locks: []
+  stats: []
+  explanation:
+    - "PostgreSQL found the 1,010 orders of customers 1 to 100 through orders_customer_id_idx (it expected 1,011), 4 × 1,010 = 4,040, and the 100 customers through customers_pkey (it expected 99), and joined them in a hash join. It counted the two filters as independent, as if most of those orders belonged to other customers, so it expected the join to return 10 rows. All 1,010 match. So it looked up each order's product through products_pkey, 4 × (1,010 + 1,010) = 8,080, and the plan costs 15,350."
+    - "For 1,010 rows a hash join with all 2,000 products is cheaper: 2,000 + 3,010, and 1,010 for the result. Starting from customers_pkey and looking up their orders through orders_customer_id_idx, 100 + 4 × (100 + 1,010) = 4,540, the plan costs 11,570. The filter on orders adds nothing the join doesn't already say, but PostgreSQL counted it twice. Write a filter once, on the table it belongs to."
