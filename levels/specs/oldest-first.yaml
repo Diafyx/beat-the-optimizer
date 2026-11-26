@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1018
+tables:
+  # Imported from an old system in no particular order.
+  - name: orders
+    rows: 100000
+    order: shuffled
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      - name: created_at
+        type: date
+        values: { kind: dateRange, from: '2016-01-01', to: '2025-12-31' }
+      - name: amount
+        type: integer
+        values: { kind: uniform, min: 1, max: 500 }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+      - { name: orders_created_at_idx, column: created_at }
+afterAnalyze: []
+level:
+  id: oldest-first
+  title: Oldest first
+  story:
+    - The archive wants every order, oldest first.
+    - The orders came from an old system in no particular order. There is an index on the date, but it would read all of them.
+  select:
+    - { table: orders, column: order_id }
+    - { table: orders, column: created_at }
+    - { table: orders, column: amount }
+  filters: []
+  joins: []
+  orderBy: { table: orders, column: created_at }
+  locks: []
+  stats: []
+  explanation:
+    - 'Draft, written again from the first authoring run.'

@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1016
+tables:
+  - name: customers
+    rows: 10000
+    order: customer_id
+    columns:
+      - name: customer_id
+        type: integer
+        values: { kind: sequence }
+      - name: name
+        type: text
+        values: { kind: label, prefix: 'customer ' }
+      # One customer in twenty lives in Iceland.
+      - name: country
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: DE, weight: 60 }
+            - { value: FR, weight: 35 }
+            - { value: IS, weight: 5 }
+    indexes:
+      - { name: customers_pkey, column: customer_id, unique: true }
+      - { name: customers_country_idx, column: country }
+  - name: orders
+    rows: 100000
+    order: order_id
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      # About ten orders for each customer.
+      - name: customer_id
+        type: integer
+        values: { kind: reference, table: customers, column: customer_id }
+      # One order in a thousand was lost on the way.
+      - name: status
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: delivered, weight: 99.9 }
+            - { value: lost, weight: 0.1 }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+      - { name: orders_customer_id_idx, column: customer_id }
+      - { name: orders_status_idx, column: status }
+afterAnalyze: []
+level:
+  id: big-table-first
+  title: Big table first
+  story:
+    - The courier lost some parcels to Iceland. Support wants each lost order with the customer's name.
+    - Iceland has few customers, and customers is the small table. Is that where to start?
+  select:
+    - { table: customers, column: name }
+    - { table: orders, column: order_id }
+  filters:
+    - { table: customers, column: country, op: '=', value: IS }
+    - { table: orders, column: status, op: '=', value: lost }
+  joins:
+    - left: { table: customers, column: customer_id }
+      right: { table: orders, column: customer_id }
+  orderBy: null
+  locks: []
+  stats:
+    - { table: customers, column: country }
+    - { table: orders, column: status }
+  explanation:
+    - 'Draft, written again from the first authoring run.'

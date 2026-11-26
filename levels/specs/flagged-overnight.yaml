@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1019
+tables:
+  - name: customers
+    rows: 10000
+    order: customer_id
+    columns:
+      - name: customer_id
+        type: integer
+        values: { kind: sequence }
+      - name: name
+        type: text
+        values: { kind: label, prefix: 'customer ' }
+    indexes:
+      - { name: customers_pkey, column: customer_id, unique: true }
+  - name: orders
+    rows: 100000
+    order: shuffled
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      - name: customer_id
+        type: integer
+        values: { kind: reference, table: customers, column: customer_id }
+      # When ANALYZE ran, one order in a thousand was held for review.
+      - name: status
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: open, weight: 99.9 }
+            - { value: review, weight: 0.1 }
+      - name: amount
+        type: integer
+        values: { kind: uniform, min: 1, max: 500 }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+      - { name: orders_status_idx, column: status }
+# The new rule runs after ANALYZE, and autovacuum is off, so PostgreSQL's
+# statistics still say one order in a thousand is held for review.
+afterAnalyze:
+  - UPDATE orders SET status = 'review' WHERE amount > 350
+level:
+  id: flagged-overnight
+  title: Flagged overnight
+  story:
+    - Overnight a new fraud rule held every order over 350 for review. The nightly ANALYZE had already run.
+    - The fraud team wants the held orders with the customer's name.
+  select:
+    - { table: customers, column: name }
+    - { table: orders, column: order_id }
+    - { table: orders, column: amount }
+  filters:
+    - { table: orders, column: status, op: '=', value: review }
+  joins:
+    - left: { table: customers, column: customer_id }
+      right: { table: orders, column: customer_id }
+  orderBy: null
+  locks: []
+  stats:
+    - { table: orders, column: status }
+  explanation:
+    - 'Draft, written again from the first authoring run.'
