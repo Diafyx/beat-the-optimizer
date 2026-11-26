@@ -58,4 +58,5 @@ level:
   stats:
     - { table: orders, column: customer_id }
   explanation:
-    - 'Draft, written again from the first authoring run.'
+    - 'PostgreSQL found the one customer named customer 1 and looked up their orders through orders_customer_id_idx in a nested loop. Its statistics for orders.customer_id show that customer 1 places four orders in five, but the query names the customer, not the number, so it could not use them. It expected the lookup to find 20,000 orders, as if the five customers who order shared them evenly, and the join to return 100, as if the orders were spread over all 1,000 customers. Customer 1 has 80,000: 1,000 to read the customers, 4 × (1 + 80,000) = 320,004 for the lookups and 80,000 for the result, 401,004 in all.'
+    - 'Reading every order once and joining it to the one customer costs 1,000 + 100,000, then 1 × 100,000 = 100,000 for a nested loop and 80,000 for the result: 281,000. A hash join costs 1 more. When a filter picks a row that most of the other table points to, the join estimate is an average, and the lookups pay for every row the average missed.'

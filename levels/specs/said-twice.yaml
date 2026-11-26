@@ -64,4 +64,5 @@ level:
   locks: []
   stats: []
   explanation:
-    - 'Draft, written again from the first authoring run.'
+    - "PostgreSQL found the 1,010 orders of customers 1 to 100 through orders_customer_id_idx (it expected 1,011), 4 × 1,010 = 4,040, and the 100 customers through customers_pkey (it expected 99), and joined them in a hash join. It counted the two filters as independent, as if most of those orders belonged to other customers, so it expected the join to return 10 rows. All 1,010 match. So it looked up each order's product through products_pkey, 4 × (1,010 + 1,010) = 8,080, and the plan costs 15,350."
+    - "For 1,010 rows a hash join with all 2,000 products is cheaper: 2,000 + 3,010, and 1,010 for the result. Starting from customers_pkey and looking up their orders through orders_customer_id_idx, 100 + 4 × (100 + 1,010) = 4,540, the plan costs 11,570. The filter on orders adds nothing the join doesn't already say, but PostgreSQL counted it twice. Write a filter once, on the table it belongs to."

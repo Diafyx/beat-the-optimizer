@@ -65,4 +65,5 @@ level:
   locks: []
   stats: []
   explanation:
-    - 'Draft, written again from the first authoring run.'
+    - 'PostgreSQL chose the right order, and its estimates were exact: it joined orders to refunds first, which keeps 10,000 rows, and added the 2,000 customers last. Starting from customers, the smallest table, the first join keeps all 100,000 orders, and that plan costs 434,000. But PostgreSQL read all 100,000 orders to find the ones with a refund: 100,000 + 10,000, a hash join of 110,000 and 10,000 for its result, then 2,000 + 12,000 + 10,000 for the customers, 254,000 in all. It prices reading a whole table by its pages, cheap next to 10,000 jumps, and here the two cost models disagree.'
+    - "Reading the refunds and looking up each one's order through orders_pkey costs 10,000 + 4 × (10,000 + 10,000) = 90,000 and skips the orders without a refund. With the customers in a hash join, the plan costs 124,000. Start from the join that keeps the fewest rows, not from the smallest table."

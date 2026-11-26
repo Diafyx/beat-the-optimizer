@@ -1,0 +1,196 @@
+{
+  "format": 1,
+  "id": "said-twice",
+  "title": "Said twice",
+  "story": [
+    "Marketing wants every product the first hundred customers ordered, with the customer's name.",
+    "Someone wrote the filter on both tables, customers and orders, to help the database."
+  ],
+  "sql": "SELECT customers.name, products.title\nFROM customers\nJOIN orders ON orders.customer_id = customers.customer_id\nJOIN products ON products.product_id = orders.product_id\nWHERE customers.customer_id <= 100\n  AND orders.customer_id <= 100",
+  "tables": [
+    {
+      "name": "customers",
+      "rows": 10000,
+      "filter": "customer_id <= 100",
+      "storedOrder": "customer_id",
+      "columns": [
+        { "name": "customer_id", "type": "integer", "stats": null },
+        { "name": "name", "type": "text", "stats": null }
+      ],
+      "indexes": [{ "name": "customers_pkey", "column": "customer_id" }]
+    },
+    {
+      "name": "products",
+      "rows": 2000,
+      "filter": null,
+      "storedOrder": "product_id",
+      "columns": [
+        { "name": "product_id", "type": "integer", "stats": null },
+        { "name": "title", "type": "text", "stats": null }
+      ],
+      "indexes": [{ "name": "products_pkey", "column": "product_id" }]
+    },
+    {
+      "name": "orders",
+      "rows": 100000,
+      "filter": "customer_id <= 100",
+      "storedOrder": null,
+      "columns": [
+        { "name": "order_id", "type": "integer", "stats": null },
+        { "name": "customer_id", "type": "integer", "stats": null },
+        { "name": "product_id", "type": "integer", "stats": null }
+      ],
+      "indexes": [
+        { "name": "orders_pkey", "column": "order_id" },
+        { "name": "orders_customer_id_idx", "column": "customer_id" }
+      ]
+    }
+  ],
+  "joins": [
+    {
+      "left": { "table": "customers", "column": "customer_id" },
+      "right": { "table": "orders", "column": "customer_id" }
+    },
+    {
+      "left": { "table": "products", "column": "product_id" },
+      "right": { "table": "orders", "column": "product_id" }
+    }
+  ],
+  "orderBy": null,
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "customers",
+        "filtered": 100,
+        "indexes": [{ "index": "customers_pkey", "matched": 100 }]
+      },
+      {
+        "table": "products",
+        "filtered": 2000,
+        "indexes": [{ "index": "products_pkey", "matched": 2000 }]
+      },
+      {
+        "table": "orders",
+        "filtered": 1010,
+        "indexes": [
+          { "index": "orders_pkey", "matched": 100000 },
+          { "index": "orders_customer_id_idx", "matched": 1010 }
+        ]
+      }
+    ],
+    "joins": [
+      { "tables": ["customers", "orders"], "rows": 1010 },
+      { "tables": ["products", "orders"], "rows": 1010 },
+      { "tables": ["customers", "products", "orders"], "rows": 1010 }
+    ],
+    "lookups": [
+      { "outer": ["customers"], "index": "orders_customer_id_idx", "fetched": 1010 },
+      { "outer": ["orders"], "index": "customers_pkey", "fetched": 1010 },
+      { "outer": ["orders"], "index": "products_pkey", "fetched": 1010 },
+      { "outer": ["customers", "orders"], "index": "products_pkey", "fetched": 1010 },
+      { "outer": ["products", "orders"], "index": "customers_pkey", "fetched": 1010 }
+    ]
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": {
+      "first": { "table": "orders", "access": "index", "index": "orders_customer_id_idx" },
+      "steps": [
+        {
+          "join": "hash",
+          "scan": { "table": "customers", "access": "index", "index": "customers_pkey" }
+        },
+        { "join": "indexNestedLoop", "table": "products", "index": "products_pkey" }
+      ]
+    },
+    "explain": {
+      "nodeType": "Nested Loop",
+      "relation": null,
+      "index": null,
+      "estimatedRows": 10,
+      "estimatedCost": 600.16,
+      "children": [
+        {
+          "nodeType": "Hash Join",
+          "relation": null,
+          "index": null,
+          "estimatedRows": 10,
+          "estimatedCost": 596.42,
+          "children": [
+            {
+              "nodeType": "Bitmap Heap Scan",
+              "relation": "orders",
+              "index": null,
+              "estimatedRows": 1011,
+              "estimatedCost": 581.51,
+              "children": [
+                {
+                  "nodeType": "Bitmap Index Scan",
+                  "relation": null,
+                  "index": "orders_customer_id_idx",
+                  "estimatedRows": 1011,
+                  "estimatedCost": 15.88,
+                  "children": []
+                }
+              ]
+            },
+            {
+              "nodeType": "Hash",
+              "relation": null,
+              "index": null,
+              "estimatedRows": 99,
+              "estimatedCost": 11.02,
+              "children": [
+                {
+                  "nodeType": "Index Scan",
+                  "relation": "customers",
+                  "index": "customers_pkey",
+                  "estimatedRows": 99,
+                  "estimatedCost": 11.02,
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "nodeType": "Index Scan",
+          "relation": "products",
+          "index": "products_pkey",
+          "estimatedRows": 1,
+          "estimatedCost": 0.37,
+          "children": []
+        }
+      ]
+    }
+  },
+  "costs": {
+    "best": 11570,
+    "optimizer": 15350,
+    "bestPlan": {
+      "first": { "table": "customers", "access": "index", "index": "customers_pkey" },
+      "steps": [
+        { "join": "indexNestedLoop", "table": "orders", "index": "orders_customer_id_idx" },
+        { "join": "hash", "scan": { "table": "products", "access": "seq" } }
+      ]
+    }
+  },
+  "explanation": [
+    "PostgreSQL found the 1,010 orders of customers 1 to 100 through orders_customer_id_idx (it expected 1,011), 4 × 1,010 = 4,040, and the 100 customers through customers_pkey (it expected 99), and joined them in a hash join. It counted the two filters as independent, as if most of those orders belonged to other customers, so it expected the join to return 10 rows. All 1,010 match. So it looked up each order's product through products_pkey, 4 × (1,010 + 1,010) = 8,080, and the plan costs 15,350.",
+    "For 1,010 rows a hash join with all 2,000 products is cheaper: 2,000 + 3,010, and 1,010 for the result. Starting from customers_pkey and looking up their orders through orders_customer_id_idx, 100 + 4 × (100 + 1,010) = 4,540, the plan costs 11,570. The filter on orders adds nothing the join doesn't already say, but PostgreSQL counted it twice. Write a filter once, on the table it belongs to."
+  ]
+}

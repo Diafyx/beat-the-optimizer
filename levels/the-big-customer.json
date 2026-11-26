@@ -1,0 +1,150 @@
+{
+  "format": 1,
+  "id": "the-big-customer",
+  "title": "The big customer",
+  "story": [
+    "The account team wants every order of customer 1, the wholesaler, found by name.",
+    "The shop has 1,000 customers. Most of them signed up and never ordered."
+  ],
+  "sql": "SELECT orders.order_id, orders.amount\nFROM customers\nJOIN orders ON orders.customer_id = customers.customer_id\nWHERE customers.name = 'customer 1'",
+  "tables": [
+    {
+      "name": "customers",
+      "rows": 1000,
+      "filter": "name = 'customer 1'",
+      "storedOrder": "customer_id",
+      "columns": [
+        { "name": "customer_id", "type": "integer", "stats": null },
+        { "name": "name", "type": "text", "stats": null }
+      ],
+      "indexes": [{ "name": "customers_pkey", "column": "customer_id" }]
+    },
+    {
+      "name": "orders",
+      "rows": 100000,
+      "filter": null,
+      "storedOrder": null,
+      "columns": [
+        { "name": "order_id", "type": "integer", "stats": null },
+        {
+          "name": "customer_id",
+          "type": "integer",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 5,
+            "mostCommon": [
+              { "value": 1, "frequency": 0.8 },
+              { "value": 2, "frequency": 0.05 },
+              { "value": 3, "frequency": 0.05 },
+              { "value": 4, "frequency": 0.05 },
+              { "value": 5, "frequency": 0.05 }
+            ],
+            "histogram": [],
+            "correlation": 0.6496407
+          }
+        },
+        { "name": "amount", "type": "integer", "stats": null }
+      ],
+      "indexes": [
+        { "name": "orders_pkey", "column": "order_id" },
+        { "name": "orders_customer_id_idx", "column": "customer_id" }
+      ]
+    }
+  ],
+  "joins": [
+    {
+      "left": { "table": "customers", "column": "customer_id" },
+      "right": { "table": "orders", "column": "customer_id" }
+    }
+  ],
+  "orderBy": null,
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "customers",
+        "filtered": 1,
+        "indexes": [{ "index": "customers_pkey", "matched": 1000 }]
+      },
+      {
+        "table": "orders",
+        "filtered": 100000,
+        "indexes": [
+          { "index": "orders_pkey", "matched": 100000 },
+          { "index": "orders_customer_id_idx", "matched": 100000 }
+        ]
+      }
+    ],
+    "joins": [{ "tables": ["customers", "orders"], "rows": 80000 }],
+    "lookups": [
+      { "outer": ["customers"], "index": "orders_customer_id_idx", "fetched": 80000 },
+      { "outer": ["orders"], "index": "customers_pkey", "fetched": 100000 }
+    ]
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": {
+      "first": { "table": "customers", "access": "seq" },
+      "steps": [{ "join": "indexNestedLoop", "table": "orders", "index": "orders_customer_id_idx" }]
+    },
+    "explain": {
+      "nodeType": "Nested Loop",
+      "relation": null,
+      "index": null,
+      "estimatedRows": 100,
+      "estimatedCost": 1240.79,
+      "children": [
+        {
+          "nodeType": "Seq Scan",
+          "relation": "customers",
+          "index": null,
+          "estimatedRows": 1,
+          "estimatedCost": 19.5,
+          "children": []
+        },
+        {
+          "nodeType": "Bitmap Heap Scan",
+          "relation": "orders",
+          "index": null,
+          "estimatedRows": 20000,
+          "estimatedCost": 1021.29,
+          "children": [
+            {
+              "nodeType": "Bitmap Index Scan",
+              "relation": null,
+              "index": "orders_customer_id_idx",
+              "estimatedRows": 20000,
+              "estimatedCost": 222.29,
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "costs": {
+    "best": 281000,
+    "optimizer": 401004,
+    "bestPlan": {
+      "first": { "table": "customers", "access": "seq" },
+      "steps": [{ "join": "nestedLoop", "scan": { "table": "orders", "access": "seq" } }]
+    }
+  },
+  "explanation": [
+    "PostgreSQL found the one customer named customer 1 and looked up their orders through orders_customer_id_idx in a nested loop. Its statistics for orders.customer_id show that customer 1 places four orders in five, but the query names the customer, not the number, so it could not use them. It expected the lookup to find 20,000 orders, as if the five customers who order shared them evenly, and the join to return 100, as if the orders were spread over all 1,000 customers. Customer 1 has 80,000: 1,000 to read the customers, 4 × (1 + 80,000) = 320,004 for the lookups and 80,000 for the result, 401,004 in all.",
+    "Reading every order once and joining it to the one customer costs 1,000 + 100,000, then 1 × 100,000 = 100,000 for a nested loop and 80,000 for the result: 281,000. A hash join costs 1 more. When a filter picks a row that most of the other table points to, the join estimate is an average, and the lookups pay for every row the average missed."
+  ]
+}
