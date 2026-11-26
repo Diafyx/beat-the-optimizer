@@ -2,7 +2,7 @@
 seed: 1019
 tables:
   - name: customers
-    rows: 10000
+    rows: 100000
     order: customer_id
     columns:
       - name: customer_id
@@ -40,12 +40,12 @@ tables:
 # The new rule runs after ANALYZE, and autovacuum is off, so PostgreSQL's
 # statistics still say one order in a thousand is held for review.
 afterAnalyze:
-  - UPDATE orders SET status = 'review' WHERE amount > 350
+  - UPDATE orders SET status = 'review' WHERE amount > 100
 level:
   id: flagged-overnight
   title: Flagged overnight
   story:
-    - Overnight a new fraud rule held every order over 350 for review. The nightly ANALYZE had already run.
+    - Overnight a new fraud rule held every order over 100 for review. The nightly ANALYZE had already run.
     - The fraud team wants the held orders with the customer's name.
   select:
     - { table: customers, column: name }
