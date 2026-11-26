@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1020
+tables:
+  - name: customers
+    rows: 10000
+    order: customer_id
+    columns:
+      - name: customer_id
+        type: integer
+        values: { kind: sequence }
+      - name: name
+        type: text
+        values: { kind: label, prefix: 'customer ' }
+      # Two customers in a hundred live in Iceland.
+      - name: country
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: DE, weight: 60 }
+            - { value: FR, weight: 38 }
+            - { value: IS, weight: 2 }
+    indexes:
+      - { name: customers_pkey, column: customer_id, unique: true }
+      - { name: customers_country_idx, column: country }
+  - name: orders
+    rows: 100000
+    order: order_id
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      # About ten orders for each customer.
+      - name: customer_id
+        type: integer
+        values: { kind: reference, table: customers, column: customer_id }
+      - name: amount
+        type: integer
+        values: { kind: uniform, min: 1, max: 500 }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+      - { name: orders_customer_id_idx, column: customer_id }
+afterAnalyze: []
+level:
+  id: keep-the-order
+  title: Keep the order
+  story:
+    - The Reykjavik office wants every order from Iceland, sorted by customer number.
+    - The customers are stored by customer number. There is an index on country.
+  select:
+    - { table: customers, column: customer_id }
+    - { table: customers, column: name }
+    - { table: orders, column: order_id }
+    - { table: orders, column: amount }
+  filters:
+    - { table: customers, column: country, op: '=', value: IS }
+  joins:
+    - left: { table: customers, column: customer_id }
+      right: { table: orders, column: customer_id }
+  orderBy: { table: customers, column: customer_id }
+  locks: []
+  stats: []
+  explanation:
+    - 'PostgreSQL found the 200 Icelandic customers with a bitmap scan of customers_country_idx (it expected exactly 200), 4 × 200 = 800 here, read all 100,000 orders, joined them in a hash join, 100,000 + 200 = 100,200 plus 1,995 for the result, then sorted the 1,995 rows by customer number, 1,995 × 11 = 21,945: 224,940 in all.'
+    - "The customers are stored by customer number, so a seq scan returns them in that order, 10,000, and an index nested loop keeps the order of its outer rows. Looking up the Icelanders' 1,995 orders through orders_customer_id_idx costs 4 × (200 + 1,995) = 8,780, and the plan needs no sort: 20,775 in all. The same lookups after customers_country_idx cost 33,520, because that index orders its rows by country, so the result has to be sorted. A nested loop keeps the order of its outer table, so start from one already in the order you need."

@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1018
+tables:
+  # Imported from an old system in no particular order.
+  - name: orders
+    rows: 100000
+    order: shuffled
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      - name: created_at
+        type: date
+        values: { kind: dateRange, from: '2016-01-01', to: '2025-12-31' }
+      - name: amount
+        type: integer
+        values: { kind: uniform, min: 1, max: 500 }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+      - { name: orders_created_at_idx, column: created_at }
+afterAnalyze: []
+level:
+  id: oldest-first
+  title: Oldest first
+  story:
+    - The archive wants every order, oldest first.
+    - The orders came from an old system in no particular order. There is an index on the date, but it would read all of them.
+  select:
+    - { table: orders, column: order_id }
+    - { table: orders, column: created_at }
+    - { table: orders, column: amount }
+  filters: []
+  joins: []
+  orderBy: { table: orders, column: created_at }
+  locks: []
+  stats: []
+  explanation:
+    - 'PostgreSQL walked orders_created_at_idx from the oldest date to the newest. The orders are stored in no particular order, so each of the 100,000 is a jump to a random place in the table: 4 × 100,000 = 400,000, already sorted. Reading the table in storage order costs only 100,000, but sorting all of it costs 100,000 × 17 = 1,700,000 more. A big sort can cost more than an index read of the whole table.'

@@ -1,0 +1,136 @@
+{
+  "format": 1,
+  "id": "flagged-overnight",
+  "title": "Flagged overnight",
+  "story": [
+    "Overnight a new fraud rule held every order over 100 for review. The nightly ANALYZE had already run.",
+    "The fraud team wants the held orders with the customer's name."
+  ],
+  "sql": "SELECT customers.name, orders.order_id, orders.amount\nFROM customers\nJOIN orders ON orders.customer_id = customers.customer_id\nWHERE orders.status = 'review'",
+  "tables": [
+    {
+      "name": "customers",
+      "rows": 100000,
+      "filter": null,
+      "storedOrder": "customer_id",
+      "columns": [
+        { "name": "customer_id", "type": "integer", "stats": null },
+        { "name": "name", "type": "text", "stats": null }
+      ],
+      "indexes": [{ "name": "customers_pkey", "column": "customer_id" }]
+    },
+    {
+      "name": "orders",
+      "rows": 100000,
+      "filter": "status = 'review'",
+      "storedOrder": null,
+      "columns": [
+        { "name": "order_id", "type": "integer", "stats": null },
+        { "name": "customer_id", "type": "integer", "stats": null },
+        {
+          "name": "status",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 2,
+            "mostCommon": [
+              { "value": "open", "frequency": 0.999 },
+              { "value": "review", "frequency": 0.001 }
+            ],
+            "histogram": [],
+            "correlation": 0.9977955
+          }
+        },
+        { "name": "amount", "type": "integer", "stats": null }
+      ],
+      "indexes": [
+        { "name": "orders_pkey", "column": "order_id" },
+        { "name": "orders_status_idx", "column": "status" }
+      ]
+    }
+  ],
+  "joins": [
+    {
+      "left": { "table": "customers", "column": "customer_id" },
+      "right": { "table": "orders", "column": "customer_id" }
+    }
+  ],
+  "orderBy": null,
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "customers",
+        "filtered": 100000,
+        "indexes": [{ "index": "customers_pkey", "matched": 100000 }]
+      },
+      {
+        "table": "orders",
+        "filtered": 80110,
+        "indexes": [
+          { "index": "orders_pkey", "matched": 100000 },
+          { "index": "orders_status_idx", "matched": 80110 }
+        ]
+      }
+    ],
+    "joins": [{ "tables": ["customers", "orders"], "rows": 80110 }],
+    "lookups": [{ "outer": ["orders"], "index": "customers_pkey", "fetched": 80110 }]
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": {
+      "first": { "table": "orders", "access": "index", "index": "orders_status_idx" },
+      "steps": [{ "join": "indexNestedLoop", "table": "customers", "index": "customers_pkey" }]
+    },
+    "explain": {
+      "nodeType": "Nested Loop",
+      "relation": null,
+      "index": null,
+      "estimatedRows": 158,
+      "estimatedCost": 1178.71,
+      "children": [
+        {
+          "nodeType": "Index Scan",
+          "relation": "orders",
+          "index": "orders_status_idx",
+          "estimatedRows": 167,
+          "estimatedCost": 14.94,
+          "children": []
+        },
+        {
+          "nodeType": "Index Scan",
+          "relation": "customers",
+          "index": "customers_pkey",
+          "estimatedRows": 1,
+          "estimatedCost": 6.97,
+          "children": []
+        }
+      ]
+    }
+  },
+  "costs": {
+    "best": 460220,
+    "optimizer": 1041430,
+    "bestPlan": {
+      "first": { "table": "customers", "access": "seq" },
+      "steps": [{ "join": "hash", "scan": { "table": "orders", "access": "seq" } }]
+    }
+  },
+  "explanation": [
+    "PostgreSQL's most common values for status still said what they said when ANALYZE ran: one order in a thousand is held for review. So it expected 167 of them (the update spread the table over more pages, and PostgreSQL scales its row count by them), found them through orders_status_idx and looked up each one's customer through customers_pkey in a nested loop. After the new rule 80,110 orders are held: 4 × 80,110 = 320,440 for the index, 4 × (80,110 + 80,110) = 640,880 for the lookups and 80,110 for the result, 1,041,430 in all.",
+    "Reading both tables and joining them in a hash join costs 100,000 + 100,000, then 80,110 + 100,000 for the join and 80,110 for the result: 460,220. One stale estimate picked both the index and the join method. After a batch that changes this many rows, run ANALYZE orders yourself."
+  ]
+}

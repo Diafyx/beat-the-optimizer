@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1016
+tables:
+  - name: customers
+    rows: 10000
+    order: customer_id
+    columns:
+      - name: customer_id
+        type: integer
+        values: { kind: sequence }
+      - name: name
+        type: text
+        values: { kind: label, prefix: 'customer ' }
+      # One customer in twenty lives in Iceland.
+      - name: country
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: DE, weight: 60 }
+            - { value: FR, weight: 35 }
+            - { value: IS, weight: 5 }
+    indexes:
+      - { name: customers_pkey, column: customer_id, unique: true }
+      - { name: customers_country_idx, column: country }
+  - name: orders
+    rows: 100000
+    order: order_id
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      # About ten orders for each customer.
+      - name: customer_id
+        type: integer
+        values: { kind: reference, table: customers, column: customer_id }
+      # One order in a thousand was lost on the way.
+      - name: status
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: delivered, weight: 99.9 }
+            - { value: lost, weight: 0.1 }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+      - { name: orders_customer_id_idx, column: customer_id }
+      - { name: orders_status_idx, column: status }
+afterAnalyze: []
+level:
+  id: big-table-first
+  title: Big table first
+  story:
+    - The courier lost some parcels to Iceland. Support wants each lost order with the customer's name.
+    - Iceland has few customers, and customers is the small table. Is that where to start?
+  select:
+    - { table: customers, column: name }
+    - { table: orders, column: order_id }
+  filters:
+    - { table: customers, column: country, op: '=', value: IS }
+    - { table: orders, column: status, op: '=', value: lost }
+  joins:
+    - left: { table: customers, column: customer_id }
+      right: { table: orders, column: customer_id }
+  orderBy: null
+  locks: []
+  stats:
+    - { table: customers, column: country }
+    - { table: orders, column: status }
+  explanation:
+    - 'PostgreSQL started from the big table too: orders_status_idx finds the 100 lost orders (it expected exactly 100), 4 × 100 = 400. It read the 500 Icelandic customers with a bitmap scan of customers_country_idx, 4 × 500 = 2,000 here, and joined the two in a hash join, 100 + 500 = 600 plus 4 for the result: 3,004 in all. A bitmap scan reads the table in stored order, which PostgreSQL prices close to a sequential read, so here the two cost models disagree.'
+    - "Looking up the 100 orders' customers through customers_pkey costs 4 × (100 + 100) = 800, and 1,204 in all. Starting from the 500 Icelanders and looking up their 4,990 orders costs 23,964. Start from the filter that keeps the fewest rows, even when it is on the big table."

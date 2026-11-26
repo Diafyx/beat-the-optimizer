@@ -1,0 +1,135 @@
+{
+  "format": 1,
+  "id": "sort-the-few",
+  "title": "Sort the few",
+  "story": [
+    "Sales wants every order of every wholesaler, sorted by customer number.",
+    "The orders are stored by customer number. The customers are stored by name."
+  ],
+  "sql": "SELECT customers.customer_id, orders.order_id, orders.amount\nFROM customers\nJOIN orders ON orders.customer_id = customers.customer_id\nWHERE customers.kind = 'wholesale'\nORDER BY customers.customer_id",
+  "tables": [
+    {
+      "name": "customers",
+      "rows": 2000,
+      "filter": "kind = 'wholesale'",
+      "storedOrder": "name",
+      "columns": [
+        { "name": "customer_id", "type": "integer", "stats": null },
+        { "name": "name", "type": "text", "stats": null },
+        { "name": "kind", "type": "text", "stats": null }
+      ],
+      "indexes": [{ "name": "customers_pkey", "column": "customer_id" }]
+    },
+    {
+      "name": "orders",
+      "rows": 100000,
+      "filter": null,
+      "storedOrder": "customer_id",
+      "columns": [
+        { "name": "order_id", "type": "integer", "stats": null },
+        { "name": "customer_id", "type": "integer", "stats": null },
+        { "name": "amount", "type": "integer", "stats": null }
+      ],
+      "indexes": [{ "name": "orders_pkey", "column": "order_id" }]
+    }
+  ],
+  "joins": [
+    {
+      "left": { "table": "customers", "column": "customer_id" },
+      "right": { "table": "orders", "column": "customer_id" }
+    }
+  ],
+  "orderBy": { "table": "customers", "column": "customer_id" },
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "customers",
+        "filtered": 200,
+        "indexes": [{ "index": "customers_pkey", "matched": 2000 }]
+      },
+      {
+        "table": "orders",
+        "filtered": 100000,
+        "indexes": [{ "index": "orders_pkey", "matched": 100000 }]
+      }
+    ],
+    "joins": [{ "tables": ["customers", "orders"], "rows": 9915 }],
+    "lookups": [{ "outer": ["orders"], "index": "customers_pkey", "fetched": 100000 }]
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": {
+      "first": { "table": "orders", "access": "seq" },
+      "steps": [{ "join": "hash", "scan": { "table": "customers", "access": "seq" } }]
+    },
+    "explain": {
+      "nodeType": "Sort",
+      "relation": null,
+      "index": null,
+      "estimatedRows": 10000,
+      "estimatedCost": 2539.94,
+      "children": [
+        {
+          "nodeType": "Hash Join",
+          "relation": null,
+          "index": null,
+          "estimatedRows": 10000,
+          "estimatedCost": 1850.56,
+          "children": [
+            {
+              "nodeType": "Seq Scan",
+              "relation": "orders",
+              "index": null,
+              "estimatedRows": 100000,
+              "estimatedCost": 1544,
+              "children": []
+            },
+            {
+              "nodeType": "Hash",
+              "relation": null,
+              "index": null,
+              "estimatedRows": 200,
+              "estimatedCost": 41,
+              "children": [
+                {
+                  "nodeType": "Seq Scan",
+                  "relation": "customers",
+                  "index": null,
+                  "estimatedRows": 200,
+                  "estimatedCost": 41,
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "costs": {
+    "best": 213715,
+    "optimizer": 350925,
+    "bestPlan": {
+      "first": { "table": "customers", "access": "seq" },
+      "steps": [{ "join": "merge", "scan": { "table": "orders", "access": "seq" } }]
+    }
+  },
+  "explanation": [
+    "PostgreSQL read both tables, 100,000 + 2,000, joined the 200 wholesalers (it expected exactly 200) to their orders in a hash join, 100,000 + 200 = 100,200 plus 9,915 for the result, then sorted the 9,915 rows by customer number, 9,915 × 14 = 138,810: 350,925 in all. It prices a comparison far below reading a page, so to it the sort was cheap, and here the two cost models disagree.",
+    "The orders are already stored by customer number. Sorting the 200 wholesalers instead, 200 × 8 = 1,600, lets a merge join walk both tables side by side and return the rows already sorted: 213,715 in all. Sort the few rows before the join, not the many after it."
+  ]
+}

@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1017
+tables:
+  # Stored in name order, so not in customer_id order.
+  - name: customers
+    rows: 2000
+    order: name
+    columns:
+      - name: customer_id
+        type: integer
+        values: { kind: sequence }
+      - name: name
+        type: text
+        values: { kind: label, prefix: 'customer ' }
+      # One customer in ten is a wholesaler.
+      - name: kind
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: retail, weight: 90 }
+            - { value: wholesale, weight: 10 }
+    indexes:
+      - { name: customers_pkey, column: customer_id, unique: true }
+  # Stored in customer_id order, about fifty orders for each customer.
+  - name: orders
+    rows: 100000
+    order: customer_id
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      - name: customer_id
+        type: integer
+        values: { kind: reference, table: customers, column: customer_id }
+      - name: amount
+        type: integer
+        values: { kind: uniform, min: 1, max: 500 }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+afterAnalyze: []
+level:
+  id: sort-the-few
+  title: Sort the few
+  story:
+    - Sales wants every order of every wholesaler, sorted by customer number.
+    - The orders are stored by customer number. The customers are stored by name.
+  select:
+    - { table: customers, column: customer_id }
+    - { table: orders, column: order_id }
+    - { table: orders, column: amount }
+  filters:
+    - { table: customers, column: kind, op: '=', value: wholesale }
+  joins:
+    - left: { table: customers, column: customer_id }
+      right: { table: orders, column: customer_id }
+  orderBy: { table: customers, column: customer_id }
+  locks: []
+  stats: []
+  explanation:
+    - 'PostgreSQL read both tables, 100,000 + 2,000, joined the 200 wholesalers (it expected exactly 200) to their orders in a hash join, 100,000 + 200 = 100,200 plus 9,915 for the result, then sorted the 9,915 rows by customer number, 9,915 × 14 = 138,810: 350,925 in all. It prices a comparison far below reading a page, so to it the sort was cheap, and here the two cost models disagree.'
+    - 'The orders are already stored by customer number. Sorting the 200 wholesalers instead, 200 × 8 = 1,600, lets a merge join walk both tables side by side and return the rows already sorted: 213,715 in all. Sort the few rows before the join, not the many after it.'

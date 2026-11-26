@@ -1,0 +1,83 @@
+{
+  "format": 1,
+  "id": "oldest-first",
+  "title": "Oldest first",
+  "story": [
+    "The archive wants every order, oldest first.",
+    "The orders came from an old system in no particular order. There is an index on the date, but it would read all of them."
+  ],
+  "sql": "SELECT orders.order_id, orders.created_at, orders.amount\nFROM orders\nORDER BY orders.created_at",
+  "tables": [
+    {
+      "name": "orders",
+      "rows": 100000,
+      "filter": null,
+      "storedOrder": null,
+      "columns": [
+        { "name": "order_id", "type": "integer", "stats": null },
+        { "name": "created_at", "type": "date", "stats": null },
+        { "name": "amount", "type": "integer", "stats": null }
+      ],
+      "indexes": [
+        { "name": "orders_pkey", "column": "order_id" },
+        { "name": "orders_created_at_idx", "column": "created_at" }
+      ]
+    }
+  ],
+  "joins": [],
+  "orderBy": { "table": "orders", "column": "created_at" },
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "orders",
+        "filtered": 100000,
+        "indexes": [
+          { "index": "orders_pkey", "matched": 100000 },
+          { "index": "orders_created_at_idx", "matched": 100000 }
+        ]
+      }
+    ],
+    "joins": [],
+    "lookups": []
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": {
+      "first": { "table": "orders", "access": "index", "index": "orders_created_at_idx" },
+      "steps": []
+    },
+    "explain": {
+      "nodeType": "Index Scan",
+      "relation": "orders",
+      "index": "orders_created_at_idx",
+      "estimatedRows": 100000,
+      "estimatedCost": 4056.26,
+      "children": []
+    }
+  },
+  "costs": {
+    "best": 400000,
+    "optimizer": 400000,
+    "bestPlan": {
+      "first": { "table": "orders", "access": "index", "index": "orders_created_at_idx" },
+      "steps": []
+    }
+  },
+  "explanation": [
+    "PostgreSQL walked orders_created_at_idx from the oldest date to the newest. The orders are stored in no particular order, so each of the 100,000 is a jump to a random place in the table: 4 × 100,000 = 400,000, already sorted. Reading the table in storage order costs only 100,000, but sorting all of it costs 100,000 × 17 = 1,700,000 more. A big sort can cost more than an index read of the whole table."
+  ]
+}
