@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1022
+tables:
+  # The smallest table.
+  - name: customers
+    rows: 2000
+    order: customer_id
+    columns:
+      - name: customer_id
+        type: integer
+        values: { kind: sequence }
+      - name: name
+        type: text
+        values: { kind: label, prefix: 'customer ' }
+    indexes:
+      - { name: customers_pkey, column: customer_id, unique: true }
+  - name: orders
+    rows: 100000
+    order: order_id
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      - name: customer_id
+        type: integer
+        values: { kind: reference, table: customers, column: customer_id }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+      - { name: orders_customer_id_idx, column: customer_id }
+  # One refund for about one order in ten.
+  - name: refunds
+    rows: 10000
+    order: shuffled
+    columns:
+      - name: refund_id
+        type: integer
+        values: { kind: sequence }
+      - name: order_id
+        type: integer
+        values: { kind: reference, table: orders, column: order_id }
+      - name: amount
+        type: integer
+        values: { kind: uniform, min: 1, max: 500 }
+    indexes:
+      - { name: refunds_pkey, column: refund_id, unique: true }
+      - { name: refunds_order_id_idx, column: order_id }
+afterAnalyze: []
+level:
+  id: refunds-first
+  title: Refunds first
+  story:
+    - Finance wants every refund with the name of the customer who got it.
+    - The query reads customers, then orders, then refunds. Customers is the smallest table.
+  select:
+    - { table: customers, column: name }
+    - { table: refunds, column: refund_id }
+    - { table: refunds, column: amount }
+  filters: []
+  joins:
+    - left: { table: customers, column: customer_id }
+      right: { table: orders, column: customer_id }
+    - left: { table: orders, column: order_id }
+      right: { table: refunds, column: order_id }
+  orderBy: null
+  locks: []
+  stats: []
+  explanation:
+    - 'Draft, written again from the first authoring run.'
