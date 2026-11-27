@@ -111,6 +111,24 @@ A column ref is `{ table, column }`. A filter is
 or `{ table, column, op: in, values }`. Values are numbers for `integer` and
 `bigint` columns, and strings for `text` and `date` columns.
 
+A filter can also apply an `expression` to its column:
+
+| Expression                 | Column              | SQL                          |
+| -------------------------- | ------------------- | ---------------------------- |
+| `{ kind: lower }`          | `text`              | `lower(customers.city)`      |
+| `{ kind: times, by: <n> }` | `integer`, `bigint` | `orders.amount * <n>`, n ≥ 2 |
+
+PostgreSQL keeps statistics for columns, not for expressions of them, unless
+an expression index or `CREATE STATISTICS` covers the expression. So it
+guesses: 0.5% of the rows for `=` (`DEFAULT_EQ_SEL` in
+`src/include/utils/selfuncs.h`), about that much for each value of `IN`, a
+third for a range (`DEFAULT_INEQ_SEL`), and 0.5% for a lower and an upper
+bound on the same expression together (`DEFAULT_RANGE_INEQ_SEL`). The level
+shows the expression in its SQL and in the table's `filter`, and the true
+counts use it too. It is not an index condition, so an index on the column
+matches every row of the table, as it does for a column the query does not
+filter.
+
 The level's SQL is built from these parts in
 [`authoring/query.ts`](../authoring/query.ts), so the query PostgreSQL plans is
 the query the level shows:
@@ -142,7 +160,8 @@ Loading a spec checks the schema, then:
   `through`, and a column of the table it references in `column`;
 - every column ref in `level` names a column, every lock names a table and,
   for an index scan, an index on it, and each filter value suits its column's
-  type (a date is a real date);
+  type (a date is a real date), and its `expression` too: `lower` needs a
+  `text` column, and `times` an `integer` or `bigint` one;
 - `level.joins` connect every table as a tree, so 1 table has none, 2 have 1
   and 3 have 2.
 

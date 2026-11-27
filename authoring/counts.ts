@@ -26,11 +26,18 @@ const column = ({ table, column: name }: ColumnRef): string => `${quote(table)}.
 
 const equal = (left: ColumnRef, right: ColumnRef): string => `${column(left)} = ${column(right)}`;
 
-/** `filter` as SQL, on `target`, its column as SQL. */
+/** `filter` as SQL, on `target`, its column as SQL, through its expression if it has one. */
 export function condition(target: string, filter: Filter): string {
+  const { expression } = filter;
+  const operand =
+    expression === undefined
+      ? target
+      : expression.kind === 'lower'
+        ? `lower(${target})`
+        : `${target} * ${String(expression.by)}`;
   return filter.op === 'in'
-    ? `${target} IN (${filter.values.map(literal).join(', ')})`
-    : `${target} ${filter.op} ${literal(filter.value)}`;
+    ? `${operand} IN (${filter.values.map(literal).join(', ')})`
+    : `${operand} ${filter.op} ${literal(filter.value)}`;
 }
 
 const filterSql = (table: string, filter: Filter): string =>
@@ -74,12 +81,15 @@ export function measure(query: Query, count: (sql: string) => number): Cardinali
       table: name,
       filtered: run([name], filters([name])),
       // An index scan reads the rows its index condition, the filters on its
-      // column, matches.
+      // column, matches. A filter on an expression of the column is not an
+      // index condition, so it is checked on every row the index returns.
       indexes: indexes.map((index) => ({
         index: index.name,
         matched: run(
           [name],
-          own.filter((filter) => filter.column === index.column).map((f) => filterSql(name, f)),
+          own
+            .filter((filter) => filter.column === index.column && filter.expression === undefined)
+            .map((f) => filterSql(name, f)),
         ),
       })),
     })),

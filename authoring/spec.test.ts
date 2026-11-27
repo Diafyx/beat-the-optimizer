@@ -39,6 +39,25 @@ describe('parseSpec', () => {
     expect(spec.level.locks).toEqual([{ kind: 'joinMethod', method: 'hash' }]);
   });
 
+  it('accepts a multiple of a bigint column', () => {
+    const text = variant([...level, 'filters', 2], {
+      table: 'orders',
+      column: 'order_id',
+      op: '>',
+      value: 2000,
+      expression: { kind: 'times', by: 2 },
+    });
+    expect(parseSpec(text).level.filters[2]).toMatchObject({
+      expression: { kind: 'times', by: 2 },
+    });
+  });
+
+  it('rejects a multiple below 2', () => {
+    expect(() => parseSpec(variant([...level, 'filters', 2, 'expression', 'by'], 1))).toThrow(
+      'spec/level/filters/2/expression/by must be >= 2',
+    );
+  });
+
   it('lists every schema error', () => {
     const text = variant(['seed'], -1).replace('afterAnalyze', 'after');
     expect(() => parseSpec(text)).toThrow(
@@ -171,6 +190,18 @@ describe('parseSpec', () => {
       [...level, 'filters', 1, 'value'],
       'July',
       'The filter on orders.created_at compares it with "July", which is not a date',
+    ],
+    [
+      'lower() of a column that is not text',
+      [...level, 'filters', 1, 'expression'],
+      { kind: 'lower' },
+      'The filter on orders.created_at applies lower(), which needs a text column',
+    ],
+    [
+      'a multiple of a column that is not an integer',
+      [...level, 'filters', 0, 'expression'],
+      { kind: 'times', by: 2 },
+      'The filter on customers.city multiplies it, which needs an integer column',
     ],
     [
       'a join on a column that does not exist',

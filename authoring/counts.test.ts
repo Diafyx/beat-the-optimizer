@@ -108,6 +108,34 @@ describe('measure', () => {
     expect(lines(cardinalities)).toEqual(['orders: 1', 'orders_amount_idx: 2', 'orders_pkey: 3']);
   });
 
+  it('counts an index on a column filtered through an expression as matching every row', () => {
+    const { sql, cardinalities } = record({
+      tables: [
+        {
+          name: 'customers',
+          filters: [
+            { column: 'country', op: '=', value: 'is', expression: { kind: 'lower' } },
+            { column: 'age', op: 'in', values: [60, 80], expression: { kind: 'times', by: 2 } },
+          ],
+          indexes: [
+            { name: 'customers_country_idx', column: 'country' },
+            { name: 'customers_age_idx', column: 'age' },
+          ],
+        },
+      ],
+      joins: [],
+    });
+    expect(sql).toEqual([
+      `SELECT count(*) FROM "customers" WHERE lower("customers"."country") = 'is' AND "customers"."age" * 2 IN (60, 80)`,
+      'SELECT count(*) FROM "customers"',
+    ]);
+    expect(lines(cardinalities)).toEqual([
+      'customers: 1',
+      'customers_country_idx: 2',
+      'customers_age_idx: 2',
+    ]);
+  });
+
   it("counts the example level's two tables, running each distinct query once", () => {
     const { sql, cardinalities } = record(two);
     expect(sql).toEqual([
