@@ -74,7 +74,8 @@
           }
         },
         { "name": "amount", "type": "integer", "stats": null },
-        { "name": "created_at", "type": "date", "stats": null }
+        { "name": "created_at", "type": "date", "stats": null },
+        { "name": "currency", "type": "text", "stats": null }
       ],
       "indexes": [{ "name": "orders_customer_id_idx", "column": "customer_id" }]
     }

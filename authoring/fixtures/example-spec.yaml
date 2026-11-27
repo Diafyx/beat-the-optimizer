@@ -48,6 +48,16 @@ tables:
       - name: created_at
         type: date
         values: { kind: dateRange, from: '2024-01-01', to: '2024-12-31' }
+      # Follows the customer's country, so it goes with customers.city too.
+      - name: currency
+        type: text
+        values:
+          kind: follows
+          through: customer_id
+          column: country
+          map:
+            - { from: IS, to: ISK }
+            - { from: PT, to: EUR }
     indexes:
       - { name: orders_customer_id_idx, column: customer_id }
 afterAnalyze:

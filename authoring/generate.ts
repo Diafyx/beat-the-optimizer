@@ -50,6 +50,13 @@ export function exactCounts(
   }));
 }
 
+/** The value of `key` in `map`, or an error with `problem` if it has none. */
+function found(map: ReadonlyMap<Value, Value>, key: Value, problem: () => string): Value {
+  const value = map.get(key);
+  if (value === undefined) throw new Error(problem());
+  return value;
+}
+
 const isoDate = (day: number): string => new Date(day * DAY).toISOString().slice(0, 10);
 
 const compare = (x: Value, y: Value): number => (x < y ? -1 : x > y ? 1 : 0);
@@ -57,6 +64,8 @@ const compare = (x: Value, y: Value): number => (x < y ? -1 : x > y ? 1 : 0);
 class Generator {
   /** Generated columns, by "table.column", in generation order. */
   private readonly done = new Map<string, readonly Value[]>();
+  /** For each reference column, the row of the referenced table each of its rows picked. */
+  private readonly picked = new Map<string, readonly number[]>();
   private readonly spec: Dataset;
 
   constructor(spec: Dataset) {
@@ -115,19 +124,45 @@ class Generator {
       }
       case 'reference': {
         const target = this.generated(values.table, values.column);
-        return rows.map(() => at(target, random.int(0, target.length - 1)));
+        const picked = rows.map(() => random.int(0, target.length - 1));
+        this.picked.set(`${table.name}.${name}`, picked);
+        return picked.map((row) => at(target, row));
       }
       case 'derived': {
-        const source = this.generated(table.name, values.column);
         const map = new Map(values.map.map(({ from, to }) => [from, to]));
-        return source.map((value) => {
-          const mapped = map.get(value);
-          if (mapped === undefined) {
-            throw new Error(
+        return this.generated(table.name, values.column).map((value) =>
+          found(
+            map,
+            value,
+            () =>
               `${table.name}.${name} has no mapping for the ${values.column} value ${JSON.stringify(value)}`,
-            );
-          }
-          return mapped;
+          ),
+        );
+      }
+      case 'follows': {
+        const link = table.columns.find((column) => column.name === values.through)?.values;
+        const picked = this.picked.get(`${table.name}.${values.through}`);
+        if (link?.kind !== 'reference' || picked === undefined) {
+          throw new Error(
+            `${table.name}.${name} follows through ${values.through}, which is not an earlier reference column`,
+          );
+        }
+        const keys = this.generated(link.table, link.column);
+        if (new Set(keys).size !== keys.length) {
+          throw new Error(
+            `${table.name}.${name} follows through ${values.through}, but ${link.table}.${link.column} has repeated values, so a ${values.through} does not reference one row`,
+          );
+        }
+        const targets = this.generated(link.table, values.column);
+        const map = new Map(values.map.map(({ from, to }) => [from, to]));
+        return picked.map((row) => {
+          const target = at(targets, row);
+          return found(
+            map,
+            target,
+            () =>
+              `${table.name}.${name} has no mapping for the ${link.table}.${values.column} value ${JSON.stringify(target)}`,
+          );
         });
       }
       case 'label':

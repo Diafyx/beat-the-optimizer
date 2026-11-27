@@ -54,15 +54,39 @@ the row limit keeps every table's statistics exact.
 
 Every column's `values` has a `kind`:
 
-| Kind        | Fields                          | Values                                                                                                            |
-| ----------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `sequence`  | `start` (default 1)             | `start`, `start + 1`, … in generation order                                                                       |
-| `uniform`   | `min`, `max`                    | A uniformly random integer from `min` to `max`, both included                                                     |
-| `weighted`  | `weights`: `{ value, weight }`  | Exactly each value's share of the rows (largest remainder, the earlier value on a tie), in random order           |
-| `dateRange` | `from`, `to` (`YYYY-MM-DD`)     | A uniformly random date from `from` to `to`, both included                                                        |
-| `reference` | `table`, `column`               | A uniformly random value of that column of an earlier table, as a foreign key                                     |
-| `derived`   | `column`, `map`: `{ from, to }` | The value an earlier column of the same row maps to, so the two are fully correlated; every value needs a mapping |
-| `label`     | `prefix`                        | `prefix` followed by the row's number in generation order, such as `customer 7`                                   |
+| Kind        | Fields                          | Values                                                                                                               |
+| ----------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `sequence`  | `start` (default 1)             | `start`, `start + 1`, … in generation order                                                                          |
+| `uniform`   | `min`, `max`                    | A uniformly random integer from `min` to `max`, both included                                                        |
+| `weighted`  | `weights`: `{ value, weight }`  | Exactly each value's share of the rows (largest remainder, the earlier value on a tie), in random order              |
+| `dateRange` | `from`, `to` (`YYYY-MM-DD`)     | A uniformly random date from `from` to `to`, both included                                                           |
+| `reference` | `table`, `column`               | A uniformly random value of that column of an earlier table, as a foreign key                                        |
+| `derived`   | `column`, `map`: `{ from, to }` | The value an earlier column of the same row maps to, so the two are fully correlated; every value needs a mapping    |
+| `follows`   | `through`, `column`, `map`      | The value the referenced row's `column` maps to, through the reference column `through`; every value needs a mapping |
+| `label`     | `prefix`                        | `prefix` followed by the row's number in generation order, such as `customer 7`                                      |
+
+A `follows` column ties two tables together. In the example, every order's
+currency follows its customer's country:
+
+```yaml
+- name: currency
+  type: text
+  values:
+    kind: follows
+    through: customer_id
+    column: country
+    map:
+      - { from: IS, to: ISK }
+      - { from: PT, to: EUR }
+```
+
+`through` is an earlier `reference` column of the same table, here
+`orders.customer_id`, which references `customers.customer_id`, and `column`
+is a column of `customers`. Every order with a Reykjavik customer pays in
+`ISK`, but PostgreSQL multiplies the selectivities of filters on different
+tables as if they were independent, and extended statistics cover only one
+table. The referenced column must not repeat a value, so each reference
+points to one row.
 
 Weights need not add up to 100. A `weighted` column of 1,000 rows with weights
 70, 29.9 and 0.1 has exactly 700, 299 and 1 rows of each value.
@@ -114,6 +138,8 @@ Loading a spec checks the schema, then:
 - `uniform` has `min ≤ max`, and `dateRange` has two real dates in order;
 - a `reference` names a column of an earlier table, and `derived` an earlier
   column of the same table;
+- a `follows` names an earlier `reference` column of the same table in
+  `through`, and a column of the table it references in `column`;
 - every column ref in `level` names a column, every lock names a table and,
   for an index scan, an index on it, and each filter value suits its column's
   type (a date is a real date);
@@ -131,6 +157,10 @@ two files for `psql`:
   key, so PostgreSQL does not use it in join estimates.
 - `after-analyze.sql` holds the `afterAnalyze` statements, each ending in a
   semicolon.
+
+Generating the data also fails if a `derived` or `follows` column meets a
+value with no mapping, or if the column a `follows` reference points to
+repeats a value.
 
 The authoring pipeline runs `load.sql`, then `ANALYZE`, then
 `after-analyze.sql`. A unique index on a column with repeated values fails

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { at, exactCounts, generate, type TableData } from './generate.ts';
 import { hash } from './random.ts';
-import { dayNumber, parseSpec, type ColumnSpec, type Dataset } from './spec.ts';
+import { dayNumber, parseSpec, type ColumnSpec, type Dataset, type Values } from './spec.ts';
 
 const example = parseSpec(
   readFileSync(new URL('fixtures/example-spec.yaml', import.meta.url), 'utf8'),
@@ -39,7 +39,7 @@ describe('generate', () => {
       ),
     ).toBe(output);
     // Any change to the generator or the random numbers changes this hash.
-    expect(hash(output)).toBe(32240044);
+    expect(hash(output)).toBe(78686049);
   });
 
   it('generates the example in insert order', () => {
@@ -51,8 +51,8 @@ describe('generate', () => {
       [3, 'customer 3', 'reykjavik', 'IS'],
     ]);
     expect(orders?.rows.slice(0, 2)).toEqual([
-      [1051, 10, 32, '2024-09-12'],
-      [1049, 6, 12, '2024-07-09'],
+      [1051, 10, 32, '2024-09-12', 'EUR'],
+      [1049, 6, 12, '2024-07-09', 'EUR'],
     ]);
   });
 
@@ -180,6 +180,112 @@ describe('generate', () => {
       },
     );
     expect(() => generate(spec)).toThrow('t.b has no mapping for the a value 2');
+  });
+
+  it('makes a column follow the row that its reference points to', () => {
+    const [customers, orders] = generate(example);
+    const ids = values(customers, 'customer_id');
+    const countries = values(customers, 'country');
+    const currency = new Map([
+      ['IS', 'ISK'],
+      ['PT', 'EUR'],
+    ]);
+    const expected = values(orders, 'customer_id').map((id) =>
+      currency.get(String(countries[ids.indexOf(id)])),
+    );
+    expect(values(orders, 'currency')).toEqual(expected);
+    expect(new Set(expected)).toEqual(new Set(['ISK', 'EUR']));
+  });
+
+  /** Customers with a unique id and a repeated city, and orders whose `zone` follows them. */
+  const linked = (follows: Values, key = 'id', ...later: ColumnSpec[]): Dataset => ({
+    seed: 1,
+    tables: [
+      {
+        name: 'c',
+        rows: 4,
+        order: 'shuffled',
+        columns: [
+          { name: 'id', type: 'integer', values: { kind: 'sequence' } },
+          {
+            name: 'city',
+            type: 'text',
+            values: {
+              kind: 'weighted',
+              weights: [
+                { value: 'a', weight: 1 },
+                { value: 'b', weight: 1 },
+              ],
+            },
+          },
+        ],
+        indexes: [],
+      },
+      {
+        name: 'o',
+        rows: 20,
+        order: 'shuffled',
+        columns: [
+          { name: 'n', type: 'integer', values: { kind: 'sequence' } },
+          { name: 'c_id', type: 'integer', values: { kind: 'reference', table: 'c', column: key } },
+          { name: 'zone', type: 'text', values: follows },
+          ...later,
+        ],
+        indexes: [],
+      },
+    ],
+    afterAnalyze: [],
+  });
+  const zone = (
+    through: string,
+    map = [
+      { from: 'a', to: 'x' },
+      { from: 'b', to: 'y' },
+    ],
+  ): Values => ({
+    kind: 'follows',
+    through,
+    column: 'city',
+    map,
+  });
+
+  it('gives a following column the same values each time', () => {
+    const spec = linked(zone('c_id'));
+    expect(JSON.stringify(generate(spec))).toBe(JSON.stringify(generate(spec)));
+  });
+
+  it.each<[string, Dataset, string]>([
+    [
+      'a referenced value with no mapping',
+      linked(zone('c_id', [{ from: 'a', to: 'x' }])),
+      'o.zone has no mapping for the c.city value "b"',
+    ],
+    [
+      'a reference to a column with repeated values',
+      linked(zone('c_id'), 'city'),
+      'o.zone follows through c_id, but c.city has repeated values, so a c_id does not reference one row',
+    ],
+    [
+      'a column that is not there, which parseSpec rules out',
+      linked(zone('customer')),
+      'o.zone follows through customer, which is not an earlier reference column',
+    ],
+    [
+      'a column that is not a reference, which parseSpec rules out',
+      linked(zone('n')),
+      'o.zone follows through n, which is not an earlier reference column',
+    ],
+    [
+      'a reference that is not generated yet, which parseSpec rules out',
+      linked(zone('later'), 'id', {
+        name: 'later',
+        type: 'integer',
+        values: { kind: 'reference', table: 'c', column: 'id' },
+      }),
+      'o.zone follows through later, which is not an earlier reference column',
+    ],
+  ])('fails to follow through %s', (_, spec, message) => {
+    expect(() => generate(spec)).toThrow(message);
   });
 
   it('inserts in ascending order of a column, keeping generation order on ties', () => {

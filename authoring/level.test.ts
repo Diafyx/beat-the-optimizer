@@ -131,6 +131,7 @@ describe('writeLevel', () => {
       20,
       null,
       null,
+      null,
     ]);
   });
 
