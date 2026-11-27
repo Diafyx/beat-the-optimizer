@@ -6,12 +6,12 @@
     "A quarter of the customers live in Reykjavik.",
     "List their orders from the second half of the year, oldest first."
   ],
-  "sql": "SELECT customers.name, orders.amount\nFROM customers\nJOIN orders ON orders.customer_id = customers.customer_id\nWHERE customers.city = 'reykjavik'\n  AND orders.created_at >= '2024-07-01'\n  AND orders.amount IN (10, 20, 30)\nORDER BY orders.created_at",
+  "sql": "SELECT customers.name, orders.amount\nFROM customers\nJOIN orders ON orders.customer_id = customers.customer_id\nWHERE lower(customers.city) = 'reykjavik'\n  AND orders.created_at >= '2024-07-01'\n  AND orders.amount * 10 IN (100, 200, 300)\nORDER BY orders.created_at",
   "tables": [
     {
       "name": "customers",
       "rows": 20,
-      "filter": "city = 'reykjavik'",
+      "filter": "lower(city) = 'reykjavik'",
       "storedOrder": "customer_id",
       "columns": [
         { "name": "customer_id", "type": "integer", "stats": null },
@@ -37,7 +37,7 @@
     {
       "name": "orders",
       "rows": 200,
-      "filter": "created_at >= '2024-07-01' AND amount IN (10, 20, 30)",
+      "filter": "created_at >= '2024-07-01' AND amount * 10 IN (100, 200, 300)",
       "storedOrder": null,
       "columns": [
         { "name": "order_id", "type": "bigint", "stats": null },
@@ -123,47 +123,38 @@
       "work_mem": "4MB"
     },
     "plan": {
-      "first": { "table": "orders", "access": "seq" },
-      "steps": [{ "join": "hash", "scan": { "table": "customers", "access": "seq" } }]
+      "first": { "table": "customers", "access": "seq" },
+      "steps": [{ "join": "nestedLoop", "scan": { "table": "orders", "access": "seq" } }]
     },
     "explain": {
       "nodeType": "Sort",
       "relation": null,
       "index": null,
       "estimatedRows": 1,
-      "estimatedCost": 6.59,
+      "estimatedCost": 7.08,
       "children": [
         {
-          "nodeType": "Hash Join",
+          "nodeType": "Nested Loop",
           "relation": null,
           "index": null,
           "estimatedRows": 1,
-          "estimatedCost": 6.57,
+          "estimatedCost": 7.06,
           "children": [
+            {
+              "nodeType": "Seq Scan",
+              "relation": "customers",
+              "index": null,
+              "estimatedRows": 1,
+              "estimatedCost": 1.3,
+              "children": []
+            },
             {
               "nodeType": "Seq Scan",
               "relation": "orders",
               "index": null,
-              "estimatedRows": 3,
-              "estimatedCost": 5.25,
+              "estimatedRows": 1,
+              "estimatedCost": 5.75,
               "children": []
-            },
-            {
-              "nodeType": "Hash",
-              "relation": null,
-              "index": null,
-              "estimatedRows": 5,
-              "estimatedCost": 1.25,
-              "children": [
-                {
-                  "nodeType": "Seq Scan",
-                  "relation": "customers",
-                  "index": null,
-                  "estimatedRows": 5,
-                  "estimatedCost": 1.25,
-                  "children": []
-                }
-              ]
             }
           ]
         }
@@ -172,7 +163,7 @@
   },
   "costs": {
     "best": 232,
-    "optimizer": 232,
+    "optimizer": 251,
     "bestPlan": {
       "first": { "table": "customers", "access": "seq" },
       "steps": [{ "join": "hash", "scan": { "table": "orders", "access": "seq" } }]
