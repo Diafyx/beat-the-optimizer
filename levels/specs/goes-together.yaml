@@ -52,7 +52,7 @@ tables:
     indexes:
       - { name: orders_pkey, column: order_id, unique: true }
       - { name: orders_currency_idx, column: currency }
-  # One shipment an order; one in 200 is lost.
+  # One shipment an order, in random order; one in 200 is lost.
   - name: shipments
     rows: 1000000
     order: shuffled
@@ -65,8 +65,10 @@ tables:
         values:
           kind: weighted
           weights:
-            - { value: delivered, weight: 199 }
-            - { value: lost, weight: 1 }
+            - { value: delivered, weight: 40 }
+            - { value: in_transit, weight: 30 }
+            - { value: returned, weight: 29.5 }
+            - { value: lost, weight: 0.5 }
     indexes:
       - { name: shipments_order_id_idx, column: order_id, unique: true }
       - { name: shipments_status_idx, column: status }

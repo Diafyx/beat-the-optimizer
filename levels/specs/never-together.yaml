@@ -16,12 +16,10 @@ tables:
         values:
           kind: weighted
           weights:
-            - { value: IS, weight: 10 }
-            - { value: 'NO', weight: 15 }
-            - { value: SE, weight: 25 }
-            - { value: DK, weight: 20 }
-            - { value: FI, weight: 15 }
-            - { value: DE, weight: 15 }
+            - { value: US, weight: 40 }
+            - { value: DE, weight: 30 }
+            - { value: FR, weight: 20 }
+            - { value: GB, weight: 10 }
     indexes:
       - { name: customers_pkey, column: customer_id, unique: true }
   # Every order is paid in its customer's currency.
@@ -42,12 +40,10 @@ tables:
           through: customer_id
           column: country
           map:
-            - { from: IS, to: ISK }
-            - { from: 'NO', to: NOK }
-            - { from: SE, to: SEK }
-            - { from: DK, to: DKK }
-            - { from: FI, to: EUR }
+            - { from: US, to: USD }
             - { from: DE, to: EUR }
+            - { from: FR, to: EUR }
+            - { from: GB, to: GBP }
     indexes:
       - { name: orders_pkey, column: order_id, unique: true }
       - { name: orders_customer_id_idx, column: customer_id }
@@ -72,13 +68,13 @@ level:
   id: never-together
   title: Never together
   story:
-    - 'Finance read a report that some Icelandic customers paid in euros. They want the order lines of those orders.'
-    - "The shop has 5,000 customers in six countries. Each order is paid in its customer's currency, and each has five lines."
+    - 'Finance read a report that some American customers paid in euros. They want the order lines of those orders.'
+    - "The shop has 5,000 customers in four countries. Each order is paid in its customer's currency, and each has five lines."
   select:
     - { table: customers, column: name }
     - { table: order_lines, column: item }
   filters:
-    - { table: customers, column: country, op: '=', value: IS }
+    - { table: customers, column: country, op: '=', value: US }
     - { table: orders, column: currency, op: '=', value: EUR }
   joins:
     - left: { table: customers, column: customer_id }
