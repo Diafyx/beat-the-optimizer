@@ -97,4 +97,6 @@ level:
     - { table: orders, column: currency }
     - { table: tickets, column: priority }
   explanation:
-    - Written after the first authoring run, from what PostgreSQL estimated.
+    - "PostgreSQL read the 10,070 krónur orders through orders_currency_idx, 10,070, and the 2,000 Icelandic customers through customers_country_idx, 4 × 2,000 = 8,000, and hashed them together, 12,070. It expected 201 rows, as if only 2% of the krónur orders were Icelandic customers', but every krónur order is: all 10,070 matched."
+    - "Then it looked up the tickets of each order's customer through tickets_customer_id_idx. A customer's tickets were fetched again for every one of their orders: 50,711 tickets for 10,070 orders, 4 × (10,070 + 50,711) = 243,124, to keep the 1,016 rows with an urgent ticket. The plan costs 284,350."
+    - "Start from the Icelandic customers and look up their tickets first, 8,000 + 4 × (2,000 + 10,006) = 56,024: only 200 are urgent. Looking up those customers' orders through orders_customer_id_idx then costs 4 × (200 + 1,016) = 4,864, and the plan costs 62,104. Join the table that removes rows before the one that multiplies them."

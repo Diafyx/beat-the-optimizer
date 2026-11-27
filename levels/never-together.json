@@ -1,0 +1,226 @@
+{
+  "format": 1,
+  "id": "never-together",
+  "title": "Never together",
+  "story": [
+    "Finance read a report that some American customers paid in euros. They want the order lines of those orders.",
+    "The shop has 5,000 customers in four countries. Each order is paid in its customer's currency, and each has five lines."
+  ],
+  "sql": "SELECT customers.name, order_lines.item\nFROM customers\nJOIN orders ON orders.customer_id = customers.customer_id\nJOIN order_lines ON order_lines.order_id = orders.order_id\nWHERE customers.country = 'US'\n  AND orders.currency = 'EUR'",
+  "tables": [
+    {
+      "name": "customers",
+      "rows": 5000,
+      "filter": "country = 'US'",
+      "storedOrder": "customer_id",
+      "columns": [
+        { "name": "customer_id", "type": "integer", "stats": null },
+        { "name": "name", "type": "text", "stats": null },
+        {
+          "name": "country",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 4,
+            "mostCommon": [
+              { "value": "US", "frequency": 0.4 },
+              { "value": "DE", "frequency": 0.3 },
+              { "value": "FR", "frequency": 0.2 },
+              { "value": "GB", "frequency": 0.1 }
+            ],
+            "histogram": [],
+            "correlation": 0.3017105
+          }
+        }
+      ],
+      "indexes": [{ "name": "customers_pkey", "column": "customer_id" }]
+    },
+    {
+      "name": "orders",
+      "rows": 100000,
+      "filter": "currency = 'EUR'",
+      "storedOrder": null,
+      "columns": [
+        { "name": "order_id", "type": "integer", "stats": null },
+        { "name": "customer_id", "type": "integer", "stats": null },
+        {
+          "name": "currency",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 3,
+            "mostCommon": [
+              { "value": "EUR", "frequency": 0.49781 },
+              { "value": "USD", "frequency": 0.40385 },
+              { "value": "GBP", "frequency": 0.09834 }
+            ],
+            "histogram": [],
+            "correlation": 0.42294246
+          }
+        }
+      ],
+      "indexes": [
+        { "name": "orders_pkey", "column": "order_id" },
+        { "name": "orders_customer_id_idx", "column": "customer_id" }
+      ]
+    },
+    {
+      "name": "order_lines",
+      "rows": 500000,
+      "filter": null,
+      "storedOrder": null,
+      "columns": [
+        { "name": "line_id", "type": "integer", "stats": null },
+        { "name": "order_id", "type": "integer", "stats": null },
+        { "name": "item", "type": "text", "stats": null }
+      ],
+      "indexes": [{ "name": "order_lines_order_id_idx", "column": "order_id" }]
+    }
+  ],
+  "joins": [
+    {
+      "left": { "table": "customers", "column": "customer_id" },
+      "right": { "table": "orders", "column": "customer_id" }
+    },
+    {
+      "left": { "table": "orders", "column": "order_id" },
+      "right": { "table": "order_lines", "column": "order_id" }
+    }
+  ],
+  "orderBy": null,
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "customers",
+        "filtered": 2000,
+        "indexes": [{ "index": "customers_pkey", "matched": 5000 }]
+      },
+      {
+        "table": "orders",
+        "filtered": 49781,
+        "indexes": [
+          { "index": "orders_pkey", "matched": 100000 },
+          { "index": "orders_customer_id_idx", "matched": 100000 }
+        ]
+      },
+      {
+        "table": "order_lines",
+        "filtered": 500000,
+        "indexes": [{ "index": "order_lines_order_id_idx", "matched": 500000 }]
+      }
+    ],
+    "joins": [
+      { "tables": ["customers", "orders"], "rows": 0 },
+      { "tables": ["orders", "order_lines"], "rows": 249004 },
+      { "tables": ["customers", "orders", "order_lines"], "rows": 0 }
+    ],
+    "lookups": [
+      { "outer": ["customers"], "index": "orders_customer_id_idx", "fetched": 40385 },
+      { "outer": ["orders"], "index": "customers_pkey", "fetched": 49781 },
+      { "outer": ["orders"], "index": "order_lines_order_id_idx", "fetched": 249004 },
+      { "outer": ["customers", "orders"], "index": "order_lines_order_id_idx", "fetched": 0 },
+      { "outer": ["order_lines"], "index": "orders_pkey", "fetched": 500000 },
+      { "outer": ["orders", "order_lines"], "index": "customers_pkey", "fetched": 249004 }
+    ]
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": {
+      "first": { "table": "order_lines", "access": "seq" },
+      "steps": [
+        { "join": "hash", "scan": { "table": "orders", "access": "seq" } },
+        { "join": "hash", "scan": { "table": "customers", "access": "seq" } }
+      ]
+    },
+    "explain": {
+      "nodeType": "Hash Join",
+      "relation": null,
+      "index": null,
+      "estimatedRows": 99560,
+      "estimatedCost": 12774.25,
+      "children": [
+        {
+          "nodeType": "Hash Join",
+          "relation": null,
+          "index": null,
+          "estimatedRows": 248905,
+          "estimatedCost": 11976.82,
+          "children": [
+            {
+              "nodeType": "Seq Scan",
+              "relation": "order_lines",
+              "index": null,
+              "estimatedRows": 500000,
+              "estimatedCost": 8248,
+              "children": []
+            },
+            {
+              "nodeType": "Hash",
+              "relation": null,
+              "index": null,
+              "estimatedRows": 49781,
+              "estimatedCost": 1794,
+              "children": [
+                {
+                  "nodeType": "Seq Scan",
+                  "relation": "orders",
+                  "index": null,
+                  "estimatedRows": 49781,
+                  "estimatedCost": 1794,
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "nodeType": "Hash",
+          "relation": null,
+          "index": null,
+          "estimatedRows": 2000,
+          "estimatedCost": 118.5,
+          "children": [
+            {
+              "nodeType": "Seq Scan",
+              "relation": "customers",
+              "index": null,
+              "estimatedRows": 2000,
+              "estimatedCost": 118.5,
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "costs": {
+    "best": 156781,
+    "optimizer": 1654789,
+    "bestPlan": {
+      "first": { "table": "customers", "access": "seq" },
+      "steps": [
+        { "join": "hash", "scan": { "table": "orders", "access": "seq" } },
+        { "join": "indexNestedLoop", "table": "order_lines", "index": "order_lines_order_id_idx" }
+      ]
+    }
+  },
+  "explanation": [
+    "PostgreSQL read all 500,000 order lines and hashed them with the 49,781 orders paid in euros, 500,000 + 100,000 + 549,781, which gave 249,004 rows. Then it hashed those with the 2,000 American customers, 5,000 + 251,004. Nothing matched: the plan costs 1,654,789 and returns no rows.",
+    "Its statistics say 40% of customers are American and half the orders are paid in euros. It multiplied the two as if they were independent, so it expected the customers and their euro orders to join to about 19,900 rows, and 99,560 at the end. For that many orders, reading every line once looked cheaper than looking them up. But each order is paid in its customer's currency, and American customers pay in dollars.",
+    "Hash the American customers with the euro orders first, 5,000 + 100,000 + 51,781. That join is empty, so looking up lines through order_lines_order_id_idx costs nothing, and the plan costs 156,781. When filters on two tables can never both be true, PostgreSQL still multiplies their shares and plans for rows that never come."
+  ]
+}

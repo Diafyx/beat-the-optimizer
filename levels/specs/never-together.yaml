@@ -87,4 +87,6 @@ level:
     - { table: customers, column: country }
     - { table: orders, column: currency }
   explanation:
-    - Written after the first authoring run, from what PostgreSQL estimated.
+    - 'PostgreSQL read all 500,000 order lines and hashed them with the 49,781 orders paid in euros, 500,000 + 100,000 + 549,781, which gave 249,004 rows. Then it hashed those with the 2,000 American customers, 5,000 + 251,004. Nothing matched: the plan costs 1,654,789 and returns no rows.'
+    - "Its statistics say 40% of customers are American and half the orders are paid in euros. It multiplied the two as if they were independent, so it expected the customers and their euro orders to join to about 19,900 rows, and 99,560 at the end. For that many orders, reading every line once looked cheaper than looking them up. But each order is paid in its customer's currency, and American customers pay in dollars."
+    - 'Hash the American customers with the euro orders first, 5,000 + 100,000 + 51,781. That join is empty, so looking up lines through order_lines_order_id_idx costs nothing, and the plan costs 156,781. When filters on two tables can never both be true, PostgreSQL still multiplies their shares and plans for rows that never come.'

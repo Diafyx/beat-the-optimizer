@@ -98,4 +98,6 @@ level:
     - { table: orders, column: currency }
     - { table: shipments, column: status }
   explanation:
-    - Written after the first authoring run, from what PostgreSQL estimated.
+    - "PostgreSQL read the 30,132 orders paid in krónur through orders_currency_idx, in the order they are stored, 30,132, and hashed them with the 150 Icelandic customers, 5,000 + 30,282. Its statistics say 3% of customers are Icelandic and 3% of orders are paid in krónur, and it multiplied the two as if they were independent, so it expected 904 rows from that join. For so few, it looked up each one's shipment through shipments_order_id_idx."
+    - "But every krónur order is an Icelandic customer's: all 30,132 orders matched, and the lookups cost 4 × (30,132 + 30,132) = 241,056. The plan costs 336,764."
+    - 'Start from the 5,000 lost shipments through shipments_status_idx, 4 × 5,000 = 20,000, and look up their orders through orders_pkey, 4 × (5,000 + 5,000) = 40,000. Only 162 are Icelandic krónur orders, and looking up their customers through customers_pkey costs 4 × (162 + 162) = 1,296: the plan costs 61,620. When filters on two tables pick the same rows, PostgreSQL multiplies them as if they were independent and expects a handful.'

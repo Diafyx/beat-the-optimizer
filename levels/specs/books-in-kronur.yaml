@@ -100,4 +100,6 @@ level:
     - { table: orders, column: currency }
     - { table: products, column: category }
   explanation:
-    - Written after the first authoring run, from what PostgreSQL estimated.
+    - "PostgreSQL read the 4,994 krónur orders through orders_currency_idx, 4,994, and the 100 Icelandic customers through customers_country_idx, 4 × 100 = 400, and hashed them together, 5,094. It expected 50 rows, as if only 1% of the krónur orders were Icelandic customers', and looked up each one's product through products_pkey. Every krónur order is an Icelandic customer's, so all 4,994 matched: 4 × (4,994 + 4,994) = 39,952, for 45 books. The plan costs 55,479."
+    - 'Joining the krónur orders with the 100 books first looked no better to PostgreSQL: it expected 50 rows from that join too. That estimate was right, 45, because what a customer pays in has nothing to do with what they buy.'
+    - "Read the books through products_category_idx, 4 × 100 = 400, hash them with the krónur orders, 4,994 + 5,094, and look up the 45 orders' customers through customers_pkey, 4 × (45 + 45) = 360: the plan costs 10,938. When two joins look the same size, start with the one whose filters have nothing to do with each other: its estimate is the one to trust."
