@@ -62,7 +62,7 @@ describe('loadSql', () => {
     }
     expect(sql.match(/^COPY /gm)).toHaveLength(2);
     expect(sql.split('\n').filter((line) => /^\d/.test(line))).toHaveLength(220);
-    expect(sql).toContain('  "created_at" date NOT NULL\n');
+    expect(sql).toContain('  "created_at" date NOT NULL,\n  "currency" text NOT NULL\n');
   });
 
   it('fails before writing anything if a unique index has repeated values', () => {

@@ -26,6 +26,20 @@
     "name": { "type": "string", "pattern": "^[a-z_][a-z0-9_]*$" },
     "value": { "anyOf": [{ "type": "string" }, { "type": "integer" }] },
     "date": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+    "map": {
+      "description": "What each value of the source column becomes; every value needs a mapping.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["from", "to"],
+        "properties": {
+          "from": { "$ref": "#/$defs/value" },
+          "to": { "$ref": "#/$defs/value" }
+        }
+      }
+    },
     "level": {
       "description": "The puzzle: the text the player reads, and the query PostgreSQL plans, built from its parts.",
       "type": "object",
@@ -206,19 +220,25 @@
           "properties": {
             "kind": { "const": "derived" },
             "column": { "$ref": "#/$defs/name" },
-            "map": {
-              "type": "array",
-              "minItems": 1,
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["from", "to"],
-                "properties": {
-                  "from": { "$ref": "#/$defs/value" },
-                  "to": { "$ref": "#/$defs/value" }
-                }
-              }
-            }
+            "map": { "$ref": "#/$defs/map" }
+          }
+        },
+        {
+          "description": "The value that a column of the referenced row maps to, so this column follows the row that an earlier reference column of the same table points to.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "through", "column", "map"],
+          "properties": {
+            "kind": { "const": "follows" },
+            "through": {
+              "description": "An earlier reference column of the same table.",
+              "$ref": "#/$defs/name"
+            },
+            "column": {
+              "description": "A column of the table that through references.",
+              "$ref": "#/$defs/name"
+            },
+            "map": { "$ref": "#/$defs/map" }
           }
         },
         {

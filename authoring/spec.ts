@@ -11,6 +11,9 @@ import { connectedSets } from '../src/engine/validate.ts';
 
 export type Value = string | number;
 
+/** What each value of a source column becomes. */
+export type Mapping = readonly { readonly from: Value; readonly to: Value }[];
+
 export type Values =
   | { readonly kind: 'sequence'; readonly start?: number }
   | { readonly kind: 'uniform'; readonly min: number; readonly max: number }
@@ -20,10 +23,14 @@ export type Values =
     }
   | { readonly kind: 'dateRange'; readonly from: string; readonly to: string }
   | { readonly kind: 'reference'; readonly table: string; readonly column: string }
+  | { readonly kind: 'derived'; readonly column: string; readonly map: Mapping }
   | {
-      readonly kind: 'derived';
+      readonly kind: 'follows';
+      /** A reference column of the same table, earlier in it. */
+      readonly through: string;
+      /** A column of the table that `through` references. */
       readonly column: string;
-      readonly map: readonly { readonly from: Value; readonly to: Value }[];
+      readonly map: Mapping;
     }
   | { readonly kind: 'label'; readonly prefix: string };
 
@@ -204,6 +211,19 @@ function problems(spec: Spec): string[] {
         }
       } else if (values.kind === 'derived' && !columns.slice(0, c).includes(values.column)) {
         found.push(`${where} is derived from ${values.column}, which is not an earlier column`);
+      } else if (values.kind === 'follows') {
+        const link = table.columns.slice(0, c).find(({ name }) => name === values.through)?.values;
+        if (link?.kind !== 'reference') {
+          found.push(
+            `${where} follows through ${values.through}, which is not an earlier reference column`,
+          );
+        } else if (
+          spec.tables
+            .find(({ name }) => name === link.table)
+            ?.columns.some((column) => column.name === values.column) !== true
+        ) {
+          found.push(`${where} follows ${link.table}.${values.column}, which is not a column`);
+        }
       }
     });
   });

@@ -125,6 +125,24 @@ describe('parseSpec', () => {
       'customers.country is derived from zone, which is not an earlier column',
     ],
     [
+      'a column that follows through a column that does not exist',
+      [...orders, 'columns', 4, 'values', 'through'],
+      'customer',
+      'orders.currency follows through customer, which is not an earlier reference column',
+    ],
+    [
+      'a column that follows through a column that is not a reference',
+      [...orders, 'columns', 4, 'values', 'through'],
+      'amount',
+      'orders.currency follows through amount, which is not an earlier reference column',
+    ],
+    [
+      'a column that follows a column that does not exist',
+      [...orders, 'columns', 4, 'values', 'column'],
+      'zone',
+      'orders.currency follows customers.zone, which is not a column',
+    ],
+    [
       'a selected column that does not exist',
       [...level, 'select', 0, 'column'],
       'nme',
@@ -204,6 +222,16 @@ describe('parseSpec', () => {
     ],
   ])('rejects %s', (_, path, value, problem) => {
     expect(() => parseSpec(variant(path, value))).toThrow(`Invalid level spec:\n  ${problem}`);
+  });
+
+  it('rejects a column that follows through a reference to a missing table', () => {
+    expect(() => parseSpec(variant([...orders, 'columns', 1, 'values', 'table'], 'shops'))).toThrow(
+      [
+        'Invalid level spec:',
+        '  orders.customer_id references shops.customer_id, which is not a column of an earlier table',
+        '  orders.currency follows shops.country, which is not a column',
+      ].join('\n'),
+    );
   });
 });
 
