@@ -72,9 +72,15 @@ level:
     - { table: customers, column: name }
     - { table: orders, column: amount }
   filters:
-    - { table: customers, column: city, op: '=', value: reykjavik }
+    # lower() and times hide the columns from PostgreSQL's statistics, so it
+    # guesses how many rows pass.
+    - { table: customers, column: city, op: '=', value: reykjavik, expression: { kind: lower } }
     - { table: orders, column: created_at, op: '>=', value: '2024-07-01' }
-    - { table: orders, column: amount, op: in, values: [10, 20, 30] }
+    - table: orders
+      column: amount
+      op: in
+      values: [100, 200, 300]
+      expression: { kind: times, by: 10 }
   joins:
     - left: { table: customers, column: customer_id }
       right: { table: orders, column: customer_id }

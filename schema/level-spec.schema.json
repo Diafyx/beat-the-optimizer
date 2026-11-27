@@ -90,7 +90,8 @@
             "table": { "$ref": "#/$defs/name" },
             "column": { "$ref": "#/$defs/name" },
             "op": { "enum": ["=", "<", "<=", ">", ">="] },
-            "value": { "$ref": "#/$defs/value" }
+            "value": { "$ref": "#/$defs/value" },
+            "expression": { "$ref": "#/$defs/expression" }
           }
         },
         {
@@ -101,7 +102,28 @@
             "table": { "$ref": "#/$defs/name" },
             "column": { "$ref": "#/$defs/name" },
             "op": { "const": "in" },
-            "values": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/value" } }
+            "values": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/value" } },
+            "expression": { "$ref": "#/$defs/expression" }
+          }
+        }
+      ]
+    },
+    "expression": {
+      "description": "A function of the filter's column, which PostgreSQL has no statistics for: lower() of a text column, or an integer column times by.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": { "kind": { "const": "lower" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "by"],
+          "properties": {
+            "kind": { "const": "times" },
+            "by": { "type": "integer", "minimum": 2 }
           }
         }
       ]

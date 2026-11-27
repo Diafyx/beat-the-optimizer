@@ -56,9 +56,9 @@ describe('levelSql', () => {
         'SELECT customers.name, orders.amount',
         'FROM customers',
         'JOIN orders ON orders.customer_id = customers.customer_id',
-        "WHERE customers.city = 'reykjavik'",
+        "WHERE lower(customers.city) = 'reykjavik'",
         "  AND orders.created_at >= '2024-07-01'",
-        '  AND orders.amount IN (10, 20, 30)',
+        '  AND orders.amount * 10 IN (100, 200, 300)',
         'ORDER BY orders.created_at',
       ].join('\n'),
     );
@@ -85,9 +85,9 @@ describe('levelSql', () => {
 
 describe('tableFilter', () => {
   it("writes each table's filters without the table name, or null", () => {
-    expect(tableFilter(example, 'customers')).toBe("city = 'reykjavik'");
+    expect(tableFilter(example, 'customers')).toBe("lower(city) = 'reykjavik'");
     expect(tableFilter(example, 'orders')).toBe(
-      "created_at >= '2024-07-01' AND amount IN (10, 20, 30)",
+      "created_at >= '2024-07-01' AND amount * 10 IN (100, 200, 300)",
     );
     expect(tableFilter(three, 'items')).toBeNull();
   });

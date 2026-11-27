@@ -102,7 +102,7 @@ describe('writeLevel', () => {
     expect(customers).toEqual({
       name: 'customers',
       rows: 20,
-      filter: "city = 'reykjavik'",
+      filter: "lower(city) = 'reykjavik'",
       storedOrder: 'customer_id',
       columns: [
         { name: 'customer_id', type: 'integer', stats: null },

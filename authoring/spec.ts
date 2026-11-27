@@ -55,14 +55,22 @@ export interface TableSpec {
   readonly indexes: readonly IndexSpec[];
 }
 
-/** A predicate on one column of a table. */
-export type Filter =
+/**
+ * A function of a filter's column. PostgreSQL has no statistics for it, so
+ * it guesses how many rows pass.
+ */
+export type Expression =
+  { readonly kind: 'lower' } | { readonly kind: 'times'; readonly by: number };
+
+/** A predicate on one column of a table, or on an expression of it. */
+export type Filter = (
   | {
       readonly column: string;
       readonly op: '=' | '<' | '<=' | '>' | '>=';
       readonly value: Value;
     }
-  | { readonly column: string; readonly op: 'in'; readonly values: readonly Value[] };
+  | { readonly column: string; readonly op: 'in'; readonly values: readonly Value[] }
+) & { readonly expression?: Expression };
 
 /** The puzzle around the dataset: its text, and the parts of its query. */
 export interface LevelSpec {
@@ -130,10 +138,16 @@ function levelProblems({ tables, level }: Spec): string[] {
   for (const filter of level.filters) {
     const type = column('A filter', filter)?.type;
     if (type === undefined) continue;
+    const where = `${filter.table}.${filter.column}`;
+    if (filter.expression?.kind === 'lower' && type !== 'text') {
+      found.push(`The filter on ${where} applies lower(), which needs a text column`);
+    } else if (filter.expression?.kind === 'times' && type !== 'integer' && type !== 'bigint') {
+      found.push(`The filter on ${where} multiplies it, which needs an integer column`);
+    }
     for (const value of filter.op === 'in' ? filter.values : [filter.value]) {
       if (!fits(type, value)) {
         found.push(
-          `The filter on ${filter.table}.${filter.column} compares it with ${JSON.stringify(value)}, which is not ${KINDS[type]}`,
+          `The filter on ${where} compares it with ${JSON.stringify(value)}, which is not ${KINDS[type]}`,
         );
       }
     }
