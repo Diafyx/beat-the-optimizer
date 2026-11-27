@@ -1,0 +1,94 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1024
+tables:
+  - name: customers
+    rows: 5000
+    order: customer_id
+    columns:
+      - name: customer_id
+        type: integer
+        values: { kind: sequence }
+      - name: name
+        type: text
+        values: { kind: label, prefix: 'customer ' }
+      - name: country
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: IS, weight: 10 }
+            - { value: 'NO', weight: 15 }
+            - { value: SE, weight: 25 }
+            - { value: DK, weight: 20 }
+            - { value: FI, weight: 15 }
+            - { value: DE, weight: 15 }
+    indexes:
+      - { name: customers_pkey, column: customer_id, unique: true }
+  # Every order is paid in its customer's currency.
+  - name: orders
+    rows: 100000
+    order: shuffled
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      - name: customer_id
+        type: integer
+        values: { kind: reference, table: customers, column: customer_id }
+      - name: currency
+        type: text
+        values:
+          kind: follows
+          through: customer_id
+          column: country
+          map:
+            - { from: IS, to: ISK }
+            - { from: 'NO', to: NOK }
+            - { from: SE, to: SEK }
+            - { from: DK, to: DKK }
+            - { from: FI, to: EUR }
+            - { from: DE, to: EUR }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+      - { name: orders_customer_id_idx, column: customer_id }
+  # Five lines an order.
+  - name: order_lines
+    rows: 500000
+    order: shuffled
+    columns:
+      - name: line_id
+        type: integer
+        values: { kind: sequence }
+      - name: order_id
+        type: integer
+        values: { kind: reference, table: orders, column: order_id }
+      - name: item
+        type: text
+        values: { kind: label, prefix: 'item ' }
+    indexes:
+      - { name: order_lines_order_id_idx, column: order_id }
+afterAnalyze: []
+level:
+  id: never-together
+  title: Never together
+  story:
+    - 'Finance read a report that some Icelandic customers paid in euros. They want the order lines of those orders.'
+    - "The shop has 5,000 customers in six countries. Each order is paid in its customer's currency, and each has five lines."
+  select:
+    - { table: customers, column: name }
+    - { table: order_lines, column: item }
+  filters:
+    - { table: customers, column: country, op: '=', value: IS }
+    - { table: orders, column: currency, op: '=', value: EUR }
+  joins:
+    - left: { table: customers, column: customer_id }
+      right: { table: orders, column: customer_id }
+    - left: { table: orders, column: order_id }
+      right: { table: order_lines, column: order_id }
+  orderBy: null
+  locks: []
+  stats:
+    - { table: customers, column: country }
+    - { table: orders, column: currency }
+  explanation:
+    - Written after the first authoring run, from what PostgreSQL estimated.

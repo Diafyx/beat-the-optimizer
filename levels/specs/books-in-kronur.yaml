@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1027
+tables:
+  - name: customers
+    rows: 10000
+    order: customer_id
+    columns:
+      - name: customer_id
+        type: integer
+        values: { kind: sequence }
+      - name: name
+        type: text
+        values: { kind: label, prefix: 'customer ' }
+      - name: country
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: IS, weight: 1 }
+            - { value: 'NO', weight: 24 }
+            - { value: SE, weight: 25 }
+            - { value: DK, weight: 20 }
+            - { value: FI, weight: 15 }
+            - { value: DE, weight: 15 }
+    indexes:
+      - { name: customers_pkey, column: customer_id, unique: true }
+      - { name: customers_country_idx, column: country }
+  - name: products
+    rows: 10000
+    order: product_id
+    columns:
+      - name: product_id
+        type: integer
+        values: { kind: sequence }
+      - name: title
+        type: text
+        values: { kind: label, prefix: 'product ' }
+      - name: category
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: books, weight: 1 }
+            - { value: games, weight: 49 }
+            - { value: tools, weight: 50 }
+    indexes:
+      - { name: products_pkey, column: product_id, unique: true }
+      - { name: products_category_idx, column: category }
+  - name: orders
+    rows: 500000
+    order: currency
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      - name: customer_id
+        type: integer
+        values: { kind: reference, table: customers, column: customer_id }
+      - name: product_id
+        type: integer
+        values: { kind: reference, table: products, column: product_id }
+      - name: currency
+        type: text
+        values:
+          kind: follows
+          through: customer_id
+          column: country
+          map:
+            - { from: IS, to: ISK }
+            - { from: 'NO', to: NOK }
+            - { from: SE, to: SEK }
+            - { from: DK, to: DKK }
+            - { from: FI, to: EUR }
+            - { from: DE, to: EUR }
+    indexes:
+      - { name: orders_currency_idx, column: currency }
+afterAnalyze: []
+level:
+  id: books-in-kronur
+  title: Books in krónur
+  story:
+    - 'The tax office wants every book sold to an Icelandic customer and paid in krónur.'
+    - 'The shop has 10,000 customers, 10,000 products and 500,000 orders, stored in currency order. One product in 100 is a book.'
+  select:
+    - { table: customers, column: name }
+    - { table: products, column: title }
+  filters:
+    - { table: customers, column: country, op: '=', value: IS }
+    - { table: orders, column: currency, op: '=', value: ISK }
+    - { table: products, column: category, op: '=', value: books }
+  joins:
+    - left: { table: customers, column: customer_id }
+      right: { table: orders, column: customer_id }
+    - left: { table: products, column: product_id }
+      right: { table: orders, column: product_id }
+  orderBy: null
+  locks: []
+  stats:
+    - { table: customers, column: country }
+    - { table: orders, column: currency }
+    - { table: products, column: category }
+  explanation:
+    - Written after the first authoring run, from what PostgreSQL estimated.
