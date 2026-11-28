@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1028
+tables:
+  - name: orders
+    rows: 1000000
+    order: order_id
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      - name: created_at
+        type: date
+        values: { kind: dateRange, from: '2024-01-01', to: '2026-10-31' }
+      - name: status
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: shipped, weight: 50 }
+            - { value: Shipped, weight: 30 }
+            - { value: SHIPPED, weight: 15 }
+            - { value: returned, weight: 3 }
+            - { value: cancelled, weight: 2 }
+      - name: amount
+        type: integer
+        values: { kind: uniform, min: 1, max: 500 }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+      - { name: orders_created_at_idx, column: created_at }
+afterAnalyze: []
+level:
+  id: in-any-case
+  title: In any case
+  story:
+    - 'The old checkout wrote order statuses in capitals, the new one in lower case, and some code in between capitalised them.'
+    - 'Finance wants every shipped order, however it was written, oldest first.'
+  select:
+    - { table: orders, column: order_id }
+    - { table: orders, column: created_at }
+    - { table: orders, column: amount }
+  filters:
+    - { table: orders, column: status, op: '=', value: shipped, expression: { kind: lower } }
+  joins: []
+  orderBy: { table: orders, column: created_at }
+  locks: []
+  stats:
+    - { table: orders, column: status }
+  explanation:
+    - 'Written after the first authoring run, from what PostgreSQL estimated.'

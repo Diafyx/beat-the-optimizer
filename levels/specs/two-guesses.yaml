@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1030
+tables:
+  - name: customers
+    rows: 50000
+    order: customer_id
+    columns:
+      - name: customer_id
+        type: integer
+        values: { kind: sequence }
+      - name: name
+        type: text
+        values: { kind: label, prefix: 'customer ' }
+      - name: country
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: IS, weight: 20 }
+            - { value: is, weight: 10 }
+            - { value: 'NO', weight: 25 }
+            - { value: SE, weight: 25 }
+            - { value: DK, weight: 20 }
+    indexes:
+      - { name: customers_pkey, column: customer_id, unique: true }
+  - name: products
+    rows: 10000
+    order: product_id
+    columns:
+      - name: product_id
+        type: integer
+        values: { kind: sequence }
+      - name: title
+        type: text
+        values: { kind: label, prefix: 'product ' }
+      - name: weight_kg
+        type: integer
+        values:
+          kind: weighted
+          weights:
+            - { value: 1, weight: 50 }
+            - { value: 2, weight: 30 }
+            - { value: 5, weight: 19.9 }
+            - { value: 40, weight: 0.1 }
+    indexes:
+      - { name: products_pkey, column: product_id, unique: true }
+  - name: orders
+    rows: 1000000
+    order: order_id
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      - name: customer_id
+        type: integer
+        values: { kind: reference, table: customers, column: customer_id }
+      - name: product_id
+        type: integer
+        values: { kind: reference, table: products, column: product_id }
+    indexes:
+      - { name: orders_customer_id_idx, column: customer_id }
+      - { name: orders_product_id_idx, column: product_id }
+afterAnalyze: []
+level:
+  id: two-guesses
+  title: Two guesses
+  story:
+    - 'One sign-up form stored country codes in capitals and the other in lower case, and the courier works in grams, not kilograms.'
+    - 'The courier wants every order of 20 kg or more that goes to Iceland, from 50,000 customers, 10,000 products and a million orders.'
+  select:
+    - { table: customers, column: name }
+    - { table: products, column: title }
+  filters:
+    - { table: customers, column: country, op: '=', value: is, expression: { kind: lower } }
+    - table: products
+      column: weight_kg
+      op: '>='
+      value: 20000
+      expression: { kind: times, by: 1000 }
+  joins:
+    - left: { table: customers, column: customer_id }
+      right: { table: orders, column: customer_id }
+    - left: { table: products, column: product_id }
+      right: { table: orders, column: product_id }
+  orderBy: null
+  locks: []
+  stats:
+    - { table: customers, column: country }
+    - { table: products, column: weight_kg }
+  explanation:
+    - 'Written after the first authoring run, from what PostgreSQL estimated.'

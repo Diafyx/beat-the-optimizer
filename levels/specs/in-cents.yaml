@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1029
+tables:
+  - name: products
+    rows: 10000
+    order: product_id
+    columns:
+      - name: product_id
+        type: integer
+        values: { kind: sequence }
+      - name: title
+        type: text
+        values: { kind: label, prefix: 'product ' }
+      - name: price
+        type: integer
+        values:
+          kind: weighted
+          weights:
+            - { value: 9, weight: 30 }
+            - { value: 19, weight: 30 }
+            - { value: 49, weight: 25 }
+            - { value: 99, weight: 14.9 }
+            - { value: 4900, weight: 0.1 }
+    indexes:
+      - { name: products_pkey, column: product_id, unique: true }
+  - name: order_lines
+    rows: 1000000
+    order: line_id
+    columns:
+      - name: line_id
+        type: integer
+        values: { kind: sequence }
+      - name: product_id
+        type: integer
+        values: { kind: reference, table: products, column: product_id }
+      - name: quantity
+        type: integer
+        values: { kind: uniform, min: 1, max: 5 }
+    indexes:
+      - { name: order_lines_pkey, column: line_id, unique: true }
+      - { name: order_lines_product_id_idx, column: product_id }
+afterAnalyze: []
+level:
+  id: in-cents
+  title: In cents
+  story:
+    - 'Prices are in euros, but the luxury report was written for a system that kept cents, so it asks for price * 100 of 100,000 or more: 1,000 euros.'
+    - 'The shop has 10,000 products and a million order lines.'
+  select:
+    - { table: products, column: title }
+    - { table: order_lines, column: quantity }
+  filters:
+    - table: products
+      column: price
+      op: '>='
+      value: 100000
+      expression: { kind: times, by: 100 }
+  joins:
+    - left: { table: products, column: product_id }
+      right: { table: order_lines, column: product_id }
+  orderBy: null
+  locks: []
+  stats:
+    - { table: products, column: price }
+  explanation:
+    - 'Written after the first authoring run, from what PostgreSQL estimated.'
