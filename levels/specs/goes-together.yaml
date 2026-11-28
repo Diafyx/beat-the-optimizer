@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1025
+tables:
+  - name: customers
+    rows: 5000
+    order: customer_id
+    columns:
+      - name: customer_id
+        type: integer
+        values: { kind: sequence }
+      - name: name
+        type: text
+        values: { kind: label, prefix: 'customer ' }
+      - name: country
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: IS, weight: 3 }
+            - { value: 'NO', weight: 22 }
+            - { value: SE, weight: 25 }
+            - { value: DK, weight: 20 }
+            - { value: FI, weight: 15 }
+            - { value: DE, weight: 15 }
+    indexes:
+      - { name: customers_pkey, column: customer_id, unique: true }
+  # Every order is paid in its customer's currency, and the table is stored
+  # in currency order.
+  - name: orders
+    rows: 1000000
+    order: currency
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      - name: customer_id
+        type: integer
+        values: { kind: reference, table: customers, column: customer_id }
+      - name: currency
+        type: text
+        values:
+          kind: follows
+          through: customer_id
+          column: country
+          map:
+            - { from: IS, to: ISK }
+            - { from: 'NO', to: NOK }
+            - { from: SE, to: SEK }
+            - { from: DK, to: DKK }
+            - { from: FI, to: EUR }
+            - { from: DE, to: EUR }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+      - { name: orders_currency_idx, column: currency }
+  # One shipment an order, in random order; one in 200 is lost.
+  - name: shipments
+    rows: 1000000
+    order: shuffled
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      - name: status
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: delivered, weight: 40 }
+            - { value: in_transit, weight: 30 }
+            - { value: returned, weight: 29.5 }
+            - { value: lost, weight: 0.5 }
+    indexes:
+      - { name: shipments_order_id_idx, column: order_id, unique: true }
+      - { name: shipments_status_idx, column: status }
+afterAnalyze: []
+level:
+  id: goes-together
+  title: Goes together
+  story:
+    - 'Support wants the lost shipments of Icelandic customers who paid in krónur.'
+    - 'There are a million orders, stored in currency order, each with one shipment. One shipment in 200 is lost.'
+  select:
+    - { table: customers, column: name }
+    - { table: orders, column: order_id }
+  filters:
+    - { table: customers, column: country, op: '=', value: IS }
+    - { table: orders, column: currency, op: '=', value: ISK }
+    - { table: shipments, column: status, op: '=', value: lost }
+  joins:
+    - left: { table: customers, column: customer_id }
+      right: { table: orders, column: customer_id }
+    - left: { table: orders, column: order_id }
+      right: { table: shipments, column: order_id }
+  orderBy: null
+  locks: []
+  stats:
+    - { table: customers, column: country }
+    - { table: orders, column: currency }
+    - { table: shipments, column: status }
+  explanation:
+    - "PostgreSQL read the 30,132 orders paid in krónur through orders_currency_idx, in the order they are stored, 30,132, and hashed them with the 150 Icelandic customers, 5,000 + 30,282. Its statistics say 3% of customers are Icelandic and 3% of orders are paid in krónur, and it multiplied the two as if they were independent, so it expected 904 rows from that join. For so few, it looked up each one's shipment through shipments_order_id_idx."
+    - "But every krónur order is an Icelandic customer's: all 30,132 orders matched, and the lookups cost 4 × (30,132 + 30,132) = 241,056. The plan costs 336,764."
+    - 'Start from the 5,000 lost shipments through shipments_status_idx, 4 × 5,000 = 20,000, and look up their orders through orders_pkey, 4 × (5,000 + 5,000) = 40,000. Only 162 are Icelandic krónur orders, and looking up their customers through customers_pkey costs 4 × (162 + 162) = 1,296: the plan costs 61,620. When filters on two tables pick the same rows, PostgreSQL multiplies them as if they were independent and expects a handful.'

@@ -1,0 +1,240 @@
+{
+  "format": 1,
+  "id": "goes-together",
+  "title": "Goes together",
+  "story": [
+    "Support wants the lost shipments of Icelandic customers who paid in krónur.",
+    "There are a million orders, stored in currency order, each with one shipment. One shipment in 200 is lost."
+  ],
+  "sql": "SELECT customers.name, orders.order_id\nFROM customers\nJOIN orders ON orders.customer_id = customers.customer_id\nJOIN shipments ON shipments.order_id = orders.order_id\nWHERE customers.country = 'IS'\n  AND orders.currency = 'ISK'\n  AND shipments.status = 'lost'",
+  "tables": [
+    {
+      "name": "customers",
+      "rows": 5000,
+      "filter": "country = 'IS'",
+      "storedOrder": "customer_id",
+      "columns": [
+        { "name": "customer_id", "type": "integer", "stats": null },
+        { "name": "name", "type": "text", "stats": null },
+        {
+          "name": "country",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 6,
+            "mostCommon": [
+              { "value": "SE", "frequency": 0.25 },
+              { "value": "NO", "frequency": 0.22 },
+              { "value": "DK", "frequency": 0.2 },
+              { "value": "DE", "frequency": 0.15 },
+              { "value": "FI", "frequency": 0.15 },
+              { "value": "IS", "frequency": 0.03 }
+            ],
+            "histogram": [],
+            "correlation": 0.17647046
+          }
+        }
+      ],
+      "indexes": [{ "name": "customers_pkey", "column": "customer_id" }]
+    },
+    {
+      "name": "orders",
+      "rows": 1000000,
+      "filter": "currency = 'ISK'",
+      "storedOrder": "currency",
+      "columns": [
+        { "name": "order_id", "type": "integer", "stats": null },
+        { "name": "customer_id", "type": "integer", "stats": null },
+        {
+          "name": "currency",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 5,
+            "mostCommon": [
+              { "value": "EUR", "frequency": 0.300195 },
+              { "value": "SEK", "frequency": 0.249118 },
+              { "value": "NOK", "frequency": 0.220429 },
+              { "value": "DKK", "frequency": 0.200126 },
+              { "value": "ISK", "frequency": 0.030132 }
+            ],
+            "histogram": [],
+            "correlation": 1
+          }
+        }
+      ],
+      "indexes": [
+        { "name": "orders_pkey", "column": "order_id" },
+        { "name": "orders_currency_idx", "column": "currency" }
+      ]
+    },
+    {
+      "name": "shipments",
+      "rows": 1000000,
+      "filter": "status = 'lost'",
+      "storedOrder": null,
+      "columns": [
+        { "name": "order_id", "type": "integer", "stats": null },
+        {
+          "name": "status",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 4,
+            "mostCommon": [
+              { "value": "delivered", "frequency": 0.4 },
+              { "value": "in_transit", "frequency": 0.3 },
+              { "value": "returned", "frequency": 0.295 },
+              { "value": "lost", "frequency": 0.005 }
+            ],
+            "histogram": [],
+            "correlation": 0.337641
+          }
+        }
+      ],
+      "indexes": [
+        { "name": "shipments_order_id_idx", "column": "order_id" },
+        { "name": "shipments_status_idx", "column": "status" }
+      ]
+    }
+  ],
+  "joins": [
+    {
+      "left": { "table": "customers", "column": "customer_id" },
+      "right": { "table": "orders", "column": "customer_id" }
+    },
+    {
+      "left": { "table": "orders", "column": "order_id" },
+      "right": { "table": "shipments", "column": "order_id" }
+    }
+  ],
+  "orderBy": null,
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "customers",
+        "filtered": 150,
+        "indexes": [{ "index": "customers_pkey", "matched": 5000 }]
+      },
+      {
+        "table": "orders",
+        "filtered": 30132,
+        "indexes": [
+          { "index": "orders_pkey", "matched": 1000000 },
+          { "index": "orders_currency_idx", "matched": 30132 }
+        ]
+      },
+      {
+        "table": "shipments",
+        "filtered": 5000,
+        "indexes": [
+          { "index": "shipments_order_id_idx", "matched": 1000000 },
+          { "index": "shipments_status_idx", "matched": 5000 }
+        ]
+      }
+    ],
+    "joins": [
+      { "tables": ["customers", "orders"], "rows": 30132 },
+      { "tables": ["orders", "shipments"], "rows": 162 },
+      { "tables": ["customers", "orders", "shipments"], "rows": 162 }
+    ],
+    "lookups": [
+      { "outer": ["orders"], "index": "customers_pkey", "fetched": 30132 },
+      { "outer": ["orders"], "index": "shipments_order_id_idx", "fetched": 30132 },
+      { "outer": ["customers", "orders"], "index": "shipments_order_id_idx", "fetched": 30132 },
+      { "outer": ["shipments"], "index": "orders_pkey", "fetched": 5000 },
+      { "outer": ["orders", "shipments"], "index": "customers_pkey", "fetched": 162 }
+    ]
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": {
+      "first": { "table": "orders", "access": "index", "index": "orders_currency_idx" },
+      "steps": [
+        { "join": "hash", "scan": { "table": "customers", "access": "seq" } },
+        { "join": "indexNestedLoop", "table": "shipments", "index": "shipments_order_id_idx" }
+      ]
+    },
+    "explain": {
+      "nodeType": "Nested Loop",
+      "relation": null,
+      "index": null,
+      "estimatedRows": 5,
+      "estimatedCost": 2377.96,
+      "children": [
+        {
+          "nodeType": "Hash Join",
+          "relation": null,
+          "index": null,
+          "estimatedRows": 904,
+          "estimatedCost": 997.27,
+          "children": [
+            {
+              "nodeType": "Index Scan",
+              "relation": "orders",
+              "index": "orders_currency_idx",
+              "estimatedRows": 30132,
+              "estimatedCost": 797.73,
+              "children": []
+            },
+            {
+              "nodeType": "Hash",
+              "relation": null,
+              "index": null,
+              "estimatedRows": 150,
+              "estimatedCost": 118.5,
+              "children": [
+                {
+                  "nodeType": "Seq Scan",
+                  "relation": "customers",
+                  "index": null,
+                  "estimatedRows": 150,
+                  "estimatedCost": 118.5,
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "nodeType": "Index Scan",
+          "relation": "shipments",
+          "index": "shipments_order_id_idx",
+          "estimatedRows": 1,
+          "estimatedCost": 1.53,
+          "children": []
+        }
+      ]
+    }
+  },
+  "costs": {
+    "best": 61620,
+    "optimizer": 336764,
+    "bestPlan": {
+      "first": { "table": "shipments", "access": "index", "index": "shipments_status_idx" },
+      "steps": [
+        { "join": "indexNestedLoop", "table": "orders", "index": "orders_pkey" },
+        { "join": "indexNestedLoop", "table": "customers", "index": "customers_pkey" }
+      ]
+    }
+  },
+  "explanation": [
+    "PostgreSQL read the 30,132 orders paid in krónur through orders_currency_idx, in the order they are stored, 30,132, and hashed them with the 150 Icelandic customers, 5,000 + 30,282. Its statistics say 3% of customers are Icelandic and 3% of orders are paid in krónur, and it multiplied the two as if they were independent, so it expected 904 rows from that join. For so few, it looked up each one's shipment through shipments_order_id_idx.",
+    "But every krónur order is an Icelandic customer's: all 30,132 orders matched, and the lookups cost 4 × (30,132 + 30,132) = 241,056. The plan costs 336,764.",
+    "Start from the 5,000 lost shipments through shipments_status_idx, 4 × 5,000 = 20,000, and look up their orders through orders_pkey, 4 × (5,000 + 5,000) = 40,000. Only 162 are Icelandic krónur orders, and looking up their customers through customers_pkey costs 4 × (162 + 162) = 1,296: the plan costs 61,620. When filters on two tables pick the same rows, PostgreSQL multiplies them as if they were independent and expects a handful."
+  ]
+}

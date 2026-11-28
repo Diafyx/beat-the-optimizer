@@ -1,0 +1,252 @@
+{
+  "format": 1,
+  "id": "every-order-every-ticket",
+  "title": "Every order, every ticket",
+  "story": [
+    "Support wants every krónur order of Icelandic customers, next to each urgent ticket the customer has open.",
+    "The shop has 100,000 customers, 500,000 orders stored in currency order, and 500,000 tickets."
+  ],
+  "sql": "SELECT customers.name, orders.order_id, tickets.ticket_id\nFROM customers\nJOIN orders ON orders.customer_id = customers.customer_id\nJOIN tickets ON tickets.customer_id = customers.customer_id\nWHERE customers.country = 'IS'\n  AND orders.currency = 'ISK'\n  AND tickets.priority = 'urgent'",
+  "tables": [
+    {
+      "name": "customers",
+      "rows": 100000,
+      "filter": "country = 'IS'",
+      "storedOrder": "customer_id",
+      "columns": [
+        { "name": "customer_id", "type": "integer", "stats": null },
+        { "name": "name", "type": "text", "stats": null },
+        {
+          "name": "country",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 6,
+            "mostCommon": [
+              { "value": "SE", "frequency": 0.25 },
+              { "value": "NO", "frequency": 0.23 },
+              { "value": "DK", "frequency": 0.2 },
+              { "value": "DE", "frequency": 0.15 },
+              { "value": "FI", "frequency": 0.15 },
+              { "value": "IS", "frequency": 0.02 }
+            ],
+            "histogram": [],
+            "correlation": 0.20323187
+          }
+        }
+      ],
+      "indexes": [
+        { "name": "customers_pkey", "column": "customer_id" },
+        { "name": "customers_country_idx", "column": "country" }
+      ]
+    },
+    {
+      "name": "orders",
+      "rows": 500000,
+      "filter": "currency = 'ISK'",
+      "storedOrder": "currency",
+      "columns": [
+        { "name": "order_id", "type": "integer", "stats": null },
+        { "name": "customer_id", "type": "integer", "stats": null },
+        {
+          "name": "currency",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 5,
+            "mostCommon": [
+              { "value": "EUR", "frequency": 0.300628 },
+              { "value": "SEK", "frequency": 0.249142 },
+              { "value": "NOK", "frequency": 0.229686 },
+              { "value": "DKK", "frequency": 0.200404 },
+              { "value": "ISK", "frequency": 0.02014 }
+            ],
+            "histogram": [],
+            "correlation": 1
+          }
+        }
+      ],
+      "indexes": [
+        { "name": "orders_customer_id_idx", "column": "customer_id" },
+        { "name": "orders_currency_idx", "column": "currency" }
+      ]
+    },
+    {
+      "name": "tickets",
+      "rows": 500000,
+      "filter": "priority = 'urgent'",
+      "storedOrder": null,
+      "columns": [
+        { "name": "ticket_id", "type": "integer", "stats": null },
+        { "name": "customer_id", "type": "integer", "stats": null },
+        {
+          "name": "priority",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 2,
+            "mostCommon": [
+              { "value": "normal", "frequency": 0.98 },
+              { "value": "urgent", "frequency": 0.02 }
+            ],
+            "histogram": [],
+            "correlation": 0.9610086
+          }
+        }
+      ],
+      "indexes": [{ "name": "tickets_customer_id_idx", "column": "customer_id" }]
+    }
+  ],
+  "joins": [
+    {
+      "left": { "table": "customers", "column": "customer_id" },
+      "right": { "table": "orders", "column": "customer_id" }
+    },
+    {
+      "left": { "table": "customers", "column": "customer_id" },
+      "right": { "table": "tickets", "column": "customer_id" }
+    }
+  ],
+  "orderBy": null,
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "customers",
+        "filtered": 2000,
+        "indexes": [
+          { "index": "customers_pkey", "matched": 100000 },
+          { "index": "customers_country_idx", "matched": 2000 }
+        ]
+      },
+      {
+        "table": "orders",
+        "filtered": 10070,
+        "indexes": [
+          { "index": "orders_customer_id_idx", "matched": 500000 },
+          { "index": "orders_currency_idx", "matched": 10070 }
+        ]
+      },
+      {
+        "table": "tickets",
+        "filtered": 10000,
+        "indexes": [{ "index": "tickets_customer_id_idx", "matched": 500000 }]
+      }
+    ],
+    "joins": [
+      { "tables": ["customers", "orders"], "rows": 10070 },
+      { "tables": ["customers", "tickets"], "rows": 200 },
+      { "tables": ["customers", "orders", "tickets"], "rows": 1016 }
+    ],
+    "lookups": [
+      { "outer": ["customers"], "index": "orders_customer_id_idx", "fetched": 10070 },
+      { "outer": ["customers"], "index": "tickets_customer_id_idx", "fetched": 10006 },
+      { "outer": ["orders"], "index": "customers_pkey", "fetched": 10070 },
+      { "outer": ["customers", "orders"], "index": "tickets_customer_id_idx", "fetched": 50711 },
+      { "outer": ["tickets"], "index": "customers_pkey", "fetched": 10000 },
+      { "outer": ["customers", "tickets"], "index": "orders_customer_id_idx", "fetched": 1016 }
+    ]
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": {
+      "first": { "table": "orders", "access": "index", "index": "orders_currency_idx" },
+      "steps": [
+        {
+          "join": "hash",
+          "scan": { "table": "customers", "access": "index", "index": "customers_country_idx" }
+        },
+        { "join": "indexNestedLoop", "table": "tickets", "index": "tickets_customer_id_idx" }
+      ]
+    },
+    "explain": {
+      "nodeType": "Nested Loop",
+      "relation": null,
+      "index": null,
+      "estimatedRows": 20,
+      "estimatedCost": 1440.8,
+      "children": [
+        {
+          "nodeType": "Hash Join",
+          "relation": null,
+          "index": null,
+          "estimatedRows": 201,
+          "estimatedCost": 1058.87,
+          "children": [
+            {
+              "nodeType": "Index Scan",
+              "relation": "orders",
+              "index": "orders_currency_idx",
+              "estimatedRows": 10070,
+              "estimatedCost": 270.65,
+              "children": []
+            },
+            {
+              "nodeType": "Hash",
+              "relation": null,
+              "index": null,
+              "estimatedRows": 2000,
+              "estimatedCost": 736.79,
+              "children": [
+                {
+                  "nodeType": "Bitmap Heap Scan",
+                  "relation": "customers",
+                  "index": null,
+                  "estimatedRows": 2000,
+                  "estimatedCost": 736.79,
+                  "children": [
+                    {
+                      "nodeType": "Bitmap Index Scan",
+                      "relation": null,
+                      "index": "customers_country_idx",
+                      "estimatedRows": 2000,
+                      "estimatedCost": 23.29,
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "nodeType": "Index Scan",
+          "relation": "tickets",
+          "index": "tickets_customer_id_idx",
+          "estimatedRows": 1,
+          "estimatedCost": 1.89,
+          "children": []
+        }
+      ]
+    }
+  },
+  "costs": {
+    "best": 62104,
+    "optimizer": 284350,
+    "bestPlan": {
+      "first": { "table": "customers", "access": "index", "index": "customers_country_idx" },
+      "steps": [
+        { "join": "indexNestedLoop", "table": "tickets", "index": "tickets_customer_id_idx" },
+        { "join": "indexNestedLoop", "table": "orders", "index": "orders_customer_id_idx" }
+      ]
+    }
+  },
+  "explanation": [
+    "PostgreSQL read the 10,070 krónur orders through orders_currency_idx, 10,070, and the 2,000 Icelandic customers through customers_country_idx, 4 × 2,000 = 8,000, and hashed them together, 12,070. It expected 201 rows, as if only 2% of the krónur orders were Icelandic customers', but every krónur order is: all 10,070 matched.",
+    "Then it looked up the tickets of each order's customer through tickets_customer_id_idx. A customer's tickets were fetched again for every one of their orders: 50,711 tickets for 10,070 orders, 4 × (10,070 + 50,711) = 243,124, to keep the 1,016 rows with an urgent ticket. The plan costs 284,350.",
+    "Start from the Icelandic customers and look up their tickets first, 8,000 + 4 × (2,000 + 10,006) = 56,024: only 200 are urgent. Looking up those customers' orders through orders_customer_id_idx then costs 4 × (200 + 1,016) = 4,864, and the plan costs 62,104. Join the table that removes rows before the one that multiplies them."
+  ]
+}

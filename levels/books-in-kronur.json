@@ -1,0 +1,255 @@
+{
+  "format": 1,
+  "id": "books-in-kronur",
+  "title": "Books in krónur",
+  "story": [
+    "The tax office wants every book sold to an Icelandic customer and paid in krónur.",
+    "The shop has 10,000 customers, 10,000 products and 500,000 orders, stored in currency order. One product in 100 is a book."
+  ],
+  "sql": "SELECT customers.name, products.title\nFROM customers\nJOIN orders ON orders.customer_id = customers.customer_id\nJOIN products ON products.product_id = orders.product_id\nWHERE customers.country = 'IS'\n  AND orders.currency = 'ISK'\n  AND products.category = 'books'",
+  "tables": [
+    {
+      "name": "customers",
+      "rows": 10000,
+      "filter": "country = 'IS'",
+      "storedOrder": "customer_id",
+      "columns": [
+        { "name": "customer_id", "type": "integer", "stats": null },
+        { "name": "name", "type": "text", "stats": null },
+        {
+          "name": "country",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 6,
+            "mostCommon": [
+              { "value": "SE", "frequency": 0.25 },
+              { "value": "NO", "frequency": 0.24 },
+              { "value": "DK", "frequency": 0.2 },
+              { "value": "DE", "frequency": 0.15 },
+              { "value": "FI", "frequency": 0.15 },
+              { "value": "IS", "frequency": 0.01 }
+            ],
+            "histogram": [],
+            "correlation": 0.19142948
+          }
+        }
+      ],
+      "indexes": [
+        { "name": "customers_pkey", "column": "customer_id" },
+        { "name": "customers_country_idx", "column": "country" }
+      ]
+    },
+    {
+      "name": "products",
+      "rows": 10000,
+      "filter": "category = 'books'",
+      "storedOrder": "product_id",
+      "columns": [
+        { "name": "product_id", "type": "integer", "stats": null },
+        { "name": "title", "type": "text", "stats": null },
+        {
+          "name": "category",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 3,
+            "mostCommon": [
+              { "value": "tools", "frequency": 0.5 },
+              { "value": "games", "frequency": 0.49 },
+              { "value": "books", "frequency": 0.01 }
+            ],
+            "histogram": [],
+            "correlation": 0.504066
+          }
+        }
+      ],
+      "indexes": [
+        { "name": "products_pkey", "column": "product_id" },
+        { "name": "products_category_idx", "column": "category" }
+      ]
+    },
+    {
+      "name": "orders",
+      "rows": 500000,
+      "filter": "currency = 'ISK'",
+      "storedOrder": "currency",
+      "columns": [
+        { "name": "order_id", "type": "integer", "stats": null },
+        { "name": "customer_id", "type": "integer", "stats": null },
+        { "name": "product_id", "type": "integer", "stats": null },
+        {
+          "name": "currency",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 5,
+            "mostCommon": [
+              { "value": "EUR", "frequency": 0.300928 },
+              { "value": "SEK", "frequency": 0.249048 },
+              { "value": "NOK", "frequency": 0.24017 },
+              { "value": "DKK", "frequency": 0.199866 },
+              { "value": "ISK", "frequency": 0.009988 }
+            ],
+            "histogram": [],
+            "correlation": 1
+          }
+        }
+      ],
+      "indexes": [{ "name": "orders_currency_idx", "column": "currency" }]
+    }
+  ],
+  "joins": [
+    {
+      "left": { "table": "customers", "column": "customer_id" },
+      "right": { "table": "orders", "column": "customer_id" }
+    },
+    {
+      "left": { "table": "products", "column": "product_id" },
+      "right": { "table": "orders", "column": "product_id" }
+    }
+  ],
+  "orderBy": null,
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "customers",
+        "filtered": 100,
+        "indexes": [
+          { "index": "customers_pkey", "matched": 10000 },
+          { "index": "customers_country_idx", "matched": 100 }
+        ]
+      },
+      {
+        "table": "products",
+        "filtered": 100,
+        "indexes": [
+          { "index": "products_pkey", "matched": 10000 },
+          { "index": "products_category_idx", "matched": 100 }
+        ]
+      },
+      {
+        "table": "orders",
+        "filtered": 4994,
+        "indexes": [{ "index": "orders_currency_idx", "matched": 4994 }]
+      }
+    ],
+    "joins": [
+      { "tables": ["customers", "orders"], "rows": 4994 },
+      { "tables": ["products", "orders"], "rows": 45 },
+      { "tables": ["customers", "products", "orders"], "rows": 45 }
+    ],
+    "lookups": [
+      { "outer": ["orders"], "index": "customers_pkey", "fetched": 4994 },
+      { "outer": ["orders"], "index": "products_pkey", "fetched": 4994 },
+      { "outer": ["customers", "orders"], "index": "products_pkey", "fetched": 4994 },
+      { "outer": ["products", "orders"], "index": "customers_pkey", "fetched": 45 }
+    ]
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": {
+      "first": { "table": "orders", "access": "index", "index": "orders_currency_idx" },
+      "steps": [
+        {
+          "join": "hash",
+          "scan": { "table": "customers", "access": "index", "index": "customers_country_idx" }
+        },
+        { "join": "indexNestedLoop", "table": "products", "index": "products_pkey" }
+      ]
+    },
+    "explain": {
+      "nodeType": "Nested Loop",
+      "relation": null,
+      "index": null,
+      "estimatedRows": 1,
+      "estimatedCost": 294.41,
+      "children": [
+        {
+          "nodeType": "Hash Join",
+          "relation": null,
+          "index": null,
+          "estimatedRows": 50,
+          "estimatedCost": 273.47,
+          "children": [
+            {
+              "nodeType": "Index Scan",
+              "relation": "orders",
+              "index": "orders_currency_idx",
+              "estimatedRows": 4994,
+              "estimatedCost": 138.82,
+              "children": []
+            },
+            {
+              "nodeType": "Hash",
+              "relation": null,
+              "index": null,
+              "estimatedRows": 100,
+              "estimatedCost": 120.29,
+              "children": [
+                {
+                  "nodeType": "Bitmap Heap Scan",
+                  "relation": "customers",
+                  "index": null,
+                  "estimatedRows": 100,
+                  "estimatedCost": 120.29,
+                  "children": [
+                    {
+                      "nodeType": "Bitmap Index Scan",
+                      "relation": null,
+                      "index": "customers_country_idx",
+                      "estimatedRows": 100,
+                      "estimatedCost": 5.04,
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "nodeType": "Index Scan",
+          "relation": "products",
+          "index": "products_pkey",
+          "estimatedRows": 1,
+          "estimatedCost": 0.42,
+          "children": []
+        }
+      ]
+    }
+  },
+  "costs": {
+    "best": 10938,
+    "optimizer": 55479,
+    "bestPlan": {
+      "first": { "table": "products", "access": "index", "index": "products_category_idx" },
+      "steps": [
+        {
+          "join": "hash",
+          "scan": { "table": "orders", "access": "index", "index": "orders_currency_idx" }
+        },
+        { "join": "indexNestedLoop", "table": "customers", "index": "customers_pkey" }
+      ]
+    }
+  },
+  "explanation": [
+    "PostgreSQL read the 4,994 krónur orders through orders_currency_idx, 4,994, and the 100 Icelandic customers through customers_country_idx, 4 × 100 = 400, and hashed them together, 5,094. It expected 50 rows, as if only 1% of the krónur orders were Icelandic customers', and looked up each one's product through products_pkey. Every krónur order is an Icelandic customer's, so all 4,994 matched: 4 × (4,994 + 4,994) = 39,952, for 45 books. The plan costs 55,479.",
+    "Joining the krónur orders with the 100 books first looked no better to PostgreSQL: it expected 50 rows from that join too. That estimate was right, 45, because what a customer pays in has nothing to do with what they buy.",
+    "Read the books through products_category_idx, 4 × 100 = 400, hash them with the krónur orders, 4,994 + 5,094, and look up the 45 orders' customers through customers_pkey, 4 × (45 + 45) = 360: the plan costs 10,938. When two joins look the same size, start with the one whose filters have nothing to do with each other: its estimate is the one to trust."
+  ]
+}

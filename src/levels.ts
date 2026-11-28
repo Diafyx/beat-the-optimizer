@@ -34,6 +34,11 @@ export const LEVEL_IDS = [
   'the-big-customer',
   'refunds-first',
   'said-twice',
+  // Added for puzzles #24 to #27 (#132).
+  'goes-together',
+  'never-together',
+  'books-in-kronur',
+  'every-order-every-ticket',
 ] as const;
 
 export type LevelLoader = () => Promise<Level>;

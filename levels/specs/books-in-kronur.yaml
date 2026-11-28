@@ -1,0 +1,105 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1027
+tables:
+  - name: customers
+    rows: 10000
+    order: customer_id
+    columns:
+      - name: customer_id
+        type: integer
+        values: { kind: sequence }
+      - name: name
+        type: text
+        values: { kind: label, prefix: 'customer ' }
+      - name: country
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: IS, weight: 1 }
+            - { value: 'NO', weight: 24 }
+            - { value: SE, weight: 25 }
+            - { value: DK, weight: 20 }
+            - { value: FI, weight: 15 }
+            - { value: DE, weight: 15 }
+    indexes:
+      - { name: customers_pkey, column: customer_id, unique: true }
+      - { name: customers_country_idx, column: country }
+  - name: products
+    rows: 10000
+    order: product_id
+    columns:
+      - name: product_id
+        type: integer
+        values: { kind: sequence }
+      - name: title
+        type: text
+        values: { kind: label, prefix: 'product ' }
+      - name: category
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: books, weight: 1 }
+            - { value: games, weight: 49 }
+            - { value: tools, weight: 50 }
+    indexes:
+      - { name: products_pkey, column: product_id, unique: true }
+      - { name: products_category_idx, column: category }
+  - name: orders
+    rows: 500000
+    order: currency
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      - name: customer_id
+        type: integer
+        values: { kind: reference, table: customers, column: customer_id }
+      - name: product_id
+        type: integer
+        values: { kind: reference, table: products, column: product_id }
+      - name: currency
+        type: text
+        values:
+          kind: follows
+          through: customer_id
+          column: country
+          map:
+            - { from: IS, to: ISK }
+            - { from: 'NO', to: NOK }
+            - { from: SE, to: SEK }
+            - { from: DK, to: DKK }
+            - { from: FI, to: EUR }
+            - { from: DE, to: EUR }
+    indexes:
+      - { name: orders_currency_idx, column: currency }
+afterAnalyze: []
+level:
+  id: books-in-kronur
+  title: Books in krónur
+  story:
+    - 'The tax office wants every book sold to an Icelandic customer and paid in krónur.'
+    - 'The shop has 10,000 customers, 10,000 products and 500,000 orders, stored in currency order. One product in 100 is a book.'
+  select:
+    - { table: customers, column: name }
+    - { table: products, column: title }
+  filters:
+    - { table: customers, column: country, op: '=', value: IS }
+    - { table: orders, column: currency, op: '=', value: ISK }
+    - { table: products, column: category, op: '=', value: books }
+  joins:
+    - left: { table: customers, column: customer_id }
+      right: { table: orders, column: customer_id }
+    - left: { table: products, column: product_id }
+      right: { table: orders, column: product_id }
+  orderBy: null
+  locks: []
+  stats:
+    - { table: customers, column: country }
+    - { table: orders, column: currency }
+    - { table: products, column: category }
+  explanation:
+    - "PostgreSQL read the 4,994 krónur orders through orders_currency_idx, 4,994, and the 100 Icelandic customers through customers_country_idx, 4 × 100 = 400, and hashed them together, 5,094. It expected 50 rows, as if only 1% of the krónur orders were Icelandic customers', and looked up each one's product through products_pkey. Every krónur order is an Icelandic customer's, so all 4,994 matched: 4 × (4,994 + 4,994) = 39,952, for 45 books. The plan costs 55,479."
+    - 'Joining the krónur orders with the 100 books first looked no better to PostgreSQL: it expected 50 rows from that join too. That estimate was right, 45, because what a customer pays in has nothing to do with what they buy.'
+    - "Read the books through products_category_idx, 4 × 100 = 400, hash them with the krónur orders, 4,994 + 5,094, and look up the 45 orders' customers through customers_pkey, 4 × (45 + 45) = 360: the plan costs 10,938. When two joins look the same size, start with the one whose filters have nothing to do with each other: its estimate is the one to trust."
