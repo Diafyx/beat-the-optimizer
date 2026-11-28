@@ -39,6 +39,10 @@ export const LEVEL_IDS = [
   'never-together',
   'books-in-kronur',
   'every-order-every-ticket',
+  // Added for puzzles #28 to #30 (#133).
+  'in-any-case',
+  'in-cents',
+  'two-guesses',
 ] as const;
 
 export type LevelLoader = () => Promise<Level>;

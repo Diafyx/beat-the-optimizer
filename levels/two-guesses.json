@@ -1,0 +1,228 @@
+{
+  "format": 1,
+  "id": "two-guesses",
+  "title": "Two guesses",
+  "story": [
+    "One sign-up form stored country codes in capitals and the other in lower case, and the courier works in grams, not kilograms.",
+    "The courier wants every order of 20 kg or more that goes to Iceland, from 50,000 customers, 10,000 products and a million orders."
+  ],
+  "sql": "SELECT customers.name, products.title\nFROM customers\nJOIN orders ON orders.customer_id = customers.customer_id\nJOIN products ON products.product_id = orders.product_id\nWHERE lower(customers.country) = 'is'\n  AND products.weight_kg * 1000 >= 20000",
+  "tables": [
+    {
+      "name": "customers",
+      "rows": 50000,
+      "filter": "lower(country) = 'is'",
+      "storedOrder": "customer_id",
+      "columns": [
+        { "name": "customer_id", "type": "integer", "stats": null },
+        { "name": "name", "type": "text", "stats": null },
+        {
+          "name": "country",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 5,
+            "mostCommon": [
+              { "value": "NO", "frequency": 0.25 },
+              { "value": "SE", "frequency": 0.25 },
+              { "value": "DK", "frequency": 0.2 },
+              { "value": "IS", "frequency": 0.2 },
+              { "value": "is", "frequency": 0.1 }
+            ],
+            "histogram": [],
+            "correlation": 0.21277876
+          }
+        }
+      ],
+      "indexes": [{ "name": "customers_pkey", "column": "customer_id" }]
+    },
+    {
+      "name": "products",
+      "rows": 10000,
+      "filter": "weight_kg * 1000 >= 20000",
+      "storedOrder": "product_id",
+      "columns": [
+        { "name": "product_id", "type": "integer", "stats": null },
+        { "name": "title", "type": "text", "stats": null },
+        {
+          "name": "weight_kg",
+          "type": "integer",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 4,
+            "mostCommon": [
+              { "value": 1, "frequency": 0.5 },
+              { "value": 2, "frequency": 0.3 },
+              { "value": 5, "frequency": 0.199 },
+              { "value": 40, "frequency": 0.001 }
+            ],
+            "histogram": [],
+            "correlation": 0.3600194
+          }
+        }
+      ],
+      "indexes": [{ "name": "products_pkey", "column": "product_id" }]
+    },
+    {
+      "name": "orders",
+      "rows": 1000000,
+      "filter": null,
+      "storedOrder": "order_id",
+      "columns": [
+        { "name": "order_id", "type": "integer", "stats": null },
+        { "name": "customer_id", "type": "integer", "stats": null },
+        { "name": "product_id", "type": "integer", "stats": null }
+      ],
+      "indexes": [
+        { "name": "orders_customer_id_idx", "column": "customer_id" },
+        { "name": "orders_product_id_idx", "column": "product_id" }
+      ]
+    }
+  ],
+  "joins": [
+    {
+      "left": { "table": "customers", "column": "customer_id" },
+      "right": { "table": "orders", "column": "customer_id" }
+    },
+    {
+      "left": { "table": "products", "column": "product_id" },
+      "right": { "table": "orders", "column": "product_id" }
+    }
+  ],
+  "orderBy": null,
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "customers",
+        "filtered": 15000,
+        "indexes": [{ "index": "customers_pkey", "matched": 50000 }]
+      },
+      {
+        "table": "products",
+        "filtered": 10,
+        "indexes": [{ "index": "products_pkey", "matched": 10000 }]
+      },
+      {
+        "table": "orders",
+        "filtered": 1000000,
+        "indexes": [
+          { "index": "orders_customer_id_idx", "matched": 1000000 },
+          { "index": "orders_product_id_idx", "matched": 1000000 }
+        ]
+      }
+    ],
+    "joins": [
+      { "tables": ["customers", "orders"], "rows": 299400 },
+      { "tables": ["products", "orders"], "rows": 1034 },
+      { "tables": ["customers", "products", "orders"], "rows": 316 }
+    ],
+    "lookups": [
+      { "outer": ["customers"], "index": "orders_customer_id_idx", "fetched": 299400 },
+      { "outer": ["products"], "index": "orders_product_id_idx", "fetched": 1034 },
+      { "outer": ["orders"], "index": "customers_pkey", "fetched": 1000000 },
+      { "outer": ["orders"], "index": "products_pkey", "fetched": 1000000 },
+      { "outer": ["customers", "orders"], "index": "products_pkey", "fetched": 299400 },
+      { "outer": ["products", "orders"], "index": "customers_pkey", "fetched": 1034 }
+    ]
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": {
+      "first": { "table": "customers", "access": "seq" },
+      "steps": [
+        { "join": "indexNestedLoop", "table": "orders", "index": "orders_customer_id_idx" },
+        { "join": "hash", "scan": { "table": "products", "access": "seq" } }
+      ]
+    },
+    "explain": {
+      "nodeType": "Hash Join",
+      "relation": null,
+      "index": null,
+      "estimatedRows": 1666,
+      "estimatedCost": 16046.05,
+      "children": [
+        {
+          "nodeType": "Nested Loop",
+          "relation": null,
+          "index": null,
+          "estimatedRows": 5000,
+          "estimatedCost": 15729.26,
+          "children": [
+            {
+              "nodeType": "Seq Scan",
+              "relation": "customers",
+              "index": null,
+              "estimatedRows": 250,
+              "estimatedCost": 1118,
+              "children": []
+            },
+            {
+              "nodeType": "Bitmap Heap Scan",
+              "relation": "orders",
+              "index": null,
+              "estimatedRows": 20,
+              "estimatedCost": 58.25,
+              "children": [
+                {
+                  "nodeType": "Bitmap Index Scan",
+                  "relation": null,
+                  "index": "orders_customer_id_idx",
+                  "estimatedRows": 20,
+                  "estimatedCost": 4.13,
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "nodeType": "Hash",
+          "relation": null,
+          "index": null,
+          "estimatedRows": 3333,
+          "estimatedCost": 262,
+          "children": [
+            {
+              "nodeType": "Seq Scan",
+              "relation": "products",
+              "index": null,
+              "estimatedRows": 3333,
+              "estimatedCost": 262,
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "costs": {
+    "best": 23798,
+    "optimizer": 1916726,
+    "bestPlan": {
+      "first": { "table": "products", "access": "seq" },
+      "steps": [
+        { "join": "indexNestedLoop", "table": "orders", "index": "orders_product_id_idx" },
+        { "join": "indexNestedLoop", "table": "customers", "index": "customers_pkey" }
+      ]
+    }
+  },
+  "explanation": [
+    "Both filters are on expressions, so PostgreSQL guessed both: 0.5% for the equality on lower(country), 250 of 50,000 customers, and a third for the range on weight_kg * 1000, 3,333 of 10,000 products. The customers looked like the better start. It read all 50,000 and looked up their orders through orders_customer_id_idx, expecting 5,000.",
+    "But IS and is are 30% of the customers, 15,000, and the lookups found 299,400 orders: 4 × (15,000 + 299,400) = 1,257,600. Reading the products, 10,000, and hashing the orders with the 10 that weigh 40 kg, 299,400 + 10, brings the plan to 1,916,726.",
+    "Start from the other guess. Read the products, 10,000, look up the 10 heavy ones' 1,034 orders through orders_product_id_idx, 4 × (10 + 1,034) = 4,176, and their customers through customers_pkey, 4 × (1,034 + 1,034) = 8,272: the plan costs 23,798, for 316 rows. A guess knows the operator, not the data: an equality always looks rarer than a range, so PostgreSQL started from the wrong end."
+  ]
+}

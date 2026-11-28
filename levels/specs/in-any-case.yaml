@@ -46,4 +46,6 @@ level:
   stats:
     - { table: orders, column: status }
   explanation:
-    - 'Written after the first authoring run, from what PostgreSQL estimated.'
+    - 'PostgreSQL has statistics for status, but not for lower(status), so it guessed: an equality matches 0.5% of the rows, 5,000 of a million. Sorting so few looked cheap, so it read every order, 1,000,000, and sorted the shipped ones by date.'
+    - 'But shipped, Shipped and SHIPPED are 95% of the orders. The sort had 950,000 rows, 950,000 × 20 = 19,000,000, and the plan costs 20,000,000.'
+    - 'Walking orders_created_at_idx gives the orders already sorted. It jumps to every one of them, 4 × 1,000,000 = 4,000,000, and needs no sort, so the plan costs 4,000,000. PostgreSQL has no statistics for an expression, so it guesses that an equality on one matches 0.5% of the rows, however many do. An index on lower(status) gives it statistics for the expression at the next ANALYZE.'

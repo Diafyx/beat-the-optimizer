@@ -63,4 +63,6 @@ level:
   stats:
     - { table: products, column: price }
   explanation:
-    - 'Written after the first authoring run, from what PostgreSQL estimated.'
+    - 'PostgreSQL has statistics for price, but not for price * 100, so it guessed: a range on an expression matches a third of the rows, 3,333 of 10,000 products. It expected 333,300 order lines for them, too many to look up one by one, so it read all 1,000,000 lines and the 10,000 products, 1,010,000, and joined them in a hash join, 1,000,000 + 10.'
+    - 'But only the 10 products at 4,900 euros cost 1,000 or more, and they have 991 lines. The plan costs 2,011,001.'
+    - "Read the products, 10,000, and look up the 10 expensive ones' lines through order_lines_product_id_idx, 4 × (10 + 991) = 4,004: the plan costs 14,995. For a range on an expression, PostgreSQL guesses a third of the rows, however few match. Write price >= 1000, which its statistics cover, or give it statistics for the expression: CREATE STATISTICS products_price_cents ON (price * 100) FROM products, then ANALYZE products."
