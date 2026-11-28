@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { planCost, type Level, type Plan } from '../engine/index.ts';
 import { LEVEL_IDS } from '../levels.ts';
+import { formatRatio } from './format.ts';
 import { describeMiss, worstMiss } from './reveal.ts';
 import { MAX_RUNS, renderRun, timesBest } from './run.ts';
 
@@ -93,12 +94,32 @@ describe('renderRun', () => {
       expect(costs(asBest)).toEqual(rows(best));
       expect(text(asBest.querySelector('.verdict'))).toBe(
         best < optimizer
-          ? 'You beat the Optimizer! Yours is the perfect plan.'
+          ? `You beat the Optimizer by ${formatRatio(optimizer / best)}! Yours is the perfect plan.`
           : 'A tie. Yours is the perfect plan.',
       );
       expect([...asBest.querySelectorAll('.explanation p')].map(text)).toEqual(level.explanation);
     },
   );
+
+  it('says by how much a win beat the Optimizer, and nothing more for a tie or a loss (#134)', () => {
+    const needle = read('needle');
+    // Reading every order costs 100,000; the Optimizer's cost changes the verdict.
+    const seq: Plan = { first: { table: 'orders', access: 'seq' }, steps: [] };
+    const against = (optimizer: number): string =>
+      text(
+        runPlan({ ...needle, costs: { ...needle.costs, optimizer } }, seq).querySelector(
+          '.verdict',
+        ),
+      );
+    // 1,000 against 37,000, and against 1,200, a hundred times over.
+    expect(against(3_700_000)).toBe('You beat the Optimizer by 37×!');
+    expect(against(120_000)).toBe('You beat the Optimizer by 1.2×!');
+    expect(against(13_411_000)).toBe('You beat the Optimizer by 134.11×!');
+    // A win too narrow to show in two decimals.
+    expect(against(100_001)).toBe('You beat the Optimizer by a hair!');
+    expect(against(100_000)).toBe('A tie.');
+    expect(against(50_000)).toBe('The Optimizer wins.');
+  });
 
   it('lists every operator with its cost, adding up to the total', () => {
     const level = read('in-order');
@@ -204,7 +225,7 @@ describe('renderRun', () => {
     expect(waits).toEqual([...Array<number>(5).fill(300), ...Array<number>(24).fill(100)]);
     expect([lane('optimizer', '.count'), lane('optimizer', '.place')]).toEqual(['241,332', 'P2']);
     expect(text(run.element.querySelector('.verdict'))).toBe(
-      'You beat the Optimizer! Yours is the perfect plan.',
+      'You beat the Optimizer by 2.41×! Yours is the perfect plan.',
     );
     expect(button?.disabled).toBe(false);
     // A win waves the chequered flag once.

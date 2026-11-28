@@ -8,7 +8,7 @@
  */
 import { planCost, type Level, type Operator, type Plan } from '../engine/index.ts';
 import { el, type Child } from './dom.ts';
-import { formatCount } from './format.ts';
+import { formatCount, formatRatio } from './format.ts';
 import { describeMiss, worstMiss } from './reveal.ts';
 
 /** Runs per puzzle. */
@@ -30,11 +30,9 @@ const METHODS = {
   indexNestedLoop: 'Index nested loop',
 } as const;
 
-const ratios = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
-
 /** `cost` as a multiple of the best cost, such as `2.41× best`. */
 export const timesBest = (cost: number, best: number): string =>
-  `${ratios.format(cost / Math.max(best, 1))}× best`;
+  `${formatRatio(cost / Math.max(best, 1))} best`;
 
 function operatorLabel(operator: Operator): Child[] {
   switch (operator.kind) {
@@ -60,10 +58,16 @@ function operatorLabel(operator: Operator): Child[] {
   }
 }
 
+/** How a win reads: by how much, as the share card writes it, or by a hair. */
+function win(yours: number, optimizer: number): string {
+  const by = formatRatio(optimizer / Math.max(yours, 1));
+  return by === '1×' ? 'You beat the Optimizer by a hair!' : `You beat the Optimizer by ${by}!`;
+}
+
 function verdict(yours: number, optimizer: number, best: number): string {
   const against =
     yours < optimizer
-      ? 'You beat the Optimizer!'
+      ? win(yours, optimizer)
       : yours === optimizer
         ? 'A tie.'
         : 'The Optimizer wins.';

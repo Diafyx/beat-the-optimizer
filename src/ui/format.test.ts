@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatCorrelation, formatCount, formatShare, formatValue } from './format.ts';
+import { formatCorrelation, formatCount, formatRatio, formatShare, formatValue } from './format.ts';
 
 describe('format', () => {
   it('writes row counts with thousands separators', () => {
@@ -12,6 +12,14 @@ describe('format', () => {
     expect(formatShare(0.005)).toBe('0.5%');
     expect(formatShare(0.295)).toBe('29.5%');
     expect(formatShare(0)).toBe('0%');
+  });
+
+  it('writes ratios to two decimals at most', () => {
+    expect(formatRatio(37)).toBe('37×');
+    expect(formatRatio(1.2)).toBe('1.2×');
+    expect(formatRatio(2.41332)).toBe('2.41×');
+    expect(formatRatio(1234.5)).toBe('1,234.5×');
+    expect(formatRatio(1.001)).toBe('1×');
   });
 
   it('writes correlations to two decimals', () => {
