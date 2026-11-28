@@ -11,7 +11,8 @@ level included, reaches app players only with the next upload to Google Play.
 Version 1 of the app, in the first closed test, was a Trusted Web Activity
 built with Bubblewrap. Version 2 is the first built with Capacitor: same
 package name, same upload key. Version 3 adds Android's share sheet, the
-Optimizer wording and levels 11 to 15.
+Optimizer wording and levels 11 to 23. It is also the first built with
+`GOATCOUNTER_CODE`, so it counts visits like the website.
 
 ## Settings
 
@@ -23,6 +24,9 @@ Optimizer wording and levels 11 to 15.
 - Share link: the app's pages are served from `https://localhost`, so its share
   card links to `SITE_URL`, which the app build needs. Use the production
   address, `https://beat-the-optimizer.saik20533.workers.dev`.
+- Analytics: the app build reads `GOATCOUNTER_CODE` like the website's
+  (`AGENTS.md`, "Build settings"). Use the production code,
+  `beat-the-optimizer`. An app built without it counts nothing.
 - Sharing: the app's WebView has no `navigator.share`, so **Share your
   result** opens Android's share sheet through Capacitor's Share plugin
   (`src/ui/native-share.ts`). Only the app build loads it.
@@ -79,8 +83,10 @@ Run these from the repository's root folder, one at a time.
 1. Build the site for the app and copy it into the Android project:
 
    ```bash
-   SITE_URL=https://beat-the-optimizer.saik20533.workers.dev npm run build-app
+   SITE_URL=https://beat-the-optimizer.saik20533.workers.dev GOATCOUNTER_CODE=beat-the-optimizer npm run build-app
    ```
+
+   Leave out `GOATCOUNTER_CODE` only for an app that should count nothing.
 
    ```bash
    npx cap sync android
