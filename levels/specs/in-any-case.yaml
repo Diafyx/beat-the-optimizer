@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=../../schema/level-spec.schema.json
+seed: 1028
+tables:
+  - name: orders
+    rows: 1000000
+    order: order_id
+    columns:
+      - name: order_id
+        type: integer
+        values: { kind: sequence }
+      - name: created_at
+        type: date
+        values: { kind: dateRange, from: '2024-01-01', to: '2026-10-31' }
+      - name: status
+        type: text
+        values:
+          kind: weighted
+          weights:
+            - { value: shipped, weight: 50 }
+            - { value: Shipped, weight: 30 }
+            - { value: SHIPPED, weight: 15 }
+            - { value: returned, weight: 3 }
+            - { value: cancelled, weight: 2 }
+      - name: amount
+        type: integer
+        values: { kind: uniform, min: 1, max: 500 }
+    indexes:
+      - { name: orders_pkey, column: order_id, unique: true }
+      - { name: orders_created_at_idx, column: created_at }
+afterAnalyze: []
+level:
+  id: in-any-case
+  title: In any case
+  story:
+    - 'The old checkout wrote order statuses in capitals, the new one in lower case, and some code in between capitalised them.'
+    - 'Finance wants every shipped order, however it was written, oldest first.'
+  select:
+    - { table: orders, column: order_id }
+    - { table: orders, column: created_at }
+    - { table: orders, column: amount }
+  filters:
+    - { table: orders, column: status, op: '=', value: shipped, expression: { kind: lower } }
+  joins: []
+  orderBy: { table: orders, column: created_at }
+  locks: []
+  stats:
+    - { table: orders, column: status }
+  explanation:
+    - 'PostgreSQL has statistics for status, but not for lower(status), so it guessed: an equality matches 0.5% of the rows, 5,000 of a million. Sorting so few looked cheap, so it read every order, 1,000,000, and sorted the shipped ones by date.'
+    - 'But shipped, Shipped and SHIPPED are 95% of the orders. The sort had 950,000 rows, 950,000 × 20 = 19,000,000, and the plan costs 20,000,000.'
+    - 'Walking orders_created_at_idx gives the orders already sorted. It jumps to every one of them, 4 × 1,000,000 = 4,000,000, and needs no sort, so the plan costs 4,000,000. PostgreSQL has no statistics for an expression, so it guesses that an equality on one matches 0.5% of the rows, however many do. An index on lower(status) gives it statistics for the expression at the next ANALYZE.'

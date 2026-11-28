@@ -1,0 +1,108 @@
+{
+  "format": 1,
+  "id": "in-any-case",
+  "title": "In any case",
+  "story": [
+    "The old checkout wrote order statuses in capitals, the new one in lower case, and some code in between capitalised them.",
+    "Finance wants every shipped order, however it was written, oldest first."
+  ],
+  "sql": "SELECT orders.order_id, orders.created_at, orders.amount\nFROM orders\nWHERE lower(orders.status) = 'shipped'\nORDER BY orders.created_at",
+  "tables": [
+    {
+      "name": "orders",
+      "rows": 1000000,
+      "filter": "lower(status) = 'shipped'",
+      "storedOrder": "order_id",
+      "columns": [
+        { "name": "order_id", "type": "integer", "stats": null },
+        { "name": "created_at", "type": "date", "stats": null },
+        {
+          "name": "status",
+          "type": "text",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 5,
+            "mostCommon": [
+              { "value": "shipped", "frequency": 0.5 },
+              { "value": "Shipped", "frequency": 0.3 },
+              { "value": "SHIPPED", "frequency": 0.15 },
+              { "value": "returned", "frequency": 0.03 },
+              { "value": "cancelled", "frequency": 0.02 }
+            ],
+            "histogram": [],
+            "correlation": 0.36458522
+          }
+        },
+        { "name": "amount", "type": "integer", "stats": null }
+      ],
+      "indexes": [
+        { "name": "orders_pkey", "column": "order_id" },
+        { "name": "orders_created_at_idx", "column": "created_at" }
+      ]
+    }
+  ],
+  "joins": [],
+  "orderBy": { "table": "orders", "column": "created_at" },
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "orders",
+        "filtered": 950000,
+        "indexes": [
+          { "index": "orders_pkey", "matched": 1000000 },
+          { "index": "orders_created_at_idx", "matched": 1000000 }
+        ]
+      }
+    ],
+    "joins": [],
+    "lookups": []
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": { "first": { "table": "orders", "access": "seq" }, "steps": [] },
+    "explain": {
+      "nodeType": "Sort",
+      "relation": null,
+      "index": null,
+      "estimatedRows": 5000,
+      "estimatedCost": 21703.69,
+      "children": [
+        {
+          "nodeType": "Seq Scan",
+          "relation": "orders",
+          "index": null,
+          "estimatedRows": 5000,
+          "estimatedCost": 21384,
+          "children": []
+        }
+      ]
+    }
+  },
+  "costs": {
+    "best": 4000000,
+    "optimizer": 20000000,
+    "bestPlan": {
+      "first": { "table": "orders", "access": "index", "index": "orders_created_at_idx" },
+      "steps": []
+    }
+  },
+  "explanation": [
+    "PostgreSQL has statistics for status, but not for lower(status), so it guessed: an equality matches 0.5% of the rows, 5,000 of a million. Sorting so few looked cheap, so it read every order, 1,000,000, and sorted the shipped ones by date.",
+    "But shipped, Shipped and SHIPPED are 95% of the orders. The sort had 950,000 rows, 950,000 × 20 = 19,000,000, and the plan costs 20,000,000.",
+    "Walking orders_created_at_idx gives the orders already sorted. It jumps to every one of them, 4 × 1,000,000 = 4,000,000, and needs no sort, so the plan costs 4,000,000. PostgreSQL has no statistics for an expression, so it guesses that an equality on one matches 0.5% of the rows, however many do. An index on lower(status) gives it statistics for the expression at the next ANALYZE."
+  ]
+}

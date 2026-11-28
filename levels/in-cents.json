@@ -1,0 +1,154 @@
+{
+  "format": 1,
+  "id": "in-cents",
+  "title": "In cents",
+  "story": [
+    "Prices are in euros, but the luxury report was written for a system that kept cents, so it asks for price * 100 of 100,000 or more: 1,000 euros.",
+    "The shop has 10,000 products and a million order lines."
+  ],
+  "sql": "SELECT products.title, order_lines.quantity\nFROM products\nJOIN order_lines ON order_lines.product_id = products.product_id\nWHERE products.price * 100 >= 100000",
+  "tables": [
+    {
+      "name": "products",
+      "rows": 10000,
+      "filter": "price * 100 >= 100000",
+      "storedOrder": "product_id",
+      "columns": [
+        { "name": "product_id", "type": "integer", "stats": null },
+        { "name": "title", "type": "text", "stats": null },
+        {
+          "name": "price",
+          "type": "integer",
+          "stats": {
+            "nullFraction": 0,
+            "distinct": 5,
+            "mostCommon": [
+              { "value": 9, "frequency": 0.3 },
+              { "value": 19, "frequency": 0.3 },
+              { "value": 49, "frequency": 0.25 },
+              { "value": 99, "frequency": 0.149 },
+              { "value": 4900, "frequency": 0.001 }
+            ],
+            "histogram": [],
+            "correlation": 0.26869595
+          }
+        }
+      ],
+      "indexes": [{ "name": "products_pkey", "column": "product_id" }]
+    },
+    {
+      "name": "order_lines",
+      "rows": 1000000,
+      "filter": null,
+      "storedOrder": "line_id",
+      "columns": [
+        { "name": "line_id", "type": "integer", "stats": null },
+        { "name": "product_id", "type": "integer", "stats": null },
+        { "name": "quantity", "type": "integer", "stats": null }
+      ],
+      "indexes": [
+        { "name": "order_lines_pkey", "column": "line_id" },
+        { "name": "order_lines_product_id_idx", "column": "product_id" }
+      ]
+    }
+  ],
+  "joins": [
+    {
+      "left": { "table": "products", "column": "product_id" },
+      "right": { "table": "order_lines", "column": "product_id" }
+    }
+  ],
+  "orderBy": null,
+  "locks": [],
+  "cardinalities": {
+    "scans": [
+      {
+        "table": "products",
+        "filtered": 10,
+        "indexes": [{ "index": "products_pkey", "matched": 10000 }]
+      },
+      {
+        "table": "order_lines",
+        "filtered": 1000000,
+        "indexes": [
+          { "index": "order_lines_pkey", "matched": 1000000 },
+          { "index": "order_lines_product_id_idx", "matched": 1000000 }
+        ]
+      }
+    ],
+    "joins": [{ "tables": ["products", "order_lines"], "rows": 991 }],
+    "lookups": [
+      { "outer": ["products"], "index": "order_lines_product_id_idx", "fetched": 991 },
+      { "outer": ["order_lines"], "index": "products_pkey", "fetched": 1000000 }
+    ]
+  },
+  "optimizer": {
+    "postgres": "18.7",
+    "settings": {
+      "autovacuum": "off",
+      "cpu_index_tuple_cost": "0.005",
+      "cpu_operator_cost": "0.0025",
+      "cpu_tuple_cost": "0.01",
+      "default_statistics_target": "10000",
+      "effective_cache_size": "4GB",
+      "jit": "off",
+      "max_parallel_workers_per_gather": "0",
+      "random_page_cost": "4",
+      "seq_page_cost": "1",
+      "work_mem": "4MB"
+    },
+    "plan": {
+      "first": { "table": "order_lines", "access": "seq" },
+      "steps": [{ "join": "hash", "scan": { "table": "products", "access": "seq" } }]
+    },
+    "explain": {
+      "nodeType": "Hash Join",
+      "relation": null,
+      "index": null,
+      "estimatedRows": 333300,
+      "estimatedCost": 18337.77,
+      "children": [
+        {
+          "nodeType": "Seq Scan",
+          "relation": "order_lines",
+          "index": null,
+          "estimatedRows": 1000000,
+          "estimatedCost": 15408,
+          "children": []
+        },
+        {
+          "nodeType": "Hash",
+          "relation": null,
+          "index": null,
+          "estimatedRows": 3333,
+          "estimatedCost": 262,
+          "children": [
+            {
+              "nodeType": "Seq Scan",
+              "relation": "products",
+              "index": null,
+              "estimatedRows": 3333,
+              "estimatedCost": 262,
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "costs": {
+    "best": 14995,
+    "optimizer": 2011001,
+    "bestPlan": {
+      "first": { "table": "products", "access": "seq" },
+      "steps": [
+        { "join": "indexNestedLoop", "table": "order_lines", "index": "order_lines_product_id_idx" }
+      ]
+    }
+  },
+  "explanation": [
+    "PostgreSQL has statistics for price, but not for price * 100, so it guessed: a range on an expression matches a third of the rows, 3,333 of 10,000 products. It expected 333,300 order lines for them, too many to look up one by one, so it read all 1,000,000 lines and the 10,000 products, 1,010,000, and joined them in a hash join, 1,000,000 + 10.",
+    "But only the 10 products at 4,900 euros cost 1,000 or more, and they have 991 lines. The plan costs 2,011,001.",
+    "Read the products, 10,000, and look up the 10 expensive ones' lines through order_lines_product_id_idx, 4 × (10 + 991) = 4,004: the plan costs 14,995. For a range on an expression, PostgreSQL guesses a third of the rows, however few match. Write price >= 1000, which its statistics cover, or give it statistics for the expression: CREATE STATISTICS products_price_cents ON (price * 100) FROM products, then ANALYZE products."
+  ]
+}
