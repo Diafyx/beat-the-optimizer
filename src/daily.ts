@@ -36,6 +36,11 @@ export interface Daily {
   /** The player's local date, YYYY-MM-DD. */
   readonly date: string;
   readonly level: string;
+  /**
+   * The first puzzle with the same level, once the rotation has come round
+   * again; null while today's level is new.
+   */
+  readonly rerunOf: number | null;
 }
 
 /** Today's puzzle, for the player's local date at `now`. */
@@ -46,5 +51,11 @@ export function dailyPuzzle(
 ): Daily {
   const date = localDate(now);
   const number = Math.max(daysBetween(launch, date), 0) + 1;
-  return { number, date, level: String(rotation[(number - 1) % rotation.length]) };
+  const first = ((number - 1) % rotation.length) + 1;
+  return {
+    number,
+    date,
+    level: String(rotation[first - 1]),
+    rerunOf: number > rotation.length ? first : null,
+  };
 }

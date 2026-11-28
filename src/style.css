@@ -821,6 +821,13 @@ details.part > summary h3 {
   color: var(--dim);
 }
 
+/* The rerun note, on a line of its own under the puzzle number. */
+.puzzle .rerun {
+  flex-basis: 100%;
+  margin-top: 0;
+  font-weight: 400;
+}
+
 .link-button {
   min-height: 2.75rem;
   padding: 0 0.25rem;
