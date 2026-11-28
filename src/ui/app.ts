@@ -156,6 +156,10 @@ export async function start(
         : el('p', {}, `Puzzle #${String(daily.number)} · ${formatDate(daily.date)} · `, streak),
       help,
     );
+    // The rotation has come round again: say so, rather than pass it off as new.
+    if (daily !== null && daily.rerunOf !== null) {
+      banner.append(el('p', { class: 'rerun' }, `A rerun of puzzle #${String(daily.rerunOf)}.`));
+    }
     const view = renderLevel(level);
     view.append(
       renderPlanBuilder(

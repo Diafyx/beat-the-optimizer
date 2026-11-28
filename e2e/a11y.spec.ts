@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { readdirSync } from 'node:fs';
 import type { Page, TestInfo } from '@playwright/test';
-import { expect, playToReview, test } from './fixtures.ts';
+import { LAUNCH_NOON, expect, playToReview, test } from './fixtures.ts';
 
 // The accessibility gate: no serious or critical axe violations against
 // WCAG 2.2 A and AA. Minor and moderate ones are attached to the report.
@@ -65,6 +65,18 @@ test.describe('accessibility @a11y', () => {
       }
     });
   });
+
+  for (const colorScheme of ['light', 'dark'] as const) {
+    test(`the rerun note in the ${colorScheme} theme has no serious or critical violations`, async ({
+      page,
+    }, testInfo) => {
+      await page.emulateMedia({ colorScheme });
+      await page.clock.setFixedTime(new Date(LAUNCH_NOON.getTime() + levels.length * 86_400_000));
+      await page.goto('/');
+      await expect(page.getByText('A rerun of puzzle #1.')).toBeVisible();
+      expect(await blockingViolations(page, testInfo, `rerun-${colorScheme}`)).toEqual([]);
+    });
+  }
 
   test('the unknown-level message has no serious or critical violations', async ({
     page,

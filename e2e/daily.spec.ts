@@ -1,5 +1,9 @@
+import { readdirSync } from 'node:fs';
 import { KEY } from '../src/progress.ts';
 import { LAUNCH_NOON, expect, test } from './fixtures.ts';
+
+// The rotation has every level once, so the day after it is the first rerun.
+const rotation = readdirSync('levels').filter((name) => name.endsWith('.json')).length;
 
 const dayAfter = (days: number): Date => new Date(LAUNCH_NOON.getTime() + days * 86_400_000);
 
@@ -9,6 +13,17 @@ test.describe('daily puzzle', () => {
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 2 })).toHaveText('Haystack');
     await expect(page.getByText('Puzzle #3 · Wednesday, November 25, 2026')).toBeVisible();
+  });
+
+  test('says when today’s puzzle is a rerun', async ({ page }) => {
+    await page.clock.setFixedTime(dayAfter(rotation - 1));
+    await page.goto('/');
+    await expect(page.getByRole('heading', { level: 2 })).toBeVisible();
+    await expect(page.getByText(/^A rerun of puzzle/)).toHaveCount(0);
+    await page.clock.setFixedTime(dayAfter(rotation));
+    await page.reload();
+    await expect(page.getByRole('heading', { level: 2 })).toHaveText('Needle');
+    await expect(page.getByText('A rerun of puzzle #1.')).toBeVisible();
   });
 
   test('keeps the runs and the streak across a reload', async ({ page }) => {

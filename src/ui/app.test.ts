@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LAUNCH_DATE } from '../daily.ts';
+import { LEVEL_IDS } from '../levels.ts';
 import type { Analytics } from '../analytics.ts';
 import type { Level } from '../engine/index.ts';
 import { KEY, type Progress } from '../progress.ts';
@@ -75,6 +76,25 @@ describe('start', () => {
     );
     expect(document.title).toBe('Needle · Beat the Optimizer');
     expect(root.hasAttribute('aria-busy')).toBe(false);
+  });
+
+  it('says when today’s puzzle is a rerun (#135)', async () => {
+    await start(root, '', { now: day(LEVEL_IDS.length), storage: memoryStorage(seen) });
+    expect(root.querySelector('h2')?.textContent).toBe('Needle');
+    expect(text(root.querySelector('.puzzle p'))).toContain(
+      `Puzzle #${String(LEVEL_IDS.length + 1)} · `,
+    );
+    expect(text(root.querySelector('.puzzle .rerun'))).toBe('A rerun of puzzle #1.');
+  });
+
+  it('has no rerun note on a new puzzle, or in practice', async () => {
+    await start(root, '', { now: day(LEVEL_IDS.length - 1), storage: memoryStorage(seen) });
+    expect(root.querySelector('.rerun')).toBeNull();
+    await start(root, '?level=needle', {
+      now: day(LEVEL_IDS.length),
+      storage: memoryStorage(seen),
+    });
+    expect(root.querySelector('.rerun')).toBeNull();
   });
 
   it('rotates through the levels day by day', async () => {

@@ -44,8 +44,30 @@ describe('dailyPuzzle', () => {
       number: 1,
       date: LAUNCH_DATE,
       level: 'needle',
+      rerunOf: null,
     });
     expect(dailyPuzzle(at(y, m, d - 30)).number).toBe(1);
+  });
+
+  it('says which puzzle a day repeats, once the levels run out (#135)', () => {
+    const rotation = LEVEL_IDS.slice(0, 23);
+    const on = (month: number, d: number) => dailyPuzzle(at(2026, month, d), LAUNCH_DATE, rotation);
+    expect(on(11, 23)).toMatchObject({ number: 1, rerunOf: null });
+    expect(on(12, 15)).toMatchObject({ number: 23, level: 'said-twice', rerunOf: null });
+    expect(on(12, 16)).toMatchObject({ number: 24, level: 'needle', rerunOf: 1 });
+    expect(on(12, 17)).toMatchObject({ number: 25, level: 'read-the-stats', rerunOf: 2 });
+    // Two rotations on: puzzle #47, on 8 January 2027, is still a rerun of #1.
+    expect(on(12, 16 + 23)).toMatchObject({ number: 47, date: '2027-01-08', rerunOf: 1 });
+  });
+
+  it('has no rerun while every level is new', () => {
+    const last = dailyPuzzle(at(2026, 11, 22 + LEVEL_IDS.length));
+    expect(last).toMatchObject({ number: LEVEL_IDS.length, rerunOf: null });
+    expect(dailyPuzzle(at(2026, 11, 23 + LEVEL_IDS.length))).toMatchObject({
+      number: LEVEL_IDS.length + 1,
+      level: 'needle',
+      rerunOf: 1,
+    });
   });
 
   it('goes through the levels in order, then starts again', () => {
