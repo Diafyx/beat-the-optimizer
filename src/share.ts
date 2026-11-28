@@ -4,6 +4,7 @@
  * (PostgreSQL's) compare with the perfect plan. It never names a table, index
  * or join method.
  */
+import { formatRatio } from './ui/format.ts';
 
 /** A run's square, by its cost as a multiple of the best cost. */
 export function square(ratio: number): string {
@@ -12,8 +13,6 @@ export function square(ratio: number): string {
   if (ratio <= 3) return '🟧';
   return '🟥';
 }
-
-const ratios = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
 
 export interface ShareInput {
   readonly puzzle: number;
@@ -28,7 +27,7 @@ export interface ShareInput {
 
 /** The text to share. */
 export function shareText({ puzzle, costs, optimizer, best, url }: ShareInput): string {
-  const times = (cost: number): string => `${ratios.format(cost / Math.max(best, 1))}×`;
+  const times = (cost: number): string => formatRatio(cost / Math.max(best, 1));
   const mine = Math.min(...costs);
   const outcome =
     mine < optimizer

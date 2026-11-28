@@ -31,7 +31,9 @@ test.describe('running a plan', () => {
     await page.getByRole('button', { name: /Seq scan/ }).click();
     await page.getByRole('button', { name: /^Race/ }).click();
     // No animation: the result is there without waiting for timers.
-    await expect(page.getByText('You beat the Optimizer! Yours is the perfect plan.')).toBeVisible({
+    await expect(
+      page.getByText('You beat the Optimizer by 2.41×! Yours is the perfect plan.'),
+    ).toBeVisible({
       timeout: 200,
     });
     // The Optimizer guessed 149 rows from orders; there were 60,333.
